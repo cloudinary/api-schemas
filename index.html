@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>API Documentation</title>
+  <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
+  <script src="https://unpkg.com/@stoplight/elements/web-components.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements/styles.min.css">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+      color: #2d3748;
+    }
+    header {
+      background-color: #ffffff;
+      padding: 10px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header img {
+      height: 32px;
+    }
+    nav button {
+      margin-right: 10px;
+      padding: 6px 12px;
+      background-color: transparent;
+      border: none;
+      color: #4a5568;
+      cursor: pointer;
+    }
+    nav button.active {
+      background-color: #007bff;
+      color: white;
+      border-radius: 4px;
+    }
+    nav select {
+      padding: 6px 30px 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e0;
+      background-color: white;
+      appearance: none;
+      background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="%234a5568"><polygon points="0,0 20,0 10,10"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 10px top 50%;
+      background-size: 10px;
+      cursor: pointer;
+    }
+    #viewer-container {
+      padding: 20px;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header>
+  <nav id="nav-container"></nav>
+  <div style="display: flex; align-items: center;">
+    <select id="viewer-select">
+      <option value="redoc">Redocly</option>
+      <option value="swagger">Swagger UI</option>
+      <option value="stoplight">Stoplight Elements</option>
+    </select>
+    <img src="https://res.cloudinary.com/cloudinary/images/cloudinary_logo_for_white_bg/cloudinary_logo_for_white_bg.png?_i=AA" alt="Cloudinary" style="margin-left: 15px;">
+  </div>
+</header>
+
+<div id="viewer-container"></div>
+
+<script>
+  let currentSchemaPath = '';
+
+  async function fetchYaml(path) {
+    const response = await fetch(path);
+    const text = await response.text();
+    return jsyaml.load(text);
+  }
+
+  async function loadSchemasConfig() {
+    const response = await fetch('schemas.yml');
+    const yamlText = await response.text();
+    return jsyaml.load(yamlText).schemas;
+  }
+
+  async function renderNavButtons(schemaDirs) {
+    const nav = document.getElementById('nav-container');
+    schemaDirs.forEach(async dir => {
+      const schemaPath = `${dir}/schema.yml`;
+      const schemaContent = await fetchYaml(schemaPath);
+      const button = document.createElement('button');
+      button.innerText = schemaContent.info.title || dir;
+      button.onclick = () => {
+        currentSchemaPath = schemaPath;
+        renderViewer();
+        setActiveButton(button);
+      };
+      nav.appendChild(button);
+    });
+  }
+
+  function setActiveButton(activeButton) {
+    document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+    activeButton.classList.add('active');
+  }
+
+  function renderViewer() {
+    const viewerType = document.getElementById('viewer-select').value;
+    const container = document.getElementById('viewer-container');
+    container.innerHTML = '';
+
+    if (viewerType === 'redoc') {
+      Redoc.init(currentSchemaPath, {}, container);
+    } else if (viewerType === 'swagger') {
+      SwaggerUIBundle({
+        url: currentSchemaPath,
+        dom_id: '#viewer-container'
+      });
+    } else if (viewerType === 'stoplight') {
+      const el = document.createElement('elements-api');
+      el.setAttribute('apiDescriptionUrl', currentSchemaPath);
+      el.setAttribute('router', 'hash');
+      container.appendChild(el);
+    }
+  }
+
+  document.getElementById('viewer-select').onchange = renderViewer;
+
+  (async () => {
+    const schemaDirs = await loadSchemasConfig();
+    await renderNavButtons(schemaDirs);
+    if (schemaDirs.length > 0) {
+      currentSchemaPath = `${schemaDirs[0]}/schema.yml`;
+      renderViewer();
+      setTimeout(() => setActiveButton(document.querySelector('nav button')), 100);
+    }
+  })();
+</script>
+
+</body>
+</html>

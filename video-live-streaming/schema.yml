@@ -1,0 +1,896 @@
+openapi: 3.0.3
+info:
+  title: Video Live Streaming
+  description: |
+    Use the Video Live Streaming API to create and manage your RTMP live streams. This includes managing outputs as well as manually starting and stopping streams. See the [live streaming guide](https://cloudinary.com/documentation/video_live_streaming) for information on how to use the Live Streaming API to stream video to your users.
+    
+      The API supports Basic Authentication using your Cloudinary API Key and API Secret (which can be found on the Dashboard page of your [Cloudinary Console](https://console.cloudinary.com/pm)).
+
+  version: 1.0.0 # x-release-please-version
+  contact:
+    name: Cloudinary Support
+    email: support@cloudinary.com
+    url: https://support.cloudinary.com
+  termsOfService: https://cloudinary.com/tou
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  x-cld-module-context: cloud
+  x-cld-module-name: video-live-streaming
+servers:
+  - url: https://api.cloudinary.com/v2/video/{cloudName}
+    variables:
+      cloudName:
+        default: CLOUD_NAME
+        description: The cloud name for your product environment.
+tags:
+  - name: Live Stream
+    description: Live Stream endpoint
+  - name: Live Stream Output
+    description: Live Stream Output endpoint
+paths:
+  /live_streams:
+    get:
+      tags:
+        - Live Stream
+      summary: 'Get a list of live streams'
+      operationId: getLiveStreams
+      x-cld-use-for-readme: true
+      responses:
+        '200':
+          description: a list of live streams
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamsWrappedResponse'
+              examples:
+                MyLiveStreamsWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamsWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+    post:
+      tags:
+        - Live Stream
+      summary: 'Create a new live stream'
+      operationId: createLiveStream
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveStreamCreatePayload'
+      responses:
+        '200':
+          description: created live stream
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamWrappedResponse'
+              examples:
+                MyLiveStreamWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+  /live_streams/{liveStreamId}:
+    parameters:
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: live stream id
+    get:
+      tags:
+        - Live Stream
+      summary: 'Get a single live stream'
+      operationId: getLiveStream
+      responses:
+        '200':
+          description: a live stream
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamWrappedResponse'
+              examples:
+                MyLiveStreamWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+    patch:
+      tags:
+        - Live Stream
+      summary: 'Update a live stream'
+      operationId: updateLiveStream
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveStreamUpdatePayload'
+      responses:
+        '200':
+          description: a live stream
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamWrappedResponse'
+              examples:
+                MyUpdatedLiveStreamWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+    delete:
+      tags:
+        - Live Stream
+      summary: 'Delete a live stream'
+      operationId: deleteLiveStream
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+  /live_streams/{liveStreamId}/activate:
+    parameters:
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: live stream id
+    post:
+      tags:
+        - Live Stream
+      summary: 'Manually activate a live stream'
+      operationId: activateLiveStream
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+  /live_streams/{liveStreamId}/idle:
+    parameters:
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: live stream id
+    post:
+      tags:
+        - Live Stream
+      summary: 'Manually idle a live stream'
+      operationId: idleLiveStream
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+  /live_streams/{liveStreamId}/outputs:
+    parameters:
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: live stream id
+    get:
+      tags:
+        - Live Stream
+      summary: 'Get a list of live stream outputs'
+      operationId: getLiveStreamOutputs
+      responses:
+        '200':
+          description: a list of outputs for a live stream
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamOutputsWrappedResponse'
+              examples:
+                MyLiveStreamOutputsWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamOutputsWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+    post:
+      tags:
+        - Live Stream
+      summary: 'Create a new live stream output'
+      operationId: createLiveStreamOutput
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveStreamOutputCreatePayload'
+            examples:
+              MyLiveStreamOutputCreatePayload:
+                $ref: '#/components/examples/MyLiveStreamOutputCreatePayload'
+      responses:
+        '200':
+          description: created live stream output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamOutputWrappedResponse'
+              examples:
+                MyLiveStreamOutputWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamOutputWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+  /live_streams/{liveStreamId}/outputs/{liveStreamOutputId}:
+    parameters:
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: live stream id
+      - in: path
+        name: liveStreamOutputId
+        schema:
+          type: string
+        required: true
+        description: live stream output id
+    get:
+      tags:
+        - Live Stream
+      summary: 'Get a single live stream output'
+      operationId: getLiveStreamOutput
+      responses:
+        '200':
+          description: a live stream output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamOutputWrappedResponse'
+              examples:
+                MyLiveStreamOutputWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamOutputWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: live stream output not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+    patch:
+      tags:
+        - Live Stream
+      summary: 'Update a live stream output'
+      operationId: updateLiveStreamOutput
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveStreamOutputUpdatePayload'
+            examples:
+                MyLiveStreamOutputUpdatePayload:
+                    $ref: '#/components/examples/MyLiveStreamOutputUpdatePayload'
+      responses:
+        '200':
+          description: a live stream output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamOutputWrappedResponse'
+              examples:
+                MyLiveStreamOutputWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamOutputWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: live stream output not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+    delete:
+      tags:
+        - Live Stream
+      summary: 'Delete a live stream output'
+      operationId: deleteLiveStreamOutput
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: live stream output not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+security:
+  - basicAuth: [ ]
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  schemas:
+    MessageWrappedResponse:
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+
+    ErrorWrappedResponse:
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+
+    LiveStreamsWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        data:
+          nullable: true
+          type: array
+          items:
+            $ref: '#/components/schemas/LiveStreamResponse'
+
+    LiveStreamWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        data:
+          $ref: '#/components/schemas/LiveStreamResponse'
+
+    LiveStreamOutputsWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        data:
+          nullable: true
+          type: array
+          items:
+            $ref: '#/components/schemas/LiveStreamOutputResponse'
+
+    LiveStreamOutputWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        data:
+          $ref: '#/components/schemas/LiveStreamOutputResponse'
+    
+    LiveStreamResponse:
+      type: object
+      required:
+        - id
+        - name
+        - input
+        - status
+        - outputs
+        - idle_timeout_sec
+        - max_runtime_sec
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          example: '0bd7f11c043da975e2a8ad9ebae0b6ec'
+        name:
+          nullable: true
+          type: string
+          example: 'My first stream'
+        input:
+          $ref: '#/components/schemas/LiveStreamInputResponse'
+        status:
+          type: string
+          example: 'idle'
+        outputs:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/LiveStreamOutputResponse'
+        idle_timeout_sec:
+          type: integer
+          example: 120
+        max_runtime_sec:
+          type: integer
+          example: 10800
+        created_at:
+          type: integer
+          format: int64
+          example: 1697265900621
+        updated_at:
+          type: integer
+          format: int64
+          example: 1697265900621
+
+    LiveStreamInputResponse:
+      type: object
+      required:
+        - type
+        - uri
+      properties:
+        type:
+          type: string
+          example: 'rtmp'
+        uri:
+          type: string
+          example: 'rtmp://live.cloudinary.com/streams'
+        stream_key:
+          type: string
+          nullable: true
+          example: dh8bxtg97t9cns4bddoa
+
+    LiveStreamOutputResponse:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          example: 'f11c043da975e2a8ad9ebae0b6ec0bd7'
+        name:
+          type: string
+          nullable: true
+          example: 'main stream'
+        type:
+          type: string
+          example: 'hls'
+        uri:
+          type: string
+          example: 'https://res.cloudinary.com/demo/video/live/f11c043da975e2a8ad9ebae0b6ec0bd7.m3u8'
+          nullable: true
+        stream_key:
+          type: string
+          example: 'f11c043da975e2a8ad9ebae0b6ec0bd7'
+          nullable: true
+        vendor:
+          type: string
+          example: 'youtube'
+          nullable: true
+        public_id:
+          type: string
+          example: 'main_stream_archive'
+          nullable: true
+        created_at:
+          type: integer
+          format: int64
+          example: 1697265900621
+        updated_at:
+          type: integer
+          format: int64
+          example: 1697265900621
+
+    LiveStreamCreatePayload:
+      type: object
+      required:
+        - input
+        - created_at
+        - updated_at
+      properties:
+        name:
+          type: string
+          example: 'My first stream'
+        input:
+          $ref: '#/components/schemas/LiveStreamInputCreatePayload'
+        idle_timeout_sec:
+          type: integer
+          example: 120
+          nullable: true
+        max_runtime_sec:
+          type: integer
+          example: 10800
+          nullable: true
+
+    LiveStreamInputCreatePayload:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          example: 'rtmp'
+
+    LiveStreamOutputCreatePayload:
+      type: object
+      required:
+        - type
+      properties:
+        name:
+          type: string
+          example: 'main stream'
+          nullable: true
+        type:
+          type: string
+          example: 'hls'
+        uri:
+          type: string
+          example: 'rtmp://a.rtmp.youtube.com/live2'
+          nullable: true
+        stream_key:
+          type: string
+          example: 'f11c043da975e2a8ad9ebae0b6ec0bd7'
+          nullable: true
+        vendor:
+          type: string
+          example: 'youtube'
+          nullable: true
+        public_id:
+          type: string
+          example: 'main_stream_archive'
+          nullable: true
+
+    LiveStreamUpdatePayload:
+      type: object
+      properties:
+        name:
+          type: string
+          example: 'My first stream'
+          nullable: true
+        idle_timeout_sec:
+          type: integer
+          example: 120
+          nullable: true
+        max_runtime_sec:
+          type: integer
+          example: 10800
+          nullable: true
+
+    LiveStreamOutputUpdatePayload:
+      type: object
+      properties:
+        name:
+          type: string
+          example: 'main stream'
+          nullable: true
+        uri:
+          type: string
+          example: 'rtmp://a.rtmp.youtube.com/live2/f11c043da975e2a8ad9ebae0b6ec0bd7'
+          nullable: true
+        stream_key:
+          type: string
+          example: 'f11c043da975e2a8ad9ebae0b6ec0bd7'
+          nullable: true
+        public_id:
+          type: string
+          example: 'main_stream_archive'
+          nullable: true
+  examples:
+    MyLiveStreamWrappedResponse:
+      summary: My Live Stream Response
+      value:
+        request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          id: 0bd7f11c043da975e2a8ad9ebae0b6ec
+          name: My Live Stream
+          input:
+            type: rtmp
+            uri: rtmp://live.cloudinary.com/streams
+            stream_key: dh8bxtg97t9cns4bddoa
+          status: idle
+          outputs:
+            - id: 8132d2dc5251432bb57f32ee55a336c1
+              name: default hls
+              type: hls
+              uri: https://res.cloudinary.com/demo/video/live/live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_hls.m3u8
+              created_at: 1712914020253
+              updated_at: 1712914020253
+            - id: 29b5cd6f54474bea9cec3834e763e12c
+              name: default archive
+              type: archive
+              public_id: live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_archive
+              created_at: 1712914020253
+              updated_at: 1714378330476
+          idle_timeout_sec: 120
+          max_runtime_sec: 10800
+          created_at: 1697265900621
+          updated_at: 1697265900621
+
+    MyLiveStreamsWrappedResponse:
+      summary: My Live Streams Response
+      value:
+        request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          - id: 0bd7f11c043da975e2a8ad9ebae0b6ec
+            name: My Live Stream 1
+            input:
+              type: rtmp
+              uri: rtmp://live.cloudinary.com/streams
+              stream_key: dh8bxtg97t9cns4bddoa
+            status: idle
+            outputs:
+              - id: 8132d2dc5251432bb57f32ee55a336c1
+                name: default hls
+                type: hls
+                uri: https://res.cloudinary.com/demo/video/live/live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_hls.m3u8
+                created_at: 1712914020253
+                updated_at: 1712914020253
+              - id: 29b5cd6f54474bea9cec3834e763e12c
+                name: default archive
+                type: archive
+                public_id: live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_archive
+                created_at: 1712914020253
+                updated_at: 1714378330476
+            idle_timeout_sec: 120
+            max_runtime_sec: 10800
+            created_at: 1697265900621
+            updated_at: 1697265900621
+          - id: 92aa375287aa4f2b82be628060c46f43
+            name: My Live Stream 2
+            input:
+              type: rtmp
+              uri: rtmp://live.cloudinary.com/streams
+              stream_key: 48224ec768164e11a685a558605f52f5
+            status: idle
+            outputs:
+              - id: 2c5e87b0648c4767acd93ea66d34a3c0
+                name: default hls
+                type: hls
+                uri: https://res.cloudinary.com/demo/video/live/live_stream_92aa375287aa4f2b82be628060c46f43_hls.m3u8
+                created_at: 1712914020253
+                updated_at: 1712914020253
+              - id: bb55ab0c159445df93cffbfc1d3a85db
+                name: default archive
+                type: archive
+                public_id: live_stream_92aa375287aa4f2b82be628060c46f43_archive
+                created_at: 1712914020253
+                updated_at: 1714378330476
+            idle_timeout_sec: 120
+            max_runtime_sec: 10800
+            created_at: 1697265900621
+            updated_at: 1697265900621
+
+    MyLiveStreamOutputWrappedResponse:
+      summary: My Live Stream Output Wrapped Response
+      value:
+        request_id: "6ec0bd7f11c043da975e2a8ad9ebae0b"
+        data:
+          id: "f11c043da975e2a8ad9ebae0b6ec0bd7"
+          name: new youtube
+          type: simulcast
+          uri: rtmp://a.rtmp.youtube.com/live2
+          stream_key: 43q7qmah2e1p83jhfpbs
+          vendor: youtube
+          created_at: 1697265900621
+          updated_at: 1697265900621
+
+    MyLiveStreamOutputsWrappedResponse:
+      summary: My Live Stream Outputs Response
+      value:
+        request_id: 2f9754330d613b998bb572696869b1ed
+        data:
+          - id: 2c5e87b0648c4767acd93ea66d34a3c0
+            name: default hls
+            type: hls
+            uri: https://res.cloudinary.com/demo/video/live/live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_hls.m3u8
+            created_at: 1714480579982
+            updated_at: 1714480579982
+          - id: bb55ab0c159445df93cffbfc1d3a85db
+            name: default archive
+            type: archive
+            public_id: 92aa375287aa_archive
+            created_at: 1714480579982
+            updated_at: 1714480579982
+          - id: 54434dddf7d44ed7abf55ca34ec70527
+            name: new youtube
+            type: simulcast
+            uri: rtmp://a.rtmp.youtube.com/live2
+            stream_key: 43q7qmah2e1p83jhfpbs
+            vendor: youtube
+            created_at: 1715859923186
+            updated_at: 1715859923186
+
+    MyLiveStreamOutputCreatePayload:
+      summary: My Live Stream Output Create Payload
+      value:
+        name: new youtube
+        type: simulcast
+        uri: rtmp://a.rtmp.youtube.com/live2
+        stream_key: 43q7qmah2e1p83jhfpbs
+        vendor: youtube
+
+    MyLiveStreamOutputUpdatePayload:
+      summary: My Live Stream Output Update Payload
+      value:
+        name: new youtube
+        uri: rtmp://a.rtmp.youtube.com/live2
+        stream_key: 43q7qmah2e1p83jhfpbs
+        public_id: main_stream_archive

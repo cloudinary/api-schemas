@@ -1,0 +1,740 @@
+######################################################################
+#                                                                     #
+#                Permissions Service API Specification                #
+#                                                                     #
+#######################################################################
+
+openapi: 3.0.3
+info:
+  version: 1.0.4
+  title: Cloudinary Account Permissions API
+  description: |
+    Accounts with Permissions API access can manage custom permission policies. These policies assign permissions for a principal, allowing the principal to perform a specific action on a designated resource within a particular scope (your account or a product environment). 
+    
+    Refer to the [Permissions API guide](permissions_api_guide) for instructions on what to specify in the `policy_statement` to control Cloudinary activities, and to the Cedar schema, which defines the possible values for principals, actions, and resources.
+
+    The API uses **Basic Authentication** over HTTPS. Your **Provisioning Key** and **Provisioning Secret** are used for the authentication. These credentials (as well as your ACCOUNT_ID) are located in the [Cloudinary Console](https://console.cloudinary.com/pm) under **Settings > Account > Provisioning API Access**.
+
+    The Permissions API has dedicated SDKs for the following languages:
+
+    * JavaScript
+    * PHP
+    * Java
+
+  contact:
+      name: Cloudinary Support
+      email: support@cloudinary.com
+      url: https://support.cloudinary.com
+  termsOfService: https://cloudinary.com/tou
+  x-cld-module-context: account
+  x-cld-module-name: permissions
+
+servers:
+  - url: https://api.cloudinary.com/v2/accounts/{account_id}/permissions
+    variables:
+      account_id:
+        default: ACCOUNT_ID
+        description: Your Account ID.
+
+security:
+  - basicAuth: [ ]
+# -----------------------------------------------------------------------
+
+tags:
+  - name: Custom policies
+    description: Manage the custom policies that control permissions in your account and product environments. Each policy includes a statement defined in Cedar. For more information, see the [Cedar official documentation](https://docs.cedarpolicy.com/).
+
+#  Deprecated tags
+# ------------------------------------
+#  - name: permission
+#    description: Permission endpoint
+#  - name: subject
+#    description: Subject endpoint
+#  - name: permission_groups
+#    description: Permission Group endpoint
+
+# -----------------------------------------------------------------------
+
+paths:
+  /policies/custom:
+
+    get:
+      # --------
+      #  Get a list of custom policies
+      # ------------------------------------
+      summary: Get custom policies
+      description: Retrieve all custom policies defined for a specific scope. The scope can be at the account level or within a specific product environment.
+      operationId: getCustomPolicies
+      x-cld-use-for-readme: true
+      tags:
+        - Custom policies
+      parameters:
+        - $ref: '#/components/parameters/ScopeTypeParam'
+        - $ref: '#/components/parameters/ScopeIdParam'
+        - $ref: '#/components/parameters/EnabledParam'
+        - $ref: '#/components/parameters/CursorParam'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomPoliciesResponse'
+              examples:
+                getCustomPoliciesResponseExample:
+                  $ref: '#/components/examples/GetCustomPoliciesResponseExample'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                internalServerErrorExample:
+                  $ref: '#/components/examples/InternalServerErrorExample'
+
+    post:
+      # --------
+      #  Create a new custom permission policy
+      # ------------------------------------
+      summary: Create custom policy
+      description: Create a new custom policy with a statement defined in Cedar. This policy specifies permissions for a principal, allowing a specific action on a designated resource, within a particular scope.
+      operationId: createCustomPolicy
+      externalDocs:
+        description: Learn more about creating a new custom policy
+        url: https://cloudinary.com/documentation/permissions_api_guide#create_a_policy_statement
+      tags:
+        - Custom policies
+      requestBody:
+        description: Policy details.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomPolicy'
+            examples:
+              createPolicyExample:
+                $ref: '#/components/examples/CreateCustomPolicyExample'
+
+      responses:
+        '201':
+          description: Policy created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomPolicyResponse'
+              examples:
+                createCustomPolicyResponse:
+                  $ref: '#/components/examples/CreateCustomPolicyResponseExample'
+
+        '400':
+          description: Missing fields, invalid field, or invalid Cedar statement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missingFieldsErrorExample:
+                  $ref: '#/components/examples/MissingFieldsErrorExample'
+                invalidFieldErrorExample:
+                  $ref: '#/components/examples/InvalidFieldErrorExample'
+                cedarErrorExample:
+                  $ref: '#/components/examples/CedarErrorExample'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '409':
+          description: Already exists for the scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                customPolicyAlreadyExistsErrorExample:
+                  $ref: '#/components/examples/CustomPolicyAlreadyExistsErrorExample'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                internalServerErrorExample:
+                  $ref: '#/components/examples/InternalServerErrorExample'
+
+# -----------------------------------------------------------------------
+
+  /policies/custom/{policy_id}:
+    parameters:
+      - $ref: '#/components/parameters/PolicyIdParam'
+
+    get:
+      # --------
+      #  Get a specific policy
+      # ------------------------------------
+      summary: Get custom policy
+      description: Get a specific custom policy.
+      operationId: getCustomPolicy
+      tags:
+        - Custom policies
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomPolicyResponse'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                policyNotFoundErrorExample:
+                  $ref: '#/components/examples/PolicyNotFoundErrorExample'
+
+    put:
+      # --------
+      #  Update a specific policy
+      # ------------------------------------
+      summary: Update custom policy
+      description: |
+        Update a specific custom policy by providing the entire policy entity in the request body. Ensure the new `policy_statement` includes modifications. Existing permissions will be replaced with the new data.
+
+        *Note:* Updating a policy with an identical `policy_statement` will trigger a 409 error.
+
+      operationId: updateCustomPolicy
+      tags:
+        - Custom policies
+      requestBody:
+        description: Policy details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomPolicy'
+            examples:
+              updateCustomPolicyExample:
+                $ref: '#/components/examples/UpdateCustomPolicyExample'
+      responses:
+        '200':
+          description: Policy updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomPolicyResponse"
+              examples:
+                updatePolicyResponse:
+                  $ref: '#/components/examples/UpdateCustomPolicyResponseExample'
+        '400':
+          description: Missing fields, invalid field, or invalid Cedar statement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missingFieldsUpdateErrorExample:
+                  $ref: '#/components/examples/MissingFieldsUpdateErrorExample'
+                invalidFieldErrorExample:
+                  $ref: '#/components/examples/InvalidFieldErrorExample'
+                cedarErrorExample:
+                  $ref: '#/components/examples/CedarErrorExample'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                policyNotFoundErrorExample:
+                  $ref: '#/components/examples/PolicyNotFoundErrorExample'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                customPolicyAlreadyExistsErrorExample:
+                  $ref: '#/components/examples/CustomPolicyAlreadyExistsErrorExample'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                internalServerErrorExample:
+                  $ref: '#/components/examples/InternalServerErrorExample'
+
+    delete:
+      # --------
+      #  Delete a policy
+      # ------------------------------------
+      summary: Delete custom policy
+      description: Delete a specific custom policy.
+      operationId: deleteCustomPolicy
+      tags:
+        - Custom policies
+      responses:
+        '204':
+          description: Successful operation
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                policyNotFoundErrorExample:
+                  $ref: '#/components/examples/PolicyNotFoundErrorExample'
+# -----------------------------------------------------------------------
+
+components:
+  schemas:
+# ------------------------------------
+    CustomPolicy:
+      type: object
+      required:
+        - scope_type
+        - policy_statement
+        - name
+      properties:
+        policy_statement:
+          description: A Cedar statement that permits or forbids a principal to perform an action on a resource. Refer to the [Permissions API guide](permissions_api_guide) for more information.
+          type: string
+          example: |
+            permit(principal == Cloudinary::APIKey::\"893515392262445\",action==Cloudinary::Action::\"read\",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains(\"asdfjkl12347890\")} ;
+        description:
+          description: A short description of the policy.
+          nullable: true
+          type: string
+          example: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
+        scope_type:
+          description: |
+            Specifies where the policy is applied, either at the account level or within product environments.
+
+            **Important:** Currently, only `prodenv` is available. 
+
+          type: string
+          enum:
+            - account
+            - prodenv
+          example: prodenv
+        scope_id:
+          description: |
+            The ID of a specific product environment, or "all" product environments, where the policy is applied. Required and only relevant if scope_type is "prodenv". Find your product environment IDs in the [Product Environments](https://console.cloudinary.com/settings/product-environments) page of the Console Settings.
+
+            **Important:** The Permissions API is enabled per product environment. Make sure the ID you provide belongs a product environment that has the Permissions API enabled.
+            
+            - <product_environment_id>
+
+            - all
+
+            *Note:* The "all" specification is relevant only when creating or updating a policy.
+          type: string
+          nullable: true
+          example: "975l29lz02jt0836fhwi"
+        name:
+          description: The name assigned to the policy.
+          type: string
+          example: "893515392262445: Read access to Clothing folder"
+        enabled:
+          description: Indicates whether the policy is currently active. Can be "true" (enabled) or "false" (disabled).
+          type: boolean
+          nullable: true
+          example: true
+          default: true
+
+# ------------------------------------
+    CreateCustomPolicy:
+      allOf:
+        - $ref: '#/components/schemas/CustomPolicy'
+# ------------------------------------
+    UpdateCustomPolicy:
+      required:
+        - enabled
+      allOf:
+        - $ref: '#/components/schemas/CustomPolicy'
+# ------------------------------------
+    CustomPolicyResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomPolicyResponseData"
+# ------------------------------------
+    CustomPolicyResponseData:
+      type: object
+      required:
+        - id
+        - enabled
+        - policy_statement
+        - created_at
+        - updated_at
+        - scope_type
+        - name
+      properties:
+        id:
+          description: The unique identifier of the policy.
+          type: string
+          example: "12jf789l12hwiuencl7aaqey"
+        policy_statement:
+          description: A Cedar policy that permits or forbids a certain action on a certain element to a principal (API key).
+          type: string
+          example: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+        description:
+          description: A short description of the policy.
+          type: string
+          nullable: true
+          example: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
+        scope_type:
+          description: |
+            Specifies where the policy is applied, either at the account level or within product environments.
+
+            **Important:** Currently, only `prodenv` is available. 
+
+          type: string
+          enum:
+            - account
+            - prodenv
+          example: "prodenv"
+        scope_id:
+          description: Returned if the scope type is product environment. Can be "all" to represent all product environments or an ID of a specific product environment.
+          type: string
+          nullable: true
+          example: "975l29lz02jt0836fhwi"
+        name:
+          description: The name of the policy
+          type: string
+          example: "893515392262445: Read access to Clothing folder"
+        enabled:
+          description: Whether the policy is enabled or not
+          type: boolean
+          example: true
+        created_at:
+          description: Creation time of the policy in epoch time
+          type: integer
+          format: int64
+          example: "1719475216"
+        updated_at:
+          description: Last update time of the policy in epoch time
+          type: integer
+          format: int64
+          example: "1719475216"
+# ------------------------------------
+    CustomPoliciesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomPolicyResponseData"
+          description: An array of custom policies.
+        next_cursor:
+          type: string
+          description: When a request has more results to return, the next_cursor value is returned as part of the response. You can then specify this value as the cursor parameter of a following request.
+# ------------------------------------
+    ErrorResponse:
+      properties:
+        error:
+          $ref: '#/components/schemas/Error'
+# ------------------------------------
+    Error:
+      type: object
+      properties:
+        category:
+          type: string
+          description: A classification of the error, indicating the general area or type of problem.
+        code:
+          type: string
+          description: A specific error code that uniquely identifies the error condition.
+        message:
+          type: string
+          description: A human-readable message providing a brief explanation of the error and its cause.
+        details:
+          type: object
+          description: Additional contextual information about the error, which may include relevant data.
+# -----------------------------------------------------------------------
+
+  parameters:
+    PolicyIdParam:
+      name: policy_id
+      description: A unique identifier for the custom permission policy.
+      in: path
+      required: true
+      schema:
+        type: string
+      example: "12jf789l12hwiuencl7aaqey"
+# ------------------------------------
+    ScopeTypeParam:
+      name: scope_type
+      description: "Specifies the level for retrieving policies, either at the account level or within product environments."
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - account
+          - prodenv
+# ------------------------------------
+    ScopeIdParam:
+      name: scope_id
+      description: >
+        The ID of a specific product environment where the policy is applied. This parameter is only relevant if `scope_type` is "prodenv". Find your product environment IDs in the [Product Environments](https://console.cloudinary.com/settings/product-environments) page of the Console Settings.
+        
+        - <product_environment_id>
+
+      in: query
+      schema:
+        type: string
+# ------------------------------------
+    CursorParam:
+      name: cursor
+      description: 'A pagination cursor for fetching subsequent results.'
+      in: query
+      schema:
+        type: string
+# ------------------------------------
+    EnabledParam:
+      name: enabled
+      description: 'Filter policies by enabled status (true/false).'
+      in: query
+      schema:
+        type: boolean
+        default: true
+
+# -----------------------------------------------------------------------
+
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+# -----------------------------------------------------------------------
+
+  examples:
+    CreateCustomPolicyExample:
+      summary: Create custom policy example
+      value:
+        policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+        description: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
+        scope_type: "prodenv"
+        scope_id: "975l29lz02jt0836fhwi"
+        name: "893515392262445: Read access to Clothing folder"
+        enabled: true
+# ------------------------------------
+    CreateCustomPolicyResponseExample:
+      summary: Custom policy created successfully
+      value:
+        data:
+          - id: "12jf789l12hwiuencl7aaqey"
+            policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+            description: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
+            scope_type: "prodenv"
+            scope_id: "975l29lz02jt0836fhwi"
+            name: "893515392262445: Read access to Clothing folder"
+            enabled: true
+            created_at: "1719475216"
+            updated_at: "1719475216"
+# ------------------------------------
+    UpdateCustomPolicyExample:
+      summary: Update custom policy example
+      value:
+        policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+        description: "Permit read access to the Accessories folder with external ID asdfjkl12347890."
+        scope_type: "prodenv"
+        scope_id: "975l29lz02jt0836fhwi"
+        name: "893515392262445: Read access to Accessories folder"
+        enabled: true
+# ------------------------------------
+    UpdateCustomPolicyResponseExample:
+      summary: Custom policy updated successfully
+      value:
+        data:
+          - id: "12jf789l12hwiuencl7aaqey"
+            policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+            description: "Permit read access to the Accessories folder with external ID asdfjkl12347890."
+            scope_type: "prodenv"
+            scope_id: "975l29lz02jt0836fhwi"
+            name: "893515392262445: Read access to Accessories folder"
+            enabled: true
+            created_at: "1719475216"
+            updated_at: "1719475216"
+# ------------------------------------
+    GetCustomPoliciesResponseExample:
+      summary: Get custom policies
+      value:
+        data:
+          - id: "as1237898hasdiuiopwqwer"
+            policy_statement: "permit(principal is Cloudinary::User, action, resource);"
+            scope_type: "prodenv"
+            scope_id: "975l29lz02jt0836fhwi"
+            name: "permission prodenv allow DAM"
+            enabled: true
+            created_at: "1721912192"
+            updated_at: "1721912192"
+
+          - id: "12jf789l12hwiuencl7aaqey"
+            policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+            description: "Permit read access to the Accessories folder with external ID asdfjkl12347890."
+            scope_type: "prodenv"
+            scope_id: "975l29lz02jt0836fhwi"
+            name: "893515392262445: Read access to Accessories folder"
+            enabled: true
+            created_at: "1719475216"
+            updated_at: "1719475216"
+
+          - id: "298wiohfjdksnzmxcasf"
+            policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445", action== Cloudinary::Action::"read",resource is Cloudinary::MetadataField);
+            description: "Permit read access to metadata fields."
+            scope_type: "prodenv"
+            scope_id: "975l29lz02jt0836fhwi"
+            name: "893515392262445: Read access to metadata fields"
+            enabled: true
+            created_at: "1719475216"
+            updated_at: "1719475216"
+
+          - id: "zxmndaskdjfqiweuyr293478"
+            policy_statement: "permit(principal == Cloudinary::APIKey::\"721588181775364\", action, resource is Cloudinary::MetadataField);"
+            scope_type: "prodenv"
+            scope_id: "123789sjklwyufj38nlaz8"
+            name: "721588181775364: Manage metadata"
+            enabled: true
+            created_at: "1722844408"
+            updated_at: "1722844408"
+# ------------------------------------
+    MissingFieldsErrorExample:
+      summary: Missing fields
+      value:
+        error:
+          category: "user_error"
+          code: "ACCOUNTS_00005"
+          message: "missing fields"
+          details:
+            fields:
+              - policy_statement
+              - scope_type
+              - name
+# ------------------------------------
+    MissingFieldsUpdateErrorExample:
+      summary: Missing fields
+      value:
+        error:
+          category: "user_error"
+          code: "ACCOUNTS_00005"
+          message: "missing fields"
+          details:
+            fields:
+              - policy_statement
+              - scope_type
+              - name
+              - enabled
+# ------------------------------------
+    InvalidFieldErrorExample:
+      summary: Invalid field
+      value:
+        error:
+          category: "user_error"
+          code: "ACCOUNTS_00005"
+          message: "invalid request"
+          details:
+            fields:
+              - enabled: "enabled"
+# ------------------------------------
+    CedarErrorExample:
+      summary: Invalid Cedar statement
+      value:
+        error:
+          category: "user_error"
+          code: "ACCOUNTS_00002"
+          message: "invalid request"
+          details:
+            fields:
+              - policy_statement: 'permit(principal == Cloudinary::APIKy::"893515392262445", action == Cloudinary::Action::"read", resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;'
+              - cedar_errors:
+                  - cedar_message: "invalid_principal"
+# ------------------------------------
+    AuthorizationErrorExample:
+      summary: Authorization required
+      value:
+        error:
+          category: "user_error"
+          code: "ACCOUNTS_00006"
+          message: "invalid credentials"
+          details:
+            fields:
+              - policy_statement: 'permit(principal == Cloudinary::APIKey::"893515392262445", action == Cloudinary::Action::"read", resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;'
+# ------------------------------------
+    CustomPolicyAlreadyExistsErrorExample:
+      summary: Already exists for the scope
+      value:
+        error:
+          category: "user_error"
+          code: "ACCOUNTS_00006"
+          message: "already exists for the scope"
+          details:
+            fields:
+              - policy_statement: 'permit(principal == Cloudinary::APIKey::"893515392262445", action == Cloudinary::Action::"read", resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;'
+# ------------------------------------
+    InternalServerErrorExample:
+      summary: Internal server error
+      value:
+        error:
+          category: "server_error"
+          code: "ACCOUNTS_00001"
+          message: "something went wrong"
+# ------------------------------------
+    PolicyNotFoundErrorExample:
+      summary: Policy not found
+      value:
+        error:
+          category: "server_error"
+          code: "ACCOUNTS_00003"
+          message: "not found"
+          details:
+            fields:
+              - policy_id: al18owlkth68901
+# ------------------------------------
