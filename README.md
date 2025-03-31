@@ -19,7 +19,7 @@ Each API schema is provided in YAML format (`schema.yml`) and can be consumed us
 
 An interactive documentation viewer is also available directly within this repository:
 
-👉 **[View Interactive Documentation](index.html)**
+👉 **[View Interactive Documentation](https://cloudinary.github.io/api-schemas/index.html)**
 
 ## Contributing
 
