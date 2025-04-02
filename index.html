@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>API Documentation</title>
+  <link rel="icon" href="https://cloudinary-res.cloudinary.com/image/upload/f_auto,q_auto,w_32/website/cloudinary_web_favicon.png">
   <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
@@ -14,7 +15,7 @@
     body {
       font-family: 'Inter', sans-serif;
       margin: 0;
-      padding: 0;
+      padding-top: 70px;
       background-color: #f8fafc;
       color: #2d3748;
     }
@@ -25,22 +26,28 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
     header img {
       height: 32px;
     }
     nav button {
-      margin-right: 10px;
+      margin-right: 8px;
       padding: 6px 12px;
       background-color: transparent;
       border: none;
       color: #4a5568;
       cursor: pointer;
+      border-radius: 4px;
     }
-    nav button.active {
+    nav button.active, nav button:hover {
       background-color: #007bff;
       color: white;
-      border-radius: 4px;
     }
     nav select {
       padding: 6px 30px 6px 10px;
@@ -53,9 +60,37 @@
       background-position: right 10px top 50%;
       background-size: 10px;
       cursor: pointer;
+      margin-left: 10px;
     }
     #viewer-container {
       padding: 20px;
+    }
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      nav {
+        display: flex;
+        overflow-x: auto;
+        width: 100%;
+        padding-bottom: 8px;
+      }
+      nav button {
+        white-space: nowrap;
+      }
+      header > div {
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 10px;
+      }
+      nav select {
+        margin-left: 0;
+        width: 100%;
+      }
+      header img {
+        margin-top: 10px;
+      }
     }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
