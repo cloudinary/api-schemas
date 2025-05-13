@@ -788,9 +788,9 @@ components:
               description: One or more prompts of open questions or tasks with an open answer
               items:
                 type: string
-                example:
-                  - Please describe this image in detail
-                  - Does this image contain an animal?
+              example:
+                - Please describe this image in detail
+                - Does this image contain an animal?
               minItems: 1
               maxItems: 10
     AnalyzeAIVisionModerationRequest:
