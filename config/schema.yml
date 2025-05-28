@@ -17,7 +17,7 @@ servers:
         default: api.cloudinary.com
         description: The host name for the API endpoint.
 security:
-  - basic_auth: []
+  - basicAuth: []
 tags:
   - name: upload_presets
     description: Enables you to manage upload presets.
@@ -2115,7 +2115,7 @@ paths:
                 $ref: '#/components/schemas/api_error'
 components:
   securitySchemes:
-    basic_auth:
+    basicAuth:
       type: http
       scheme: basic
   parameters:

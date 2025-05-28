@@ -17,7 +17,7 @@ servers:
         default: api.cloudinary.com
         description: The host name for the API endpoint.
 security:
-  - basic_auth: []
+  - basicAuth: []
 tags:
   - name: upload
     description: Uploads files to the active product environment.
@@ -3533,7 +3533,7 @@ paths:
                 $ref: '#/components/schemas/api_error'
 components:
   securitySchemes:
-    basic_auth:
+    basicAuth:
       type: http
       scheme: basic
   parameters:
