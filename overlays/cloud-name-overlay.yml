@@ -1,0 +1,29 @@
+overlay: 1.0.0
+info:
+  title: Cloudinary signature based authentication modifications
+  version: 0.0.0
+actions:
+  - target: $.components 
+    update:
+      parameters:
+        cloud_name:
+          name: cloud_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The cloud name of your product environment.
+          x-speakeasy-globals-hidden: true
+  - target: $["x-speakeasy-globals"]["parameters"]
+    update:
+      - $ref: "#/components/parameters/cloud_name"
+  # replace each cloud_name parameter in every endpoint with the cloud_name parameter in the parameters section
+  - target: $.paths.*.parameters[?(@.name=='cloud_name' && @.in=='path')]
+    remove: true
+  - target: $.paths.*.*.parameters[?(@.name=='cloud_name' && @.in=='path')]
+    remove: true
+  # add the cloud_name parameter to every path item
+  - target: $.paths.*
+    update:
+      parameters:
+        - $ref: '#/components/parameters/cloud_name'
