@@ -1,0 +1,12 @@
+overlay: 1.0.0
+info:
+  title: Auto-disable MCP for operations without explicit configuration
+  version: 1.0.0
+
+actions:
+  # Single rule to target all HTTP operations that don't have x-speakeasy-mcp
+  # Matches any property under paths that has operationId (indicating it's an operation)
+  - target: "$.paths.*.*[?(@.operationId && !@['x-speakeasy-mcp'])]"
+    update:
+      x-speakeasy-mcp:
+        disabled: true 
