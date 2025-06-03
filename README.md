@@ -17,7 +17,7 @@ This repository contains publicly accessible OpenAPI schemas for various APIs, e
 
 An advanced web-based tool for analyzing and visualizing MCP (Model Context Protocol) operations from OpenAPI schemas.
 
-**👉 [Launch MCP Operations Viewer](mcp-operations-viewer.html)**
+**👉 [Launch MCP Operations Viewer](https://cloudinary.github.io/api-schemas/mcp-operations-viewer.html)**
 
 #### Features
 
@@ -63,7 +63,7 @@ The tool automatically loads schemas listed in `schemas.yml`. To add new schemas
 
 An interactive documentation viewer is also available:
 
-👉 **[View Interactive Documentation](index.html)**
+👉 **[View Interactive Documentation](https://cloudinary.github.io/api-schemas/index.html)**
 
 ## How to Use Schemas
 
