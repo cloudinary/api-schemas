@@ -50,17 +50,30 @@
       color: white;
     }
     nav select {
-      padding: 6px 30px 6px 10px;
-      border-radius: 4px;
-      border: 1px solid #cbd5e0;
+      padding: 8px 35px 8px 16px;
+      border-radius: 6px;
+      border: 2px solid #007bff;
       background-color: white;
+      color: #007bff;
+      font-weight: 500;
+      font-size: 14px;
       appearance: none;
-      background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="%234a5568"><polygon points="0,0 20,0 10,10"/></svg>');
+      background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="%23007bff"><polygon points="0,0 12,0 6,8"/></svg>');
       background-repeat: no-repeat;
-      background-position: right 10px top 50%;
-      background-size: 10px;
+      background-position: right 12px top 50%;
+      background-size: 12px;
       cursor: pointer;
       margin-left: 10px;
+      transition: all 0.2s;
+    }
+    nav select:hover {
+      background-color: #007bff;
+      color: white;
+      background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="white"><polygon points="0,0 12,0 6,8"/></svg>');
+    }
+    nav select:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
     }
     #viewer-container {
       padding: 20px;
@@ -69,6 +82,7 @@
       header {
         flex-direction: column;
         align-items: flex-start;
+        padding-bottom: 15px;
       }
       nav {
         display: flex;
@@ -83,13 +97,23 @@
         width: 100%;
         justify-content: space-between;
         margin-top: 10px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      header > div a {
+        order: 1;
+        flex-shrink: 0;
       }
       nav select {
         margin-left: 0;
-        width: 100%;
+        order: 2;
+        flex: 1;
+        min-width: 120px;
       }
       header img {
-        margin-top: 10px;
+        margin-top: 0;
+        order: 3;
+        flex-shrink: 0;
       }
     }
   </style>
@@ -99,13 +123,18 @@
 
 <header>
   <nav id="nav-container"></nav>
-  <div style="display: flex; align-items: center;">
+  <div style="display: flex; align-items: center; gap: 15px;">
+    <a href="mcp-operations-viewer.html" style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px; transition: background-color 0.2s;" 
+       onmouseover="this.style.backgroundColor='#218838'" 
+       onmouseout="this.style.backgroundColor='#28a745'">
+      🔍 MCP Analyzer
+    </a>
     <select id="viewer-select">
       <option value="redoc">Redocly</option>
       <option value="swagger">Swagger UI</option>
-      <option value="stoplight">Stoplight Elements</option>
+      <option value="stoplight" selected>Stoplight Elements</option>
     </select>
-    <img src="https://res.cloudinary.com/cloudinary/images/cloudinary_logo_for_white_bg/cloudinary_logo_for_white_bg.png?_i=AA" alt="Cloudinary" style="margin-left: 15px;">
+    <img src="https://res.cloudinary.com/cloudinary/images/cloudinary_logo_for_white_bg/cloudinary_logo_for_white_bg.png?_i=AA" alt="Cloudinary" style="margin-left: 0;">
   </div>
 </header>
 
@@ -142,9 +171,62 @@
     });
   }
 
+  document.getElementById('viewer-select').onchange = renderViewer;
+
+  // State preservation functions
+  function saveState() {
+    // Extract schema directory name for cross-page compatibility
+    const schemaDir = currentSchemaPath ? currentSchemaPath.split('/')[0] : '';
+    const state = {
+      selectedSchema: currentSchemaPath,
+      selectedSchemaDir: schemaDir, // Add normalized identifier
+      selectedViewer: document.getElementById('viewer-select').value,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('api-docs-state', JSON.stringify(state));
+    
+    // Also save to shared state for MCP viewer
+    localStorage.setItem('shared-schema-state', JSON.stringify({
+      activeSchemaDir: schemaDir,
+      timestamp: Date.now()
+    }));
+  }
+
+  function loadState() {
+    try {
+      const saved = localStorage.getItem('api-docs-state');
+      let state = null;
+      
+      if (saved) {
+        state = JSON.parse(saved);
+        // Only use if saved within last 24 hours
+        if (Date.now() - state.timestamp >= 24 * 60 * 60 * 1000) {
+          state = null;
+        }
+      }
+      
+      // Check for shared state from MCP viewer (higher priority)
+      const sharedState = localStorage.getItem('shared-schema-state');
+      if (sharedState) {
+        const shared = JSON.parse(sharedState);
+        if (Date.now() - shared.timestamp < 24 * 60 * 60 * 1000) {
+          // Override schema selection with shared state
+          if (!state) state = {};
+          state.selectedSchemaDir = shared.activeSchemaDir;
+        }
+      }
+      
+      return state;
+    } catch (e) {
+      console.warn('Could not load saved state:', e);
+    }
+    return null;
+  }
+
   function setActiveButton(activeButton) {
     document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
     activeButton.classList.add('active');
+    saveState(); // Save state when schema changes
   }
 
   function renderViewer() {
@@ -165,17 +247,53 @@
       el.setAttribute('router', 'hash');
       container.appendChild(el);
     }
+    
+    saveState(); // Save state when viewer changes
   }
-
-  document.getElementById('viewer-select').onchange = renderViewer;
 
   (async () => {
     const schemaDirs = await loadSchemasConfig();
     await renderNavButtons(schemaDirs);
-    if (schemaDirs.length > 0) {
-      currentSchemaPath = `${schemaDirs[0]}/schema.yml`;
+    
+    // Try to restore saved state
+    const savedState = loadState();
+    let initialSchema = schemaDirs.length > 0 ? `${schemaDirs[0]}/schema.yml` : '';
+    let initialViewer = 'stoplight';
+    
+    if (savedState) {
+      // Restore viewer selection
+      if (savedState.selectedViewer) {
+        document.getElementById('viewer-select').value = savedState.selectedViewer;
+        initialViewer = savedState.selectedViewer;
+      }
+      
+      // Restore schema selection - prioritize shared state
+      const targetSchemaDir = savedState.selectedSchemaDir || savedState.selectedSchema?.split('/')[0];
+      if (targetSchemaDir) {
+        const matchingSchema = schemaDirs.find(dir => dir === targetSchemaDir);
+        if (matchingSchema) {
+          initialSchema = `${matchingSchema}/schema.yml`;
+        }
+      }
+    }
+    
+    if (initialSchema) {
+      currentSchemaPath = initialSchema;
       renderViewer();
-      setTimeout(() => setActiveButton(document.querySelector('nav button')), 100);
+      
+      // Set the active button based on the restored schema
+      setTimeout(() => {
+        const buttons = document.querySelectorAll('nav button');
+        const targetButton = Array.from(buttons).find(btn => {
+          const schemaDir = initialSchema.split('/')[0];
+          return btn.onclick.toString().includes(schemaDir);
+        });
+        if (targetButton) {
+          setActiveButton(targetButton);
+        } else if (buttons.length > 0) {
+          setActiveButton(buttons[0]);
+        }
+      }, 100);
     }
   })();
 </script>
