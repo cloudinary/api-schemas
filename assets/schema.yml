@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Assets API
-  version: 0.1.0
+  version: 0.2.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -11,11 +11,22 @@ info:
     url: https://support.cloudinary.com
   termsOfService: https://cloudinary.com/tou
 servers:
-  - url: https://{defaultHost}
+  - url: https://{region}.cloudinary.com
+    description: Regional API endpoints for optimal performance.
     variables:
-      defaultHost:
+      region:
+        default: api
+        description: Regional endpoint selection
+        enum:
+          - api
+          - api-eu
+          - api-ap
+  - url: https://{host}
+    description: Custom domains for enterprise deployments.
+    variables:
+      host:
         default: api.cloudinary.com
-        description: The host name for the API endpoint.
+        description: API host domain.
 security:
   - basicAuth: []
 tags:
@@ -45,72 +56,37 @@ paths:
   /v1_1/{cloud_name}/{resource_type}/upload:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
-      - name: resource_type
-        in: path
-        required: true
-        schema:
-          type: string
-          description: The type of resource to upload. "image" for uploading strictly images, "video" for uploading strictly videos, "raw" for uploading non-media files, or "auto" for allowing Cloudinary to automatically detect the type of the uploaded file.
-          enum:
-            - image
-            - video
-            - raw
-            - auto
+      - $ref: '#/components/parameters/upload_resource_type'
     post:
-      summary: Uploads a file to Cloudinary
-      tags:
-        - upload
       operationId: upload
-      requestBody:
-        $ref: '#/components/requestBodies/upload_request_body'
-      responses:
-        '200':
-          description: Successful upload
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - $ref: '#/components/schemas/upload_response'
-                  - $ref: '#/components/schemas/async_upload_response'
-        '302':
-          description: Redirect to callback URL (when 'callback' parameter is provided and request is not XHR).
-          content:
-            text/html:
-              schema:
-                $ref: '#/components/schemas/html_redirect'
-        '400':
-          description: Bad request (e.g., missing parameters, invalid type, target exists without overwrite)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/api_error'
-        '401':
-          description: Authorization required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/api_error'
-        '403':
-          description: Not allowed (e.g., insufficient permissions)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/api_error'
-        '404':
-          description: Asset not found (e.g. when uploading from a remote URL that does not exist)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/api_error'
-  /v1_1/{cloud_name}/upload:
-    parameters:
-      - $ref: '#/components/parameters/cloud_name'
-    post:
-      summary: Upload with automatic file type detection
-      description: Uploads a file to Cloudinary. The file type is automatically detected based on its content, so you don't need to specify the type manually.
+      summary: Uploads media assets (images, videos, raw files) to your Cloudinary product environment
+      description: |
+        Uploads media assets (images, videos, raw files) to your Cloudinary product environment. The file is securely stored 
+        in the cloud with backup and revision history. Cloudinary automatically analyzes and saves important data about each 
+        asset, such as format, size, resolution, and prominent colors, which is indexed to enable searching on those attributes.
+
+        Supports uploading from:
+        - Local file paths (SDKs/MCP server only). For MCP server path MUST start with file://
+        - Remote HTTP/HTTPS URLs
+        - Base64 Data URIs (max ~60 MB)
+        - Private storage buckets (S3 or Google Storage)
+        - FTP addresses
+
+        The uploaded asset is immediately available for transformation and delivery upon successful upload.
       tags:
         - upload
-      operationId: uploadNoResourceType
+      x-speakeasy-mcp:
+        scopes:
+          - librarian
+          - builder
+        description: |
+          Purpose: Uploads media assets (images, videos, raw files) to your Cloudinary product environment with automatic format detection, metadata extraction, and immediate availability for transformation and delivery.
+          Usage: Use this to add new media assets to your cloud storage, whether from local files, remote URLs, Base64 data, or cloud storage buckets. Essential for content management systems, user uploads, and bulk media ingestion workflows.
+          Example request: POST with multipart/form-data containing file binary data, or JSON body like {"file": "https://example.com/image.jpg", "public_id": "sample", "folder": "products", "tags": "featured,electronics"}
+          Parameters: file(asset to upload - local path (For MCP server path MUST start with file://)/URL/Base64), public_id(custom identifier), folder(organization folder), tags(comma-separated labels), resource_type(image/video/raw), format(convert to specific format), transformation(apply on upload), overwrite(replace existing), notification_url(callback URL), context(key-value metadata), metadata(structured metadata), access_mode(public/authenticated), backup(enable versioning), faces(detect faces), colors(extract colors), quality_analysis(assess quality), auto_tagging(confidence threshold), moderation(content filtering)
+          When Not to Use: Don't use for assets that are already in cloud storage (use existing asset operations instead). Avoid for temporary files that don't need permanent storage. Don't use for very large files without chunked upload for files over 100MB.
+          Output: Returns comprehensive asset information: public_id(asset identifier), asset_id(unique asset ID), version(version number), resource_type(asset type), format(file format), created_at(upload timestamp), bytes(file size), width/height(dimensions for images/videos), url(public delivery URL), secure_url(HTTPS delivery URL), signature(validation signature), etag(entity tag), original_filename(source filename), tags(assigned tags array), context(metadata object), analysis results (colors, faces, moderation if requested)
+          Example output: {"public_id":"sample","asset_id":"abc123def456","version":1234567890,"resource_type":"image","format":"jpg","created_at":"2023-01-15T10:00:00Z","bytes":45231,"width":800,"height":600,"url":"http://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg","secure_url":"https://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg","signature":"abc123def456","etag":"def789ghi012","original_filename":"photo.jpg","tags":["featured","electronics"],"context":{"category":"product"}}
       requestBody:
         $ref: '#/components/requestBodies/upload_request_body'
       responses:
@@ -155,26 +131,20 @@ paths:
   /v1_1/{cloud_name}/{resource_type}/upload_chunked:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
-      - name: resource_type
-        in: path
-        required: true
-        schema:
-          type: string
-          description: The type of resource to upload. "image" for uploading strictly images, "video" for uploading strictly videos, "raw" for uploading non-media files, or "auto" for allowing Cloudinary to automatically detect the type of the uploaded file.
-          enum:
-            - image
-            - video
-            - raw
-            - auto
+      - $ref: '#/components/parameters/upload_resource_type'
     post:
-      summary: Upload a large file in chunks
+      operationId: uploadChunk
+      summary: Upload a single chunk of a large file
       description: |
-        Uploads a large file in chunks, enabling efficient upload of large files with the ability to resume interrupted uploads.
-        It is required for any files that are larger than 100 MB. This is often relevant for video files, as they tend to have larger files sizes.
-        Minimum chunk size is 5 MB.
+        Uploads a single chunk of a large file as part of a chunked upload process. This enables efficient upload of 
+        large files with the ability to resume interrupted uploads. Each request uploads one chunk of the file.
+        It is required for any files that are larger than 100 MB. This is often relevant for video files, as they 
+        tend to have larger file sizes. Minimum chunk size is 5 MB.
       tags:
         - upload
-      operationId: uploadChunked
+      x-speakeasy-mcp:
+        scopes:
+          - librarian
       parameters:
         - name: Content-Range
           in: header
@@ -240,7 +210,19 @@ paths:
             - video
             - raw
     post:
-      summary: Renames an asset
+      x-speakeasy-mcp:
+        name: asset-public_id-rename
+        scopes:
+          - librarian
+        description: |
+          Purpose: Changes an existing asset's public ID (identifier) and optionally moves it to a different storage type, effectively renaming or moving the asset while preserving its content and metadata.
+          Usage: Use this to rename assets for better organization, move assets between storage types (upload/private/authenticated), or reorganize your media library structure. Essential for maintaining clean naming conventions and evolving organizational systems.
+          Example request: {"from_public_id": "old_image", "to_public_id": "products/new_image", "type": "upload", "to_type": "private", "overwrite": false}
+          Parameters: from_public_id(current asset identifier), to_public_id(new asset identifier), type(current storage type), to_type(new storage type), overwrite(replace existing asset), invalidate(clear CDN cache), context(update context metadata), metadata(update structured metadata), notification_url(callback URL)
+          When Not to Use: Don't use if the asset is actively referenced in applications without updating those references. Avoid renaming during high-traffic periods if the asset is frequently accessed. Don't use for copying assets (this moves, not copies).
+          Output: Returns updated asset information: public_id(new identifier), version(version number), signature(validation signature), resource_type(asset type), created_at(creation timestamp), bytes(file size), type(storage type), etag(entity tag)
+          Example output: {"public_id":"products/new_image","version":1234567890,"signature":"abc123def456","resource_type":"image","created_at":"2023-01-15T10:00:00Z","bytes":45231,"type":"private","etag":"def789ghi012"}
+      summary: Updates an existing asset's identifier and optionally other metadata in your Cloudinary account
       tags:
         - assets
       operationId: renameAsset
@@ -319,13 +301,21 @@ paths:
   /v1_1/{cloud_name}/{resource_type}/download:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
-      - $ref: '#/components/parameters/resource_type'
+      - ref: ../shared/parameters.yml#/resource_type
     get:
       x-speakeasy-mcp:
         name: download-asset
         scopes:
-          - librarian
-      summary: Downloads an asset
+          - admin
+        description: |
+          Purpose: Downloads an asset (with optional transformation) through Cloudinary's secure download API, often used for authenticated access or to apply transformations during download.
+          Usage: Use this when you need to programmatically download assets with authentication, apply transformations during download, or track download activities. Particularly useful for private/authenticated assets or when you need to transform before download.
+          Example request: GET /image/download?public_id=sample&format=jpg&transformation=w_300,h_200,c_crop&api_key=your_key&signature=abc123&timestamp=1234567890
+          Parameters: public_id(asset identifier), resource_type(image/video/raw), format(convert to specific format), transformation(apply transformation), type(upload/private/authenticated), attachment(force download), expires_at(expiration timestamp), target_filename(custom filename), api_key(authentication), signature(security signature), timestamp(for signature)
+          When Not to Use: Don't use for regular asset delivery (use direct CDN URLs instead). Avoid for high-volume traffic as this bypasses CDN caching. Not needed for public assets unless transformation is required.
+          Output: Returns the binary asset data directly as the response body with appropriate Content-Type headers and optional Content-Disposition for attachments.
+          Example output: Binary asset data with headers like Content-Type: image/jpeg, Content-Length: 45231, Content-Disposition: attachment; filename="sample.jpg"
+      summary: Generates a download link for a specific asset (image)
       tags:
         - assets
       operationId: downloadAsset
@@ -698,9 +688,17 @@ paths:
     post:
       x-speakeasy-mcp:
         name: generate-archive
-        scope:
-          - advanced_librarian
-      summary: Generate downloadable archive
+        scopes:
+          - librarian
+        description: |
+          Purpose: Creates an archive (ZIP or TGZ file) that contains a set of assets from your Cloudinary product environment, either for download or storage as a new asset.
+          Usage: Use this to bundle multiple assets for download, backup, content packages, or distribution. Supports selecting assets by public IDs, tags, or prefixes, with optional transformations applied before archiving.
+          Example request: {"public_ids": ["sample1", "sample2"], "target_format": "zip", "mode": "create_and_download", "transformations": "w_300,h_300", "target_public_id": "my_package", "timestamp": 1234567890, "signature": "abc123", "api_key": "your_key"}
+          Parameters: public_ids(array of asset IDs), tags(select by tags), prefixes(select by prefix), type(upload/private/authenticated), transformations(apply before archiving), mode(download/create/create_and_download), target_format(zip/tgz), target_public_id(archive name), flatten_folders(flatten structure), allow_missing(ignore missing assets), expires_at(download expiration), use_original_filename(use original names), async(background processing), notification_url(completion webhook), target_tags(archive tags), keep_derived(preserve transformations), timestamp(signature timestamp), signature(authentication), api_key(account key)
+          When Not to Use: Don't use for single asset downloads (use direct URLs). Avoid for extremely large collections that create oversized archives. Not suitable for real-time operations requiring immediate response.
+          Output: Returns archive details (create mode) or binary archive data (download mode). Includes asset_id, secure_url, bytes, resource_count, file_count for created archives.
+          Example output: {"asset_id":"abc123","public_id":"my_package.zip","version":1234567890,"secure_url":"https://res.cloudinary.com/demo/raw/upload/v1234567890/my_package.zip","bytes":1024000,"resource_count":2,"file_count":2}
+      summary: Creates an archive (ZIP or TGZ file) that contains a set of assets from
       description: Creates a downloadable ZIP or other archive format containing the specified resources.
       tags:
         - assets
@@ -1079,8 +1077,17 @@ paths:
       x-speakeasy-mcp:
         name: delete-asset
         scopes:
-          - librarian
-      summary: Delete asset by ID
+          - admin
+        description: |
+          Purpose: Permanently deletes a media asset from your Cloudinary account using its unique asset identifier. This operation removes the asset from storage, invalidates CDN caches, and cleans up any derived assets or transformations associated with the original asset.
+          Usage: Use when you need to permanently remove assets that are no longer needed, comply with data retention policies, or manage storage quotas. Essential for content management workflows such as removing outdated marketing materials, deleting test uploads, or handling user-requested content deletion.
+          Example request: {"asset_id": "fa4272ac98d1400f2982fada9dd5a8cf", "invalidate": true, "timestamp": 1749416056, "signature": "71d37b1b636a61c42c2d5b9f17139cac47e67906", "api_key": "123456789"}
+          Note: The signature must be generated by concatenating parameters in alphabetical order and appending the API secret. For example: "asset_id=abc123&invalidate=true&timestamp=1234567$API_SECRET"
+          Parameters - examples of parameters that can be used: asset_id(unique identifier of the asset to delete), invalidate(boolean to purge CDN cache), timestamp(current Unix timestamp), signature(SHA-1 hash of ordered parameters with API secret), api_key(your account API key), notification_url(webhook for deletion confirmation), resource_type(specify asset type - defaults to determined by asset_id)
+          When Not to Use: Don't use for temporary asset hiding (use access_mode changes instead), versioning control (use versions API), or when you need to maintain asset history. For bulk deletions of multiple assets, use the bulk deletion API instead of multiple single-asset delete calls.
+          Output: Returns a simple confirmation object indicating success or a detailed error message for failures. Success response: {"result": "ok"}. Error response example: {"error": {"message": "Invalid Signature. String to sign - 'asset_id=xyz&invalidate=true&timestamp=123'"}}
+          Example output: {"result": "ok"}
+      summary: Delete asset by asset-id
       description: |
         Deletes an asset using its asset ID. This endpoint replaces the legacy /resources/by_asset_id endpoint.
         Returns the deletion status and asset folder information when folder decoupling is enabled.
@@ -1369,6 +1376,14 @@ paths:
         name: list-images
         scopes:
           - librarian
+        description: |
+          Purpose: Retrieves a paginated list of image assets from your Cloudinary account with comprehensive filtering and sorting options. This endpoint provides detailed information about your image inventory including metadata, transformations, and delivery URLs.
+          Usage: Use this to browse your image library, implement asset management interfaces, search for specific images, or audit your image collection. Essential for building media galleries, asset browsers, and content management systems.
+          Example request: GET /resources/image?prefix=products&tags=true&max_results=50&fields=asset_folder,tags,context
+          Parameters: type(storage type for filtering - upload/private/authenticated/fetch/list), prefix(filter by public ID prefix), public_ids(specific image identifiers to retrieve), tags(include tag information), next_cursor(pagination token), max_results(limit response size 1-500), direction(sort direction asc/desc), start_at(filter by upload timestamp), fields(specify response fields)
+          When Not to Use: Don't use for single asset retrieval (use get-asset-details instead), real-time asset status checks, or when you need video/raw assets (use list-videos or list-files respectively).
+          Output: Returns paginated list of image assets: resources(array of image objects), next_cursor(pagination token), rate_limit_allowed(API rate limit), rate_limit_remaining(remaining calls), rate_limit_reset_at(reset timestamp). Each image object contains: asset_id, public_id, format, version, width, height, bytes, url, secure_url, created_at, asset_folder, tags, context
+          Example output: {"resources":[{"asset_id":"abc123","public_id":"sample","format":"jpg","version":1234567890,"width":1000,"height":800,"bytes":245032,"url":"http://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg","secure_url":"https://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg","created_at":"2023-01-15T10:30:00Z","asset_folder":"products","tags":["featured","new"]}],"next_cursor":"xyz789"}
       summary: Get image assets
       description: |
         Retrieves a list of image assets. Results can be filtered by various criteria like tags, moderation status, prefix, or specific public IDs.
@@ -1447,6 +1462,14 @@ paths:
         name: list-videos
         scopes:
           - librarian
+        description: |
+          Purpose: Retrieves a paginated list of video assets from your Cloudinary account with comprehensive filtering and sorting capabilities. This endpoint provides detailed video metadata including duration, bitrate, codecs, and delivery URLs for streaming and download.
+          Usage: Use this to browse your video library, build video management interfaces, search for specific videos, or analyze your video collection. Essential for creating video galleries, media management dashboards, and video content organization systems.
+          Example request: GET /resources/video?prefix=marketing&tags=true&max_results=25&fields=asset_folder,duration,bitrate
+          Parameters: type(delivery type for filtering - upload/private/authenticated/fetch/list), prefix(filter by public ID prefix), public_ids(specific video identifiers to retrieve), tags(include tag information), next_cursor(pagination token), max_results(limit response size 1-500), direction(sort direction asc/desc), start_at(filter by upload timestamp), fields(specify response fields)
+          When Not to Use: Don't use for single video retrieval (use get-asset-details instead), real-time transcoding status checks, or when you need image/raw assets (use list-images or list-files respectively).
+          Output: Returns paginated list of video assets: resources(array of video objects), next_cursor(pagination token), rate_limit_allowed(API rate limit), rate_limit_remaining(remaining calls), rate_limit_reset_at(reset timestamp). Each video object contains: asset_id, public_id, format, version, width, height, duration, bitrate, bytes, url, secure_url, created_at, asset_folder, tags, context
+          Example output: {"resources":[{"asset_id":"def456","public_id":"promo_video","format":"mp4","version":1234567890,"width":1920,"height":1080,"duration":120.5,"bitrate":2500000,"bytes":38400000,"url":"http://res.cloudinary.com/demo/video/upload/v1234567890/promo_video.mp4","secure_url":"https://res.cloudinary.com/demo/video/upload/v1234567890/promo_video.mp4","created_at":"2023-01-15T14:20:00Z","asset_folder":"marketing","tags":["featured","2023"]}],"next_cursor":"abc456"}
       summary: Get video assets
       description: |
         Retrieves a list of video assets. Results can be filtered by various criteria like tags, moderation status, prefix, or specific public IDs.
@@ -1525,6 +1548,14 @@ paths:
         name: list-files
         scopes:
           - librarian
+        description: |
+          Purpose: Retrieves a paginated list of raw (non-media) assets from your Cloudinary account including documents, archives, data files, and other non-image/video content. This endpoint provides comprehensive metadata about your file inventory and delivery URLs.
+          Usage: Use this to browse your document library, manage file assets, search for specific documents, or audit your raw file collection. Essential for building document management systems, file browsers, and content organization tools.
+          Example request: GET /resources/raw?prefix=documents&tags=true&max_results=100&fields=asset_folder,format,bytes
+          Parameters: type(delivery type for filtering - upload/private/authenticated/list), prefix(filter by public ID prefix), public_ids(specific file identifiers to retrieve), tags(include tag information), next_cursor(pagination token), max_results(limit response size 1-500), direction(sort direction asc/desc), start_at(filter by upload timestamp), fields(specify response fields)
+          When Not to Use: Don't use for single file retrieval (use get-asset-details instead), real-time file processing status, or when you need image/video assets (use list-images or list-videos respectively).
+          Output: Returns paginated list of raw file assets: resources(array of file objects), next_cursor(pagination token), rate_limit_allowed(API rate limit), rate_limit_remaining(remaining calls), rate_limit_reset_at(reset timestamp). Each file object contains: asset_id, public_id, format, version, bytes, url, secure_url, created_at, asset_folder, tags, context
+          Example output: {"resources":[{"asset_id":"ghi789","public_id":"user_manual","format":"pdf","version":1234567890,"bytes":2048576,"url":"http://res.cloudinary.com/demo/raw/upload/v1234567890/user_manual.pdf","secure_url":"https://res.cloudinary.com/demo/raw/upload/v1234567890/user_manual.pdf","created_at":"2023-01-15T16:45:00Z","asset_folder":"documents","tags":["manual","v2.0"]}],"next_cursor":"def789"}
       summary: Get raw assets
       description: |
         Retrieves a list of raw assets. Results can be filtered by various criteria like tags, moderation status, prefix, or specific public IDs.
@@ -1987,6 +2018,7 @@ paths:
       tags:
         - assets
       operationId: listResourcesByExternalIDs
+      x-speakeasy-ignore: true
       parameters:
         - $ref: '#/components/parameters/cloud_name'
         - name: external_ids
@@ -2296,6 +2328,14 @@ paths:
         name: get-asset-details
         scopes:
           - librarian
+        description: |
+          Purpose: Retrieves comprehensive details about a specific asset using its unique asset ID, providing complete metadata, transformation information, derived resources, and analysis results for the requested asset.
+          Usage: Use this to get detailed information about a single asset including metadata, dimensions, file properties, color analysis, face detection results, and associated transformations. Essential for asset inspection, debugging, and detailed content analysis workflows.
+          Example request: GET /resources/by_asset_id/e9b44a374f66ad53a64a74c7398f7?colors=true&faces=true&media_metadata=true
+          Parameters: asset_id(unique asset identifier), colors(include color analysis), media_metadata(include IPTC/XMP/EXIF data), faces(include face detection), quality_analysis(include quality scores), accessibility_analysis(include accessibility scores), pages(include page count for documents), phash(include perceptual hash), coordinates(include custom coordinates), versions(include backup versions), max_results(limit derived resources returned), derived_next_cursor(pagination for derived resources)
+          When Not to Use: Don't use for bulk asset retrieval (use list-images/list-videos/list-files instead), asset discovery workflows, or when you only need basic asset information without detailed analysis.
+          Output: Returns comprehensive asset information: asset_id, public_id, format, version, width, height, bytes, url, secure_url, created_at, asset_folder, tags, context, metadata, colors(color analysis), faces(detected faces), quality_analysis(quality scores), accessibility_analysis(accessibility scores), derived(array of derived resources), versions(backup versions if requested)
+          Example output: {"asset_id":"e9b44a374f66ad53a64a74c7398f7","public_id":"sample","format":"jpg","version":1234567890,"width":1000,"height":800,"bytes":245032,"url":"https://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg","created_at":"2023-01-15T10:30:00Z","asset_folder":"products","tags":["featured"],"colors":{"predominant":[["#F3285C",18.0]]}}
       summary: Get resource by asset ID
       description: Returns the details of a single resource specified by its asset ID.
       tags:
@@ -2350,7 +2390,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/api_error'
     put:
-      summary: Update asset by asset ID
+      x-speakeasy-mcp:
+        name: asset-update
+        scopes:
+          - librarian
+        description: |
+          Purpose: Updates an existing asset's metadata, tags, context, and other attributes using its immutable asset ID, allowing you to modify asset properties without needing to know the current public ID or folder structure.
+          Usage: Use this to update asset metadata, add/remove tags, modify context data, or change other asset attributes when you have the asset ID. Essential for asset management workflows, content tagging systems, and metadata synchronization processes.
+          Example request: {"tags": "product,electronics,featured", "context": "category=electronics|status=active", "metadata": {"product_id": "12345", "category": "smartphones"}}
+          Parameters: asset_id(immutable asset identifier from URL path), tags(comma-separated tag list), context(pipe-separated key=value pairs), metadata(structured metadata object), access_control(access permissions), auto_tagging(confidence threshold 0-1), notification_url(callback URL), face_coordinates(facial detection coordinates), custom_coordinates(manual crop coordinates), background_removal(AI background removal), moderation(content moderation)
+          When Not to Use: Don't use for renaming assets or changing public IDs (use rename instead). Avoid for high-frequency updates on the same asset. Don't use if you need to update transformation settings (those are separate from asset metadata).
+          Output: Returns updated asset information: public_id(asset identifier), asset_id(unique asset ID), version(version number), resource_type(asset type), type(storage type), format(file format), created_at(creation timestamp), bytes(file size), width/height(dimensions for images/videos), tags(current tags array), context(current context object), metadata(current structured metadata), url(public delivery URL), secure_url(HTTPS delivery URL)
+          Example output: {"public_id":"sample","asset_id":"abc123def456","version":1234567890,"resource_type":"image","type":"upload","format":"jpg","created_at":"2023-01-15T10:00:00Z","bytes":45231,"width":800,"height":600,"tags":["product","electronics","featured"],"context":{"category":"electronics","status":"active"},"metadata":{"product_id":"12345","category":"smartphones"},"url":"http://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg","secure_url":"https://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg"}
+      summary: Updates an existing asset's metadata, tags, and other attributes using its asset ID
       description: |
         Updates one or more attributes of a specified resource (asset) by its asset ID. This enables you to update details of an asset by its unique and immutable identifier, regardless of public ID, display name, asset folder, resource type or deliver type. Note that you can also update many attributes of an existing asset using the explicit method, which is not rate-limited.
       tags:
@@ -2401,7 +2453,19 @@ paths:
                 $ref: '#/components/schemas/api_error'
   /v1_1/{cloud_name}/tags/{resource_type}:
     get:
-      summary: Get tags
+      x-speakeasy-mcp:
+        name: list-tags
+        scopes:
+          - librarian
+        description: |
+          Purpose: Retrieves a comprehensive list of all tags currently assigned to assets in your Cloudinary account, providing an overview of your tagging taxonomy and helping you understand what organizational labels are in use.
+          Usage: Use this to audit existing tags, discover available tags for asset organization, or build tag suggestion systems in your applications. Essential for content management workflows and maintaining consistent tagging practices.
+          Example request: GET /resources/image/tags?prefix=product&max_results=100 (no request body required)
+          Parameters: resource_type(filter by image/video/raw), prefix(filter tags starting with specific text), max_results(limit response size 1-500), next_cursor(pagination token for additional results)
+          When Not to Use: Don't use for retrieving tags for specific assets (use get-resource-details instead). Avoid frequent polling as tag lists change infrequently.
+          Output: Returns tag list with pagination: tags(array of tag strings), next_cursor(pagination token if more results available)
+          Example output: {"tags":["product","electronics","mobile","smartphone","featured","sale"],"next_cursor":"8edbc61040178db60b0973ca9494bf3a"}
+      summary: Retrieves a list of tags currently applied to assets in your Cloudinary account
       description: |
         Retrieves a comprehensive list of all tags that exist in your product environment for assets of the specified type.
 
@@ -2559,7 +2623,12 @@ paths:
         name: get-usage-details
         scopes:
           - admin
-      summary: Get usage details
+        description: |
+          Purpose: Provides a report on your product environment's usage, including storage, credits, bandwidth, requests, and asset counts. 
+          Usage: Use this operation to monitor account usage or retrieve usage metrics for a specific date (up to 3 months in the past). 
+          When Not to Use: Don't use this for per-asset statistics or real-time updates – the data is aggregated and updated periodically, meant for overall account monitoring. 
+          Output: Returns a comprehensive JSON object containing: plan(account plan type), last_updated(last usage calculation date), date_requested(usage report date), credits(total credits used/limit), transformations(image/video transformation usage), storage(storage usage in bytes), bandwidth(bandwidth usage in bytes), resources(total number of assets), derived_resources(transformed assets count), requests(total API requests), objects(object detection usage), impressions(image impression count), seconds_delivered(video seconds delivered), aws_rek_tagging(AWS recognition usage/limits), google_speech(Google speech API usage/limits), google_video_tagging(Google video tagging usage/limits), google_tagging(Google image tagging usage/limits), cloudinary_ai(Cloudinary AI services usage/limits), object_detection(object detection usage/limits), clip(CLIP model usage/limits), ai_vision(AI vision services usage/limits), media_limits(file size/pixel limits)
+      summary: Retrieves comprehensive usage metrics and account statistics
       description: A report on the status of product environment usage, including storage, credits, bandwidth, requests, number of resources, and add-on usage.
       tags:
         - usage
@@ -2731,6 +2800,15 @@ paths:
         name: create-asset-relations
         scopes:
           - librarian
+        description: |
+          Purpose: Creates bidirectional relationships between assets using their unique asset IDs, enabling logical grouping and association of related content. This allows you to establish connections between assets for content organization, related item discovery, and workflow management.
+          Usage: Use this to link related assets such as product images with their videos, documents with their thumbnails, or content pieces that belong to the same campaign. Essential for building content relationships, recommendation systems, and asset organization workflows.
+          Example request: {"assets_to_relate": ["f12345a5c789c", "bbb0efc00c0f12"]}
+          Parameters: asset_id(primary asset identifier from URL path), assets_to_relate(array of up to 10 asset IDs to relate to the primary asset)
+          Note: This is bidirectional - each related asset will also list the primary asset as related. Relations are one-to-many (primary asset relates to all specified assets, but specified assets don't automatically relate to each other).
+          When Not to Use: Don't use for temporary associations or data that changes frequently. Avoid creating excessive relations as this can impact performance.
+          Output: Returns relation creation results: created(array of successfully created relations), errors(array of failed relations with error details), partially_successful(boolean indicating if some relations failed)
+          Example output: {"created":[{"asset_id":"f12345a5c789c","status":"related"},{"asset_id":"bbb0efc00c0f12","status":"related"}],"errors":[],"partially_successful":false}
       operationId: createAssetRelationsByAssetId
       summary: Add related assets by asset ID
       description: Relates an asset to other assets by their asset IDs, an immutable identifier, regardless of public ID, display name, asset folder, resource type or deliver type. This is a bidirectional process, meaning that the asset will also be added as a related_asset to all the other assets specified. The relation is also a one to many relationship, where the asset is related to all the assets specified, but those assets aren't also related to each other.
@@ -2798,6 +2876,15 @@ paths:
         name: delete-asset-relations
         scopes:
           - librarian
+        description: |
+          Purpose: Removes bidirectional relationships between assets using their unique asset IDs, breaking previously established content associations and logical groupings.
+          Usage: Use this to clean up outdated asset relationships, remove incorrect associations, or reorganize content structures when relationships are no longer relevant. Essential for maintaining clean content organization and relationship accuracy.
+          Example request: {"assets_to_unrelate": ["f12345a5c789c", "bbb0efc00c0f12"]}
+          Parameters: asset_id(primary asset identifier from URL path), assets_to_unrelate(array of asset IDs to remove relationships with)
+          Note: This is bidirectional - the primary asset will be removed from the related assets list of each specified asset, and the specified assets will be removed from the primary asset's related list.
+          When Not to Use: Don't use for temporary relationship management or when you might need to restore relationships later. Be careful not to remove relationships that are still needed for content organization.
+          Output: Returns relation deletion results: deleted(array of successfully removed relations), errors(array of failed deletions with error details), partially_successful(boolean indicating if some deletions failed)
+          Example output: {"deleted":[{"asset_id":"f12345a5c789c","status":"unrelated"},{"asset_id":"bbb0efc00c0f12","status":"unrelated"}],"errors":[],"partially_successful":false}
       operationId: deleteAssetRelationsByAssetId
       summary: Delete asset relations by asset ID
       description: Unrelates the asset from other assets, specified by their asset IDs, an immutable identifier, regardless of public ID, display name, asset folder, resource type or deliver type. This is a bidirectional process, meaning that the asset will also be removed as a related_asset from all the other assets specified.
@@ -3061,7 +3148,15 @@ paths:
         name: move-folder
         scopes:
           - librarian
-      summary: Update folder
+        description: |
+          Purpose: Renames or moves an entire folder (along with all assets it contains) to a new location within your Cloudinary media library, updating all asset paths accordingly.
+          Usage: Use this to reorganize folder structures, rename folders for better organization, or move content between different organizational hierarchies. Essential for maintaining organized media libraries and adapting to changing content structures.
+          Example request: PUT /folders/old/path with body {"to_folder": "new/path"}
+          Parameters: folder(current folder path), to_folder(new folder path - can include renaming and/or moving to different location)
+          When Not to Use: Don't use for deleting folders (use delete-folder instead). Avoid moving folders that are actively being used in production workflows during the operation. Don't use for individual asset moves (assets maintain their public IDs within the new folder path).
+          Output: Returns details of the move operation showing both source and destination paths.
+          Example output: {"from":{"name":"path","path":"old/path"},"to":{"name":"path","path":"new/path"}}
+      summary: Renames or moves an entire folder (along with all assets it contains) to a
       description: Updates a folder's properties.
       tags:
         - folders
@@ -3135,9 +3230,17 @@ paths:
         name: create-folder
         scopes:
           - librarian
+        description: |
+          Purpose: Creates an empty folder structure in your Cloudinary media library to organize your assets hierarchically. The folder will be available immediately for asset uploads and folder operations.
+          Usage: Use this to establish folder structures before uploading assets, organize content by categories or projects, or create nested folder hierarchies for complex media organization. Essential for maintaining clean asset organization and supporting structured content workflows.
+          Example request: POST /folders/marketing/campaigns/2024
+          Parameters: folder(full folder path to create - required, supports nested paths like "marketing/campaigns/2024")
+          When Not to Use: Don't use to move existing folders (use move-folder instead). Avoid creating deeply nested structures that may complicate asset management. Not needed if uploading assets directly creates the folder structure automatically.
+          Output: Returns confirmation of folder creation with path details and success status.
+          Example output: {"success":true,"path":"marketing/campaigns/2024","name":"2024"}
       tags:
         - folders
-      summary: Create a new folder
+      summary: Creates a new empty folder in your Cloudinary media library
       description: Creates a new folder at the specified path
       operationId: createFolder
       parameters:
@@ -3207,7 +3310,15 @@ paths:
         name: delete-folder
         scopes:
           - librarian
-      summary: Delete folder
+        description: |
+          Purpose: Permanently deletes a folder and all assets contained within it from your Cloudinary media library. This is a destructive operation that removes both the folder structure and any assets it contains.
+          Usage: Use this to clean up unused folders and their contents, remove deprecated organizational structures, or permanently delete entire content categories. Essential for media library maintenance and storage cleanup operations.
+          Example request: DELETE /folders/archived/old-campaign
+          Parameters: folder(full folder path to delete - required)
+          When Not to Use: Don't use if you only want to move or rename the folder (use move-folder instead). Avoid using this for folders containing assets you might need later, as deletion is permanent. Don't use for individual asset deletion (use delete-asset instead).
+          Output: Returns confirmation listing all deleted folder paths.
+          Example output: {"deleted":["archived/old-campaign"]}
+      summary: Deletes an existing folder from your media library
       description: Deletes a folder and all assets within it.
       tags:
         - folders
@@ -3278,7 +3389,21 @@ paths:
                 $ref: '#/components/schemas/api_error'
   /v1_1/{cloud_name}/folders/search:
     get:
-      summary: Searches for folders in your product environment
+      x-speakeasy-mcp:
+        name: search-folders
+        scopes:
+          - librarian
+        description: |
+          Purpose: Searches for folders whose attributes match a given expression, or returns all folders when no expression is provided. This lets you filter and find specific folders by criteria such as folder name or path using Lucene-like syntax, or get a complete folder inventory equivalent to GET /folders.
+          Usage: Use when you need to locate specific folders or get a complete folder listing. Essential for folder management in dynamic environments where you need to find folders by patterns (e.g., all test folders, marketing-related folders, folders from specific time periods). Supports boolean logic for complex queries combining multiple criteria.
+          Example request: GET /folders/search?expression=name:test OR path:marketing&max_results=10&sort_by=[{"field":"created_at","direction":"desc"}]
+          Note: Wildcards () are not supported in expressions. Only works in dynamic folder mode environments, not legacy fixed-folder mode. Newly created folders may take moments to appear in search results.
+          Parameters - examples of parameters that can be used: expression(search query using Lucene syntax - empty string returns all folders), max_results(limit results 1-2000, default 50), sort_by(array of sort criteria with field and direction), next_cursor(pagination cursor for additional results), with_count(include total count in response)
+          Expression examples: empty string (list all folders), name:test (folders containing "test"), path:marketing (folders under marketing path), name:project AND path:2024 (boolean combination), name:test OR name:staging (multiple criteria)
+          When Not to Use: Don't use for simple folder structures where you know exact paths - direct folder endpoints are simpler. Avoid for finding individual assets (use asset search instead). Not suitable for legacy fixed-folder mode accounts or when you need wildcard pattern matching.
+          Output: Returns folders matching search criteria with total_count(number of matches), time(query execution milliseconds), folders(array of matching folder objects), next_cursor(pagination token if more results available). Each folder includes name, path, created_at timestamp, and external_id.
+          Example output: {"total_count":2,"time":45,"folders":[{"name":"test","path":"test","created_at":"2025-02-03T09:05:44+00:00","external_id":"ca65877d72894ae12539a0185d7ca4eff3"},{"name":"test-marketing","path":"marketing/test-marketing","created_at":"2024-12-15T10:30:22+00:00","external_id":"cb1234567890abcdef"}]}
+      summary: Searches for folders whose attributes match a given expression
       description: |
         Lists the folders that match the specified search expression. Limited to 2000 results. If no parameters are passed, returns the 50 most recently created folders in descending order of creation time.
       operationId: searchFolders
@@ -3425,8 +3550,16 @@ paths:
     delete:
       x-speakeasy-mcp:
         name: delete-derived-assets
-        scope:
-          - advanced_librarian
+        scopes:
+          - librarian
+        description: |
+          Purpose: Permanently deletes specific derived resources (transformed versions) from your Cloudinary account using their unique derived resource IDs. Derived resources are generated versions of your original assets created through transformations like resizing, cropping, or format conversion.
+          Usage: Use this to clean up specific derived assets that are no longer needed, manage storage quotas, or remove outdated transformed versions while preserving the original asset. Essential for storage optimization and managing transformation caches.
+          Example request: {"derived_resource_ids": ["1234567890abcdef", "fedcba0987654321"], "invalidate": true}
+          Parameters: derived_resource_ids(array of derived resource identifiers to delete), invalidate(whether to invalidate CDN cache for deleted resources)
+          When Not to Use: Don't use for deleting original assets (use delete-asset instead) or for bulk deletion of all derived assets (those have separate endpoints). Avoid invalidating CDN cache unnecessarily as it impacts delivery performance.
+          Output: Returns deletion results with status for each derived resource: deleted(object mapping derived resource IDs to deletion status - "deleted" or "not_found"), unauthorized(array of IDs that couldn't be deleted due to permissions), invalidation(CDN invalidation details including processing time and affected URLs)
+          Example output: {"deleted": {"1234567890abcdef": "deleted", "fedcba0987654321": "not_found"}, "unauthorized": [], "invalidation": {"took": 25.0, "urls": ["/image/upload/w_100/sample", "/image/upload/w_200/sample"]}}
       summary: Delete derived resources
       description: Deletes derived resources by derived resource ID
       tags:
@@ -3463,11 +3596,24 @@ paths:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
     post:
-      operationId: searchResourcesPost
-      summary: Get resources by search (POST method)
+      operationId: searchAssets
+      summary: Provides a powerful query interface to filter and retrieve assets and their details
       description: Returns a list of resources matching the specified search criteria. The API supports a variety of search parameters and returns a JSON response with the matching resources and their details.
       tags:
         - search
+      x-speakeasy-mcp:
+        name: search-assets
+        scopes:
+          - librarian
+        description: |
+          Purpose: Provides a powerful query interface to filter and retrieve assets (images, videos, raw files) in your account using a flexible expression language. The search-assets operation allows you to specify complex conditions (similar to a SQL or Lucene query) on asset fields such as public IDs, filenames, tags, folders, upload dates, file size, format, metadata, etc., and get back only the resources that meet those criteria. This is essentially Cloudinary's Search API, enabling sophisticated Digital Asset Management queries.
+          Usage: Use this when you need to find assets that meet specific conditions or combinations of conditions beyond simple listings. For example, "find all images tagged 'summer' uploaded last week larger than 2MB", or "videos longer than 30 seconds with format MP4 in a certain folder". It's ideal for building admin dashboards, search functionality in a media library, or anytime you need to filter resources by attributes. You can combine multiple filters with AND/OR logic, do prefix or wildcard searches, numeric ranges, date ranges, etc. The search expression language supports tokenized (contains) searches and exact matches on string fields, numerical comparisons, date comparisons, and more. (Boolean operators like AND, OR, NOT can be used to join sub-expressions as well.) Keep in mind that this is a rate-limited Admin API method, so it's not meant for high-volume public queries, but rather for backend or management use.
+          When Not to Use: If a simpler endpoint can achieve the goal (for example, listing all assets in a folder or retrieving a specific asset by ID), use that instead of executing a search query. The search API is very powerful but also more resource-intensive, so avoid using it unnecessarily (especially for frequent or simple operations that could be achieved with direct GET calls). Also, if your search can be done via tagging or structured metadata and you prefer to maintain those, consider whether you actually need complex queries. In short, don't use search-assets for every small retrieval when an exact fetch or a simpler list would do, to stay within rate limits and reduce complexity.
+          Output: Returns a JSON response containing the assets that match the search criteria and some summary information. The main part of the response is an array called `resources`, where each element is a resource (asset) object with its details (like it would appear in an Admin API listing — e.g., public_id, URL, format, dimensions, tags, context, etc., depending on what fields you requested to include). The response also includes: `total_count` (total number of matched assets), `time` (query execution time), `next_cursor` (if there are more results beyond the page limit), and any aggregation counts.
+          Searchable Fields and Filters: The query expression can utilize essentially any asset attribute. This includes standard fields like `public_id`, `filename`, `folder`, `tags`, `context` (key-value metadata), `format`, `resource_type`, `uploaded_at` (or `created_at`), file `bytes` (size), image/video dimensions (`width`, `height`, `pixels`), duration (for video), as well as structured metadata fields (`metadata.<field_external_id>`), moderation status, and more. Even internal or analysis-based fields can be used: e.g., `face_count`, `colors`, `accessibility_analysis` scores, `quality_analysis` scores, etc., for accounts with those features (these advanced fields require that you have enabled analysis on upload). *Full list of searchable fields:* - **Asset info:** `public_id`, `filename`, `folder`, `asset_id`, `asset_folder` (dynamic folders), `format`, `resource_type`, `type` (delivery type), `uploaded_at`/`created_at`, `uploaded_by` (if applicable), `tags`, `context` (use `context.<key>` for specific keys), `metadata.<external_id>` (for structured metadata fields), `status` (active/deleted). - **File characteristics:** `bytes` (file size), `width`, `height`, `aspect_ratio`, `pixels` (total pixels), `duration` (for video/audio length). - **Moderation and status:** `moderation_status` (e.g., approved/rejected), `moderation_kind` (which moderation service), `access_mode` (public or authenticated). - **Analysis & AI (Tier 2 features):** `face_count`, `grayscale` (boolean if image is grayscale), `colors` (contains a given color), `illustration_score`, `accessibility_analysis.colorblind_accessibility_score`, `quality_analysis.color_score`, `quality_analysis.pixel_score`, etc., as well as embedded `image_metadata` fields (EXIF/XMP data) and `location` (GPS coordinates).
+          Supported Operators: You can filter string fields by exact match (`=`) or tokenized (contains) match (`:`), numeric and date fields with comparison operators (`=`, `>`, `>=`, `<`, `<=`) and range syntax (`[...]` for inclusive ranges, `{...}` for exclusive ranges). String fields support wildcards for prefix/suffix searches (e.g., `public_id:holiday*` for prefix). You can also use negation to exclude terms (for example, prefixing with a minus: `-tags:holiday` means tag is not "holiday"). Boolean fields use `=true` or `=false`. Complex expressions can be built using parentheses and the logical operators AND, OR, NOT as needed (Cloudinary's search syntax will interpret space-separated terms as AND by default).
+          Sortable Fields: You can sort the results by a specified field in ascending or descending order. Common sortable fields include `public_id`, `filename`, `created_at`/`uploaded_at`, `updated_at` (last updated), `bytes` (file size), or other single-valued attributes like width or height. Multi-valued fields like tags or context keys are not typically used for sorting. If no sort is specified, results default to descending by creation date. You can specify multiple sort keys as an array of field-direction pairs (e.g., sort by format asc, then public_id asc).
+          Examples: Here are a few example search expressions (as they would be used in the `expression` parameter) illustrating different types of filters and operators: ```text tags: sale AND uploaded_at > 1d
       requestBody:
         required: true
         content:
@@ -3497,8 +3643,8 @@ paths:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
     post:
-      operationId: visualSearchResources
-      summary: Get resources by visual similarity
+      operationId: visualSearchAssets
+      summary: Finds images in your asset library based on visual similarity or content
       description: |
         Returns a list of resources that are visually similar to a specified image. You can provide the source image for comparison in one of three ways:
         - Provide a URL of an image
@@ -3506,6 +3652,15 @@ paths:
         - Provide a textual description
       tags:
         - search
+      x-speakeasy-mcp:
+        name: visual-search-assets
+        scopes:
+          - librarian
+        description: |
+          Purpose: Finds images in your asset library based on visual similarity or content, rather than metadata or filename. This operation analyzes an input (which can be an image or a textual description) and returns assets that are visually similar or relevant. It allows you to search by what's actually in the image (colors, shapes, objects, etc.) instead of by tags or keywords. For example, you can provide a reference image and find other images in your cloud with similar content.
+          Usage: Use visual search when you need to locate images that "look like" a given image or match a described visual concept. Common use cases include finding duplicate or near-duplicate images, grouping product photos by appearance, or enabling end-users to search a media library by uploading an example image. To execute a visual search, you must supply either an image URL, an asset ID of an existing image, or a text query describing the desired image content. (This feature is available to Enterprise accounts, and images need to be indexed for visual search – for example, by setting the `visual_search` indexing flag on upload.)
+          When Not to Use: If a simple metadata or tag search can achieve the result (for example, searching by explicit tags like "red shirt"), visual search may be unnecessary overhead. Also avoid using it for non-image asset types (it's intended for images). If your account does not have the visual search feature enabled (or you haven't indexed your images for it), this operation will not be applicable. In such cases, rely on standard search by tags, filenames, or other attributes.
+          Output: Returns a list of image assets sorted by visual similarity to the query image or concept. The response includes an array of resource records (just like a typical asset listing) for the images deemed most similar. They are ordered from most visually similar to less similar. Each returned resource will include standard asset details (public ID, URLs, etc.), allowing you to identify or use those images. (No special fields beyond the normal asset info are added – the key difference is how the results are ranked by relevance.)
       requestBody:
         required: true
         content:
@@ -3544,17 +3699,24 @@ components:
       schema:
         type: string
         description: The cloud name of your product environment.
-    resource_type:
+    upload_resource_type:
       name: resource_type
       in: path
       required: true
       schema:
         type: string
-        description: The type the of asset.
+        description: |
+          The type of resource to upload:
+          - "image" for uploading strictly images
+          - "video" for uploading strictly videos  
+          - "raw" for uploading non-media files
+          - "auto" for allowing Cloudinary to automatically detect the type of the uploaded file
         enum:
           - image
           - video
           - raw
+          - auto
+        default: auto
     next_cursor:
       name: next_cursor
       in: query
@@ -3619,6 +3781,17 @@ components:
             - etag
         description: |
           A comma-separated list of fields to include in the response. The following fields are always included in the response: public_id, and asset_id.
+    resource_type:
+      name: resource_type
+      in: path
+      required: true
+      schema:
+        type: string
+        description: The type the of asset.
+        enum:
+          - image
+          - video
+          - raw
     colors:
       name: colors
       in: query
@@ -4068,12 +4241,13 @@ components:
           properties:
             file:
               type: string
-              pattern: ^https?:\/\/|^s3:\/\/|^gcs:\/\/|^ftp:\/\/|^(data:[^;]*;base64,)
+              pattern: ^https?:\/\/|^s3:\/\/|^gcs:\/\/|^ftp:\/\/|^(data:[^;]*;base64,)|^file:\/\/
               description: |
                 One of the following:
                 - The remote HTTP or HTTPS URL address of an existing file.
                 - The Data URI (Base64 encoded), max ~60 MB (62,910,000 chars).
                 - The FTP address of an existing file.
+                - Local file path starting with file://.
       required:
         - file
     upload_response:

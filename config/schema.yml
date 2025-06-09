@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Config API
-  version: 0.1.0
+  version: 0.2.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -11,11 +11,22 @@ info:
     url: https://support.cloudinary.com
   termsOfService: https://cloudinary.com/tou
 servers:
-  - url: https://{defaultHost}
+  - url: https://{region}.cloudinary.com
+    description: Regional API endpoints for optimal performance.
     variables:
-      defaultHost:
+      region:
+        default: api
+        description: Regional endpoint selection
+        enum:
+          - api
+          - api-eu
+          - api-ap
+  - url: https://{host}
+    description: Custom domains for enterprise deployments.
+    variables:
+      host:
         default: api.cloudinary.com
-        description: The host name for the API endpoint.
+        description: API host domain.
 security:
   - basicAuth: []
 tags:
@@ -41,8 +52,16 @@ paths:
       x-speakeasy-mcp:
         name: list-transformations
         scopes:
-          - builder
-      summary: Get transformations
+          - admin
+        description: |
+          Purpose: Retrieves a comprehensive list of all transformations (both named and unnamed) in your Cloudinary account. Transformations define how images and videos are processed, resized, filtered, or optimized during delivery.
+          Usage: Use this to audit existing transformations, manage transformation inventory, or discover available transformation templates before creating new ones. Essential for transformation governance and optimization workflows.
+          Example request: GET /transformations?named=true&max_results=50 (no request body required)
+          Parameters: named(filter by named/unnamed transformations), max_results(limit response size 1-500), next_cursor(pagination token for additional results)
+          When Not to Use: Don't use for retrieving a single transformation's details - use get-transformation-details instead. Avoid frequent polling as transformation configurations change infrequently.
+          Output: Returns array of transformation objects with usage statistics: transformations(array of transformation objects), name(transformation identifier), allowed_for_strict(whether usable in strict mode), used(whether transformation has been applied to assets), derived_resource_count(number of derived resources using this transformation), next_cursor(pagination token if more results available)
+          Example output: {"transformations":[{"name":"c_fill,w_100,h_150","allowed_for_strict":false,"used":true,"derived_resource_count":15},{"name":"quality_auto","allowed_for_strict":true,"used":true,"derived_resource_count":234}],"next_cursor":"8edbc61040178db60b0973ca9494bf3a"}
+      summary: Lists all transformation definitions in your account (including named transformations
       description: |
         Retrieves a list of all transformations, which can be filtered to show either only named or unnamed transformations.
       tags:
@@ -103,8 +122,16 @@ paths:
       x-speakeasy-mcp:
         name: get-transformation-details
         scopes:
-          - builder
-      summary: Get a transformation
+          - admin
+        description: |
+          Purpose: Retrieves detailed information about a specific transformation, including its usage statistics, derived resources count, and configuration parameters. Transformations define how media assets are processed during delivery.
+          Usage: Use this to inspect transformation details, verify configuration parameters, or analyze usage statistics for specific transformations. Essential for transformation debugging and optimization analysis.
+          Example request: GET /transformations/c_fill,w_100,h_150 (transformation string in URL path)
+          Parameters: transformation(URL-encoded transformation string - either named transformation or full parameter string)
+          When Not to Use: Don't use for listing multiple transformations - use list-transformations instead. Not needed if you only want to apply the transformation without inspecting details.
+          Output: Returns comprehensive transformation details: name(transformation identifier), allowed_for_strict(strict mode compatibility), used(whether applied to assets), derived_resource_count(number of derived resources), transformation_string(full parameter string), max_width(maximum width if constrained), max_height(maximum height if constrained)
+          Example output: {"name":"c_fill,w_100,h_150","allowed_for_strict":false,"used":true,"derived_resource_count":15,"transformation_string":"c_fill,w_100,h_150"}
+      summary: Retrieves details of a specific transformation
       description: |
         Retrieves details for a named or unnamed transformation.
       tags:
@@ -148,8 +175,16 @@ paths:
       x-speakeasy-mcp:
         name: create-transformation
         scopes:
-          - builder
-      summary: Create a named transformation
+          - admin
+        description: |
+          Purpose: Creates a new named transformation that can be referenced by a simple name instead of using the full transformation parameter string. Named transformations provide reusable transformation templates that can be applied consistently across your applications.
+          Usage: Use this to create commonly-used transformation patterns that can be referenced by name rather than repeating complex parameter strings. Essential for establishing consistent media processing workflows and simplifying application code.
+          Example request: {"transformation": "c_fill,w_300,h_300,q_auto", "allowed_for_strict": true}
+          Parameters: transformation(complete transformation parameter string), allowed_for_strict(whether transformation can be used in strict mode - boolean)
+          When Not to Use: Don't create named transformations for one-time use cases or rarely-used parameter combinations. Avoid creating duplicates of existing named transformations - check existing transformations first using list-transformations.
+          Output: Returns creation confirmation with transformation name: message(creation status confirmation)
+          Example output: {"message": "created"}
+      summary: Creates a new named transformation (assigning a custom name to a set of transformation
       description: |
         Creates a new named transformation with the given name and transformation string.
       tags:
@@ -202,8 +237,16 @@ paths:
       x-speakeasy-mcp:
         name: update-transformation
         scopes:
-          - builder
-      summary: Update a transformation
+          - admin
+        description: |
+          Purpose: Updates the settings of an existing named or unnamed transformation, allowing you to modify the transformation string or change whether it's allowed in strict mode without creating a new transformation.
+          Usage: Use this to modify existing transformation configurations when requirements change, such as updating quality settings or adding new processing parameters. Essential for maintaining transformation consistency across applications.
+          Example request: {"allowed_for_strict": false, "unsafe_update": "c_fill,w_400,h_400,q_80"}
+          Parameters: allowed_for_strict(whether transformation can be used in strict mode), unsafe_update(new transformation parameter string - use with caution)
+          When Not to Use: Avoid updating transformations that are actively used in production without careful testing, as this affects all assets using that transformation. Don't use for creating new transformations - use create-transformation instead.
+          Output: Returns update confirmation: message(update status confirmation)
+          Example output: {"message": "updated"}
+      summary: Updates the definition of an existing named transformation
       description: |
         Update an existing named or unnamed transformation.
       tags:
@@ -250,8 +293,16 @@ paths:
       x-speakeasy-mcp:
         name: delete-transformation
         scopes:
-          - builder
-      summary: Delete a transformation
+          - admin
+        description: |
+          Purpose: Permanently removes a named or unnamed transformation from your Cloudinary account. This operation can also invalidate all derived resources (cached versions) that were generated using this transformation.
+          Usage: Use this to clean up unused transformations, remove deprecated transformation configurations, or manage transformation inventory. Essential for maintaining organized transformation catalogs and reducing account clutter.
+          Example request: DELETE /transformations/my_old_transformation?invalidate=true
+          Parameters: transformation(URL-encoded transformation string or name), invalidate(whether to invalidate derived resources using this transformation from CDN)
+          When Not to Use: Don't delete transformations that are still actively used in production applications, as this will break image/video delivery. Avoid deleting without testing if invalidate=true, as this affects cached content delivery.
+          Output: Returns deletion confirmation: message(deletion status confirmation)
+          Example output: {"message": "deleted"}
+      summary: Deletes a named transformation from your account
       description: |
         Delete a named or unnamed transformation. Optionally invalidate derived resources generated using the named transformation.
       tags:
@@ -309,8 +360,17 @@ paths:
         name: create-upload-preset
         scopes:
           - builder
+        description: |
+          Purpose: Creates a new named upload preset that defines default upload parameters and transformations. Upload presets streamline the upload process by pre-configuring settings like folder destinations, tags, transformations, and access controls for consistent file handling.
+          Usage: Use when you need to standardize upload configurations for different content types that require different processing rules (e.g., user profile photos need resizing and face detection, product catalog images need multiple size variants, temporary files need minimal processing). Essential for creating reusable upload workflows that ensure consistent processing and organization.
+          Example request: {"name": "temp-new-upload-preset", "unsigned": true, "use_filename": true, "unique_filename": false, "folder": "temp", "tags": "temp,test"}
+          Note: Cannot set overwrite=true for unsigned presets due to security restrictions.
+          Parameters - examples of parameters that can be used: name(preset identifier), unsigned(allows uploads without authentication), use_filename(preserves original filename), unique_filename(generates unique names), folder(destination folder), tags(comma-separated labels), overwrite(replace existing files - not allowed for unsigned), access_mode(public/authenticated), type(upload type), transformation(image/video processing), allowed_formats(permitted file types), backup(create backup copy), auto_tagging(AI tagging threshold), faces(face detection), colors(color analysis), quality_analysis(image quality check), moderation(content moderation service), notification_url(webhook endpoint), async(background processing), eager(generate derivatives), display_name(human readable name)
+          When Not to Use: Don't create upload presets for one-time uploads or when upload requirements frequently change. Avoid creating duplicates of existing presets - use update-upload-preset to modify existing configurations instead.
+          Output: Returns creation confirmation with preset identification details: message(creation status - "created"), name(preset identifier as specified), external_id(unique system-generated identifier for internal tracking)
+          Example output: {"message":"created","name":"temp-new-upload-preset","external_id":"26c944df-84f0-4bd3-afa6-1cb177fce5dc"}
       operationId: createUploadPreset
-      summary: Creates an upload preset
+      summary: Creates a new upload preset with specified configuration settings
       tags:
         - upload_presets
       parameters: []
@@ -358,8 +418,16 @@ paths:
         name: list-upload-presets
         scopes:
           - builder
+        description: |
+          Purpose: Lists all upload presets defined in your Cloudinary product environment with their complete configuration settings. Upload presets contain predefined upload parameters that streamline file processing workflows.
+          Usage: Use when you need to audit existing upload configurations, build management interfaces, or understand available preset options before creating new ones. Essential for preset management and configuration discovery.
+          Example request: GET /upload_presets (no request body required)
+          Parameters: direction(asc/desc sort order), order_by(name/id/updated_at sort field), next_cursor(pagination token for additional results)
+          When Not to Use: Don't use for retrieving a single preset's details - use get-upload-preset-details instead. Avoid frequent polling as preset configurations rarely change.
+          Output: Returns array of preset objects with configuration details: presets(array containing preset objects), name(preset identifier), unsigned(authentication requirement), settings(configuration object with upload parameters), external_id(unique system identifier)
+          Example output: {"presets":[{"name":"Prepend Folder","unsigned":false,"settings":{"overwrite":"1","use_filename":"1","unique_filename":"0","use_filename_as_display_name":"1","use_asset_folder_as_public_id_prefix":"1","type":"upload"},"external_id":"6052708a-94b2-47e3-9368-c9de14032b72"}]}
       operationId: listUploadPresets
-      summary: lists upload presets
+      summary: Lists all upload presets configured in the account
       tags:
         - upload_presets
       parameters:
@@ -424,6 +492,11 @@ paths:
         name: get-upload-preset-details
         scopes:
           - builder
+        description: |
+          Purpose: Retrieves the configuration details of a specific upload preset (such as its allowed parameters and settings). 
+          Usage: Use this when you need to inspect or utilize a preset's settings (for example, to verify if unsigned uploading is enabled or what transformations are applied on upload by default). 
+          When Not to Use: Not required if you only need a list of preset names (use list-upload-presets for that). Also not useful if the preset name is unknown. 
+          Output: Returns a JSON object containing information on the upload preset profile. Some returned parameters examples: presets(array of preset objects), name(preset name), unsigned(allows unsigned uploads), settings(preset configuration object), external_id(unique preset identifier), transformation(default transformation string), tags(auto-applied tags), allowed_formats(permitted file formats), eager(transformations generated on upload), overwrite(overwrite existing files), use_filename(use original filename), unique_filename(ensure unique filenames), use_filename_as_display_name(filename as display name), use_asset_folder_as_public_id_prefix(folder prefix for public ID), type(upload type), moderation(content moderation settings), auto_transcription(automatic transcription settings), asset_folder(default upload folder), access_control(access permissions)
       operationId: getUploadPreset
       summary: Retrieves details of a single upload preset
       tags:
@@ -452,8 +525,14 @@ paths:
         name: update-upload-preset
         scopes:
           - builder
+        description: |
+          Purpose: Updates the settings of an existing upload preset. This lets you change parameters like allowed transformations, moderation settings, or whether unsigned uploads are allowed. 
+          Usage: Use this to modify a preset when requirements change (for example, enabling a new format or altering incoming transformation rules) without creating a new preset. 
+          Note 1: Should be used carefully, as updating upload_presets may impact existed production flows that uses the upload_preset profile that is being updated. consider creating new one with the modification and then change the production flow to the new one if the intent is to modify a production flow. Note 2: Cannot set overwrite=true for unsigned presets. , Note-3: Uses  this (PUT) method to update existing presets rather than creating new ones.
+          When Not to Use: Don't use for creating new presets (use create-upload-preset instead). Also, if the preset doesn't exist, you'd need to create it first. 
+          Output: Returns update confirmation with preset identifier: message(update status), external_id(unique system identifier)
       operationId: updateUploadPreset
-      summary: Updates an upload preset
+      summary: Updates an existing upload preset's configuration settings
       tags:
         - upload_presets
       parameters: []
@@ -498,8 +577,13 @@ paths:
         name: delete-upload-preset
         scopes:
           - builder
+        description: |
+          Purpose: Deletes an upload preset from your product environment, preventing any further uploads from using that preset. 
+          Usage: Use this to remove presets that are no longer needed or relevant (for example, a deprecated upload configuration). 
+          When Not to Use: Avoid deleting a preset that is still in active use by your applications or integrations; doing so will cause any uploads referencing it to act as expected in that upload preset profile that is deleted.
+          Output: Confirms the deletion of the preset (the preset will no longer appear in listing results).
       operationId: deleteUploadPreset
-      summary: Deletes an upload preset
+      summary: Deletes an upload preset from the account
       tags:
         - upload_presets
       responses:
@@ -536,9 +620,17 @@ paths:
       x-speakeasy-mcp:
         name: create-metadata-field
         scopes:
-          - builder
+          - admin
+        description: |
+          Purpose: Creates a new structured metadata field that can be used to store custom information with your assets. Metadata fields define the schema for storing structured data like product information, content tags, or custom attributes that can be searched and filtered.
+          Usage: Use this to establish custom data structures for your assets, enabling rich content organization and searchability. Essential for content management workflows, asset categorization, and building custom asset management interfaces.
+          Example request: {"type": "string", "label": "Product Category", "external_id": "product_category", "mandatory": false, "default_value": "uncategorized"}
+          Parameters: type(field data type - string/integer/date/enum/set), label(human-readable field name), external_id(unique field identifier), mandatory(whether field is required), default_value(default field value), datasource(for enum/set types - predefined values), validation(validation rules), restrictions(field access restrictions)
+          When Not to Use: Don't create fields for data that changes frequently or is better suited for tags. Avoid creating too many fields as this can impact performance and user experience.
+          Output: Returns created metadata field configuration: external_id(unique identifier), type(field type), label(display name), mandatory(required status), default_value(default value), datasource(available values for enum/set types), validation(field rules), created_at(creation timestamp)
+          Example output: {"external_id":"product_category","type":"string","label":"Product Category","mandatory":false,"default_value":"uncategorized","created_at":"2023-01-15T10:00:00Z"}
       operationId: createMetadataField
-      summary: Create a metadata field
+      summary: Creates a new structured metadata field in your account
       description: Creates a new metadata field with the specified properties and configuration.
       tags:
         - metadata_fields
@@ -578,8 +670,16 @@ paths:
         name: list-metadata-fields
         scopes:
           - builder
+        description: |
+          Purpose: Retrieves a comprehensive list of all structured metadata fields configured in your Cloudinary account, providing the schema and configuration details for each field used to organize and categorize your assets.
+          Usage: Use this to discover available metadata fields, build dynamic forms, audit metadata configurations, or understand the data structure available for asset organization. Essential for metadata management interfaces and asset organization workflows.
+          Example request: GET /metadata_fields?external_ids=product_category,brand_name (no request body required)
+          Parameters: external_ids(filter by specific field identifiers - if not provided, returns all fields)
+          When Not to Use: Don't use for retrieving a single field's details (use get-metadata-field instead) or for high-frequency polling as metadata schemas change infrequently.
+          Output: Returns array of metadata field configurations: metadata_fields(array of field objects). Each field contains: external_id(unique identifier), type(field data type), label(human-readable name), mandatory(required status), default_value(default value), datasource(available values for enum/set), validation(field rules), created_at(creation timestamp), updated_at(last modification time)
+          Example output: {"metadata_fields":[{"external_id":"product_category","type":"string","label":"Product Category","mandatory":false,"default_value":"uncategorized"},{"external_id":"price","type":"integer","label":"Price","mandatory":true}]}
       operationId: listMetadataFields
-      summary: Get metadata fields
+      summary: Lists all structured metadata fields defined in your Cloudinary product environment
       description: Retrieves a list of all metadata fields in the product environment based on the provided filters.
       tags:
         - metadata_fields
@@ -629,9 +729,17 @@ paths:
       x-speakeasy-mcp:
         name: get-metadata-field
         scopes:
-          - builder
+          - admin
+        description: |
+          Purpose: Retrieves comprehensive details about a specific structured metadata field using its external ID, providing complete configuration information including data type, validation rules, and available values for enum/set fields.
+          Usage: Use this to inspect metadata field configurations, build dynamic forms based on field types, validate field settings, or understand field constraints before updating. Essential for metadata management interfaces and field-specific operations.
+          Example request: GET /metadata_fields/product_category (external_id in URL path)
+          Parameters: external_id(unique field identifier from URL path)
+          When Not to Use: Don't use for listing multiple fields (use list-metadata-fields instead) or for high-frequency polling as metadata schemas change infrequently.
+          Output: Returns complete metadata field configuration: external_id(unique identifier), type(field data type), label(human-readable name), mandatory(required status), default_value(default value), datasource(available values for enum/set types), validation(field constraints), restrictions(access limitations), created_at(creation timestamp), updated_at(last modification time)
+          Example output: {"external_id":"product_category","type":"enum","label":"Product Category","mandatory":false,"default_value":"electronics","datasource":{"values":[{"value":"electronics","position":1},{"value":"clothing","position":2}]},"created_at":"2023-01-15T10:00:00Z"}
       operationId: getMetadataField
-      summary: Get metadata field
+      summary: Retrieves the definition of a specific structured metadata field by its identifier (external_id)
       description: Retrieves detailed information about the specified metadata field.
       tags:
         - metadata_fields
@@ -664,9 +772,17 @@ paths:
       x-speakeasy-mcp:
         name: update-metadata-field
         scopes:
-          - builder
+          - admin
+        description: |
+          Purpose: Updates the configuration properties of an existing structured metadata field, allowing you to modify field labels, validation rules, default values, and datasource options without recreating the field.
+          Usage: Use this to refine metadata field configurations as requirements evolve, such as updating validation rules, changing labels, adding new enum values, or modifying default values. Essential for maintaining current metadata schemas and improving data quality.
+          Example request: {"label": "Updated Product Category", "default_value": "general", "datasource": {"values": [{"value": "electronics", "position": 1}, {"value": "clothing", "position": 2}, {"value": "books", "position": 3}]}}
+          Parameters: external_id(field identifier from URL path), plus updatable field properties: label(display name), default_value(default field value), datasource(available values for enum/set), validation(field constraints), mandatory(required status), restrictions(access controls)
+          When Not to Use: Avoid changing field types after creation as this can break existing data. Don't update fields that are actively used in production without careful testing. Be cautious with mandatory field changes as this affects existing assets.
+          Output: Returns updated metadata field configuration: external_id(unique identifier), type(field data type), label(updated name), mandatory(required status), default_value(updated default), datasource(updated values), validation(updated rules), updated_at(modification timestamp)
+          Example output: {"external_id":"product_category","type":"enum","label":"Updated Product Category","mandatory":false,"default_value":"general","datasource":{"values":[{"value":"electronics","position":1},{"value":"clothing","position":2},{"value":"books","position":3}]},"updated_at":"2023-01-15T14:30:00Z"}
       operationId: updateMetadataField
-      summary: Update metadata field
+      summary: Updates the configuration of an existing metadata field
       description: Updates the properties and configuration of the specified metadata field.
       tags:
         - metadata_fields
@@ -712,8 +828,17 @@ paths:
         name: delete-metadata-field
         scopes:
           - builder
+        description: |
+          Purpose: Permanently removes a structured metadata field from your Cloudinary account, including all associated data, values, and configurations. This action also removes the field from any assets that currently have values for this field.
+          Usage: Use this to clean up unused metadata fields, remove deprecated data structures, or reorganize metadata schemas when fields are no longer needed. Essential for maintaining clean metadata organization and reducing schema complexity.
+          Example request: DELETE /metadata_fields/old_product_field (external_id in URL path)
+          Parameters: external_id(field identifier from URL path)
+          Warning: This is irreversible and will permanently delete all field data from assets. Ensure the field is not needed for production workflows before deletion.
+          When Not to Use: Don't delete fields that are still being used in production applications or contain valuable data. Avoid deletion without backing up field data if it might be needed later.
+          Output: Returns deletion confirmation: message(deletion status confirmation)
+          Example output: {"message": "Field deleted successfully"}
       operationId: deleteMetadataField
-      summary: Delete metadata field
+      summary: Deletes a structured metadata field definition from your account
       description: Permanently deletes the specified metadata field and all its associated data.
       tags:
         - metadata_fields
@@ -927,8 +1052,16 @@ paths:
         name: update-metadata-datasource-values
         scopes:
           - builder
+        description: |
+          Purpose: Updates the predefined values available for enum and set metadata fields, allowing you to add new options, modify existing values, reorder choices, or activate/deactivate specific values without recreating the entire field.
+          Usage: Use this to maintain current option lists for categorical metadata fields, such as adding new product categories, reordering selection options, or temporarily disabling specific values. Essential for keeping enum/set fields relevant and well-organized.
+          Example request: {"values": [{"external_id": "electronics", "value": "Electronics", "position": 1, "state": "active"}, {"external_id": "clothing", "value": "Clothing & Apparel", "position": 2, "state": "active"}, {"external_id": "books", "value": "Books", "position": 3, "state": "inactive"}]}
+          Parameters: external_id(field identifier from URL path), values array containing: external_id(unique value identifier), value(display text), position(sort order), state(active/inactive status)
+          When Not to Use: Don't use for string/integer/date field types that don't have datasources. Avoid frequent updates to stable option lists. Be careful when deactivating values that are actively used in production.
+          Output: Returns updated datasource configuration: values array with external_id(unique identifier), value(display text), position(sort order), state(activation status), created_at(creation timestamp), updated_at(modification time)
+          Example output: {"values":[{"external_id":"electronics","value":"Electronics","position":1,"state":"active","updated_at":"2023-01-15T15:00:00Z"},{"external_id":"clothing","value":"Clothing & Apparel","position":2,"state":"active","updated_at":"2023-01-15T15:00:00Z"}]}
       operationId: updateMetadataFieldDatasource
-      summary: Update datasource values
+      summary: Updates the allowed values (the datasource) for a specified metadata field
       description: Updates the values in a metadata field's datasource, including adding, modifying, or changing the order of values.
       tags:
         - metadata_fields
@@ -994,8 +1127,17 @@ paths:
         name: delete-metadata-datasource-values
         scopes:
           - builder
+        description: |
+          Purpose: Permanently removes specific predefined values from enum and set metadata fields using their external IDs, effectively removing these options from the available choices for asset metadata assignment.
+          Usage: Use this to clean up unused enum values, remove deprecated options, or streamline selection lists by eliminating outdated choices. Essential for maintaining clean, relevant option lists in categorical metadata fields.
+          Example request: {"external_ids": ["old_category_1", "deprecated_option", "unused_value"]}
+          Parameters: external_id(field identifier from URL path), external_ids array(list of value identifiers to remove)
+          Warning: This permanently removes values and may affect assets that currently use these values. Consider setting values to "inactive" state instead for safer option management.
+          When Not to Use: Don't delete values that are actively used in production assets. Avoid deletion if you might need to restore the values later - use inactive state instead.
+          Output: Returns updated datasource configuration: values array with remaining active values and their properties
+          Example output: {"values":[{"external_id":"electronics","value":"Electronics","position":1,"state":"active"},{"external_id":"clothing","value":"Clothing","position":2,"state":"active"}]}
       operationId: deleteMetadataFieldDatasource
-      summary: Delete datasource values
+      summary: Removes one or more allowed values from a metadata field's datasource
       description: Removes specific values from a metadata field's datasource by their external IDs.
       tags:
         - metadata_fields
@@ -1169,8 +1311,16 @@ paths:
         name: create-metadata-rule
         scopes:
           - builder
+        description: |
+          Purpose: Creates automated metadata rules that populate metadata fields based on asset properties or conditions, enabling dynamic content organization and reducing manual tagging overhead.
+          Usage: Use this to automate metadata assignment based on upload conditions like file names, folder paths, tags, or other asset properties. Essential for implementing consistent metadata workflows and automatic content categorization.
+          Example request: {"metadata_field_id": "product_category", "name": "Auto-tag electronics", "condition": {"resource_type": "image", "tags": {"$in": ["electronics", "gadgets"]}}, "result": {"value": "electronics"}, "state": "active", "position": 1}
+          Parameters: metadata_field_id(target field ID), name(rule description), condition(trigger criteria), result(value to assign), state(active/inactive), position(execution order)
+          When Not to Use: Don't create overlapping rules that might conflict. Avoid complex conditions that could slow down upload processing. Be careful with broad conditions that might incorrectly categorize assets.
+          Output: Returns created metadata rule: external_id(unique rule identifier), metadata_field_id(target field), name(rule name), condition(trigger criteria), result(assigned value), state(activation status), position(execution order), created_at(creation time)
+          Example output: {"external_id":"rule_123","metadata_field_id":"product_category","name":"Auto-tag electronics","condition":{"tags":{"$in":["electronics","gadgets"]}},"result":{"value":"electronics"},"state":"active","position":1,"created_at":"2023-01-15T16:00:00Z"}
       operationId: createMetadataRule
-      summary: Create a metadata rule
+      summary: Creates a new conditional metadata rule
       description: Creates a new metadata rule with the specified properties and configuration.
       tags:
         - metadata_rules
@@ -1210,8 +1360,16 @@ paths:
         name: list-metadata-rules
         scopes:
           - builder
+        description: |
+          Purpose: Retrieves all automated metadata rules configured in your Cloudinary account, providing complete visibility into your metadata automation workflows and rule configurations.
+          Usage: Use this to audit existing metadata rules, understand current automation logic, troubleshoot metadata assignment issues, or review rule configurations before creating new ones. Essential for metadata rule management and workflow optimization.
+          Example request: GET /metadata_rules
+          Parameters: None required - returns all rules in the account
+          When Not to Use: Not needed for simple metadata operations that don't involve automation. Avoid frequent polling as metadata rules change infrequently.
+          Output: Returns comprehensive rule list: metadata_rules array containing external_id(unique identifiers), metadata_field_id(target fields), name(rule descriptions), condition(trigger criteria), result(assigned values), state(activation status), position(execution order), created_at(creation timestamps), updated_at(modification times)
+          Example output: {"metadata_rules":[{"external_id":"rule_123","metadata_field_id":"product_category","name":"Auto-tag electronics","condition":{"tags":{"$in":["electronics"]}},"result":{"value":"electronics"},"state":"active","position":1,"created_at":"2023-01-15T16:00:00Z"}]}
       operationId: listMetadataRules
-      summary: Get metadata rules
+      summary: Retrieves a list of all conditional metadata rules defined in your accountcloudinary
       description: Retrieves a list of all metadata rules in the cloud.
       tags:
         - metadata_rules
@@ -1253,8 +1411,16 @@ paths:
         name: update-metadata-rule
         scopes:
           - builder
+        description: |
+          Purpose: Updates the configuration of existing automated metadata rules, allowing you to modify conditions, results, execution order, or activation status without recreating the rule from scratch.
+          Usage: Use this to refine metadata automation logic as requirements evolve, fix rule conditions that aren't working correctly, change rule priorities through position updates, or temporarily disable rules. Essential for maintaining effective metadata workflows.
+          Example request: {"name": "Updated auto-tag rule", "condition": {"resource_type": "image", "tags": {"$in": ["electronics", "gadgets", "tech"]}}, "result": {"value": "technology"}, "state": "active", "position": 2}
+          Parameters: external_id(rule identifier from URL path), plus updatable properties: name(rule description), condition(trigger criteria), result(assigned value), state(active/inactive), position(execution order)
+          When Not to Use: Avoid updating rules that are actively processing uploads without testing. Don't change critical production rules during peak hours. Be careful with condition changes that might affect existing asset categorization.
+          Output: Returns updated metadata rule: external_id(unique identifier), metadata_field_id(target field), name(updated description), condition(updated criteria), result(updated value), state(current status), position(execution order), updated_at(modification time)
+          Example output: {"external_id":"rule_123","metadata_field_id":"product_category","name":"Updated auto-tag rule","condition":{"tags":{"$in":["electronics","gadgets","tech"]}},"result":{"value":"technology"},"state":"active","position":2,"updated_at":"2023-01-15T17:00:00Z"}
       operationId: updateMetadataRule
-      summary: Update metadata rule
+      summary: Updates an existing conditional metadata rule's definition
       description: Updates the properties and configuration of an existing metadata rule.
       tags:
         - metadata_rules
@@ -1300,8 +1466,17 @@ paths:
         name: delete-metadata-rule
         scopes:
           - builder
+        description: |
+          Purpose: Permanently removes automated metadata rules from your Cloudinary account, stopping their execution for future uploads and cleaning up unused automation configurations.
+          Usage: Use this to remove obsolete automation rules, clean up metadata workflows, or eliminate rules that are causing incorrect categorization. Essential for maintaining clean, efficient metadata automation and preventing rule conflicts.
+          Example request: DELETE /metadata_rules/rule_123 (external_id in URL path)
+          Parameters: external_id(rule identifier from URL path)
+          Warning: This permanently removes the rule and stops its execution for future uploads. Existing assets with metadata assigned by this rule will retain their current values.
+          When Not to Use: Don't delete rules that are still needed for production workflows. Avoid deletion if you might need the rule logic later - consider setting to "inactive" state instead.
+          Output: Returns deletion confirmation: success(boolean status indicating successful removal)
+          Example output: {"success": true}
       operationId: deleteMetadataRule
-      summary: Delete metadata rule
+      summary: Deletes a conditional metadata rule by its ID
       description: Permanently deletes a metadata rule.
       tags:
         - metadata_rules
@@ -1349,8 +1524,16 @@ paths:
         name: list-upload-mappings
         scopes:
           - builder
+        description: |
+          Purpose: Retrieves all upload mappings configured in your Cloudinary account, which define custom URL structures for accessing assets in specific folders, enabling branded or custom domain delivery patterns.
+          Usage: Use this to audit existing URL mappings, understand current delivery configurations, troubleshoot URL routing issues, or review mappings before creating new ones. Essential for managing custom domain setups and branded asset delivery.
+          Example request: GET /upload_mappings?folder=products&max_results=50
+          Parameters: folder(optional - filter by specific folder), max_results(pagination limit 1-500), next_cursor(pagination token)
+          When Not to Use: Not needed for standard Cloudinary URL delivery. Avoid frequent polling as mappings change infrequently.
+          Output: Returns mapping list or single mapping: mappings array containing folder(folder path), template(URL pattern), external_id(unique identifier), created_at(creation time), plus total_entries(count) and next_cursor(pagination) for lists
+          Example output: {"mappings":[{"folder":"products","template":"https://cdn.example.com/{public_id}","external_id":"map_123","created_at":"2023-01-15T18:00:00Z"}],"total_entries":1}
       operationId: listUploadMappings
-      summary: Lists upload mappings
+      summary: Retrieves a list of all upload mapping rules configured in your Cloudinary product environment
       description: |
         Returns a list of all upload mappings defined for your account.
         Upload mappings allow you to map an upload preset to a specific folder and URL template.
@@ -1427,8 +1610,16 @@ paths:
         name: create-upload-mapping
         scopes:
           - builder
+        description: |
+          Purpose: Creates custom URL mappings that define how assets in specific folders are delivered through branded or custom domain URLs, enabling consistent branding and custom URL structures for asset delivery.
+          Usage: Use this to set up branded asset delivery, create custom domain mappings for specific folders, implement consistent URL patterns, or establish dedicated delivery paths for different content types. Essential for white-label solutions and custom branding.
+          Example request: {"folder": "products", "template": "https://cdn.mystore.com/images/{public_id}"}
+          Parameters: folder(target folder path), template(URL pattern with {public_id} placeholder)
+          When Not to Use: Don't create mappings for temporary folders or without proper DNS/domain setup. Avoid overly complex URL patterns that might cause routing issues.
+          Output: Returns creation confirmation: message(creation status), folder(mapped folder path), external_id(unique mapping identifier)
+          Example output: {"message": "created", "folder": "products", "external_id": "mapping_456"}
       operationId: createUploadMapping
-      summary: Creates an upload mapping
+      summary: Creates a new upload mapping
       description: Creates a new upload mapping for the specified folder
       tags:
         - upload_mappings
@@ -1494,8 +1685,16 @@ paths:
         name: update-upload-mapping
         scopes:
           - builder
+        description: |
+          Purpose: Updates existing URL mappings to modify custom delivery patterns for folders, allowing you to change domain endpoints, URL structures, or routing configurations without recreating the mapping.
+          Usage: Use this to update branded domains, modify URL patterns for existing folders, fix routing configurations, or migrate to new delivery endpoints while maintaining folder associations. Essential for maintaining current branded delivery setups.
+          Example request: {"folder": "products", "template": "https://newcdn.mystore.com/assets/{public_id}"}
+          Parameters: folder(existing folder path), template(updated URL pattern with {public_id} placeholder)
+          When Not to Use: Avoid updating production mappings without testing the new URLs. Don't change mappings during high-traffic periods as this affects asset delivery.
+          Output: Returns update confirmation: message(update status), external_id(unique mapping identifier)
+          Example output: {"message": "updated", "external_id": "mapping_456"}
       operationId: updateUploadMapping
-      summary: Updates an upload mapping
+      summary: Updates an existing upload mapping by changing its remote URL template for a given
       description: Updates the URL template for an existing folder mapping
       tags:
         - upload_mappings
@@ -1555,8 +1754,17 @@ paths:
         name: delete-upload-mapping
         scopes:
           - builder
+        description: |
+          Purpose: Permanently removes custom URL mappings for specific folders, stopping branded or custom domain delivery for assets in those folders and reverting to standard Cloudinary URL patterns.
+          Usage: Use this to clean up unused mappings, remove deprecated custom domains, or eliminate mapping configurations that are no longer needed. Essential for maintaining clean URL routing and removing outdated branded delivery setups.
+          Example request: DELETE /upload_mappings?folder=old_products
+          Parameters: folder(folder path of mapping to remove)
+          Warning: This permanently removes the custom URL mapping and affects how assets in this folder are delivered. Ensure alternative delivery methods are in place if needed.
+          When Not to Use: Don't delete mappings that are actively used in production without confirming impact on asset delivery. Avoid deletion during high-traffic periods.
+          Output: Returns deletion confirmation: message(deletion status), external_id(unique identifier of deleted mapping)
+          Example output: {"message": "deleted", "external_id": "mapping_456"}
       operationId: deleteUploadMapping
-      summary: Deletes an upload mapping
+      summary: Deletes a folder upload mapping
       description: Permanently deletes the upload mapping for the specified folder
       tags:
         - upload_mappings
@@ -1656,9 +1864,17 @@ paths:
       x-speakeasy-mcp:
         name: list-triggers
         scopes:
-          - builder
+          - admin
+        description: |
+          Purpose: Retrieves a comprehensive list of all event triggers and notification configurations in your Cloudinary account. Event triggers automatically send HTTP notifications to your specified URLs when specific events occur (like asset uploads, deletions, or transformations).
+          Usage: Use this to audit existing webhook configurations, manage event notification setups, or discover what events are currently being monitored. Essential for webhook management and event-driven integration monitoring.
+          Example request: GET /notifications/triggers?event_type=upload
+          Parameters: event_type(filter triggers by specific event type - upload, delete, transformation, etc.)
+          When Not to Use: Don't use for creating or modifying triggers (use create-trigger or update-trigger instead), real-time event processing, or when you need immediate notification delivery status.
+          Output: Returns array of trigger configurations: triggers(array of trigger objects), total(total count of triggers). Each trigger object contains: id(trigger identifier), uri(notification URL), event_type(triggering event), created_at(creation timestamp), updated_at(last modification time)
+          Example output: {"triggers":[{"id":"12345678","uri":"https://webhook.site/124","event_type":"upload","created_at":"2023-01-15T10:00:00Z","updated_at":"2023-01-15T10:00:00Z"}],"total":1}
       operationId: listTrigger
-      summary: Get event triggers
+      summary: Lists all webhook notification triggers configured for your product environmentcloudinary
       description: |
         Retrieves a list of all event triggers and notifications within your product environment.
       tags:
@@ -1713,9 +1929,18 @@ paths:
       x-speakeasy-mcp:
         name: create-trigger
         scopes:
-          - builder
+          - admin
+        description: |
+          Purpose: Creates a new event trigger that automatically sends HTTP POST notifications to your specified URL when specific Cloudinary events occur. This enables real-time integration and automation workflows based on asset lifecycle events.
+          Usage: Use this to set up webhook notifications for asset uploads, deletions, transformations, moderation results, or other events. Essential for building event-driven integrations, audit systems, and automated content workflows.
+          Example request: {"uri": "https://trigger.site/124", "event_type": "upload"}
+          Parameters: uri(webhook URL that will receive notifications), event_type(type of event to monitor - upload, delete, transformation, moderation, etc.)
+          Note: Your account supports up to 30 notification URLs per event type. Total triggers are limited by (unique event types × 30).
+          When Not to Use: Don't create triggers for events you don't need to process, as this increases notification volume. Avoid creating duplicate triggers for the same event type and URL combination.
+          Output: Returns created trigger configuration: id(unique trigger identifier), uri(notification URL), event_type(monitored event type), created_at(creation timestamp)
+          Example output: {"id":"12345678","uri":"https://trigger.site/124","event_type":"upload","created_at":"2023-01-15T10:00:00Z"}
       operationId: createTrigger
-      summary: Create a trigger
+      summary: Creates a new notification trigger (webhook) by specifying an event type and a destination
       description: |
         Creates a new trigger. 
         Your product environment supports triggers up to a maximum determined by multiplying the number of unique event types by the limit of 30 notification URLs.
@@ -1788,9 +2013,17 @@ paths:
       x-speakeasy-mcp:
         name: update-trigger
         scopes:
-          - builder
+          - admin
+        description: |
+          Purpose: Updates the notification URL for an existing event trigger, allowing you to redirect webhook notifications to a new endpoint without recreating the trigger configuration.
+          Usage: Use this when you need to change the destination URL for webhook notifications due to infrastructure changes, endpoint migrations, or updated integration requirements. Essential for maintaining webhook continuity during system updates.
+          Example request: {"new_uri": "https://new-webhook.site/updated-endpoint"}
+          Parameters: id(trigger identifier from URL path), new_uri(updated webhook URL that will receive notifications)
+          When Not to Use: Don't use for changing event types (delete and recreate trigger instead) or for testing webhooks (use dedicated testing tools). Avoid frequent URL changes as this may disrupt notification delivery.
+          Output: Returns update confirmation: message(success confirmation - typically "ok")
+          Example output: {"message": "ok"}
       operationId: updateTrigger
-      summary: Update trigger URL
+      summary: Updates the callback URL of an existing webhook trigger in your Cloudinary account
       description: Updates a notification URL for a trigger.
       tags:
         - triggers
@@ -1852,9 +2085,17 @@ paths:
       x-speakeasy-mcp:
         name: delete-trigger
         scopes:
-          - builder
+          - admin
+        description: |
+          Purpose: Permanently removes an event trigger from your Cloudinary account, stopping all webhook notifications for the specified trigger configuration.
+          Usage: Use this to clean up unused triggers, remove deprecated webhook endpoints, or stop notifications that are no longer needed. Essential for maintaining organized webhook configurations and reducing unnecessary network traffic.
+          Example request: DELETE /notifications/triggers/c2c822dd1aa41ba6d81299df8b5ae949
+          Parameters: id(trigger identifier from URL path)
+          When Not to Use: Don't delete triggers that are still needed for production workflows. Avoid deleting without confirming the trigger ID, as this action cannot be undone.
+          Output: Returns deletion confirmation: message(success confirmation - typically "ok")
+          Example output: {"message": "ok"}
       operationId: deleteTrigger
-      summary: Delete a trigger
+      summary: Deletes a notification trigger
       description: Deletes a trigger.
       tags:
         - triggers
@@ -1906,8 +2147,13 @@ paths:
         name: create-streaming-profile
         scopes:
           - builder
+        description: |
+          Purpose: Creates a new adaptive streaming profile in your Cloudinary account. You define a unique profile name and a set of video representations (each with specific transformation parameters like resolution, bitrate, codec, etc.) for adaptive bitrate streaming. This operation allows you to customize streaming profiles beyond the built-in ones by specifying exactly how videos should be encoded at various quality levels.
+          Usage: Use this operation when the existing built-in streaming profiles do not meet your requirements and you need a custom profile. For example, if you require different resolutions or advanced codecs (such as VP9 or H.265/HEVC for DASH streaming) that are not covered by the default profiles, you can create your own. Provide a profile name (not already in use) and an array of representation definitions. Once created, the new profile can be applied in video uploads (e.g., as an eager transformation) and for delivering videos using the `sp_<profile>` parameter.
+          When Not to Use: Do not create a new profile if an existing Cloudinary predefined profile already satisfies your needs, as that would be redundant. Also, avoid using this operation to change an existing profile's settings—if a profile exists but needs adjustments, use **update-streaming-profile** instead. Ensure the profile name you choose isn't already taken by another profile (attempting to recreate an existing name will result in an error).
+          Output: On success, returns the details of the newly created streaming profile. The response will include the profile's `name`, any `display_name` you set, and the list of `representations` (transformation specifications) for that profile, confirming that the profile was created.
       operationId: createStreamingProfile
-      summary: Create streaming profile
+      summary: Creates a new adaptive streaming profile in your Cloudinary account
       tags:
         - streaming_profiles
       parameters: []
@@ -1955,8 +2201,13 @@ paths:
         name: list-streaming-profiles
         scopes:
           - builder
+        description: |
+          Purpose: Lists all adaptive streaming profiles (both built-in and custom) defined in your Cloudinary account, which are used to deliver videos via HLS/DASH adaptive bitrate streaming. This operation provides a complete overview of every streaming profile by name and details in the product environment.
+          Usage: Use this operation when you need to retrieve the full list of streaming profiles configured for your account. It's useful for auditing available profiles or populating a selection list in an application. Since it returns all profiles, you can identify both Cloudinary's predefined profiles and any custom profiles you've created.
+          When Not to Use: If you only require details of a single profile, avoid retrieving all profiles; use **get-streaming-profile** for a specific name instead. Also, do not use this if your goal is to create or modify profiles (use the respective **create** or **update** operations for those purposes).
+          Output: Returns an array of streaming profile definitions. The response includes each profile's information such as its `name`, `display_name`, whether it is a predefined (built-in) profile, and the list of video representations configured under that profile.
       operationId: getStreamingProfiles
-      summary: Get streaming profiles
+      summary: Lists all adaptive streaming profiles (both built-in and custom) defined in your Cloudinary account
       tags:
         - streaming_profiles
       parameters: []
@@ -1994,8 +2245,13 @@ paths:
         name: get-streaming-profile
         scopes:
           - builder
+        description: |
+          Purpose: Retrieves the details of a single adaptive streaming profile by its name It returns the profile's full configuration, including all representation settings, so you can inspect exactly how that profile is defined.
+          Usage: Use this operation when you need information about one specific streaming profile. For example, to verify a custom profile's resolutions and bitrates or to display the configuration of a particular profile in a management interface. Simply provide the profile's name to get its attributes and settings.
+          When Not to Use: Avoid using this to fetch many profiles one by one; if you require multiple profiles or an overview of all profiles, use **list-streaming-profiles** instead. Also, do not use this operation for creating or updating profiles (it is read-only); use **create-streaming-profile** or **update-streaming-profile** for those tasks.
+          Output: Returns a single streaming profile object with its details. The output includes fields such as the profile's unique `external_id`, `name`, `display_name`, a `predefined` flag (indicating if it's a built-in profile), and an array of `representations` (each describing a video transformation for that profile).
       operationId: getStreamingProfile
-      summary: Get streaming profile
+      summary: Retrieves the details of a single adaptive streaming profile by its name
       tags:
         - streaming_profiles
       responses:
@@ -2027,8 +2283,13 @@ paths:
         name: update-streaming-profile
         scopes:
           - builder
+        description: |
+          Purpose: Modifies an existing adaptive streaming profile's configuration. You can update both custom and built-in profiles by providing a new set of video representations (transformations), which will replace the profile's previous representations entirely. This allows you to change the resolutions, bitrates, codecs, or other settings of the streaming profile while keeping the same profile name.
+          Usage: Use this operation to adjust an established streaming profile when requirements change. For example, you might add a lower-resolution fallback representation to a custom profile or tweak the bitrate of a built-in profile's entries to better suit your audience's bandwidth. To use it, provide the target profile's name and a full updated list of representations that should define the profile. The next time that profile is used for encoding, it will use these new settings.
+          When Not to Use: Do not call this for a profile name that doesn't exist in your account (it will fail with a 'not found' error — use **create-streaming-profile** first if needed). If a built-in profile already meets your needs as provided, there's no need to update it (unnecessary overrides can be avoided). Also, this operation is not for retrieving profile info (use **get-streaming-profile** for that) and not for removing profiles (use **delete-streaming-profile** if you intend to remove or reset a profile).
+          Output: Returns the streaming profile's details after the update, reflecting the new configuration. In the response, you will see the profile's name and properties with the updated list of representations, confirming the changes were applied successfully.
       operationId: updateStreamingProfile
-      summary: Update streaming profile
+      summary: Modifies an existing adaptive streaming profile's configuration
       tags:
         - streaming_profiles
       parameters: []
@@ -2079,6 +2340,11 @@ paths:
         name: delete-streaming-profile
         scopes:
           - builder
+        description: |
+          Purpose: Removes a streaming profile or reverts a built-in profile to its default settings. If the profile is a custom one, this operation permanently deletes it from your account. If the profile is a built-in Cloudinary profile that you have modified via an update, this will undo the customizations and restore the original preset values. (Attempting to delete a built-in profile that has never been modified will result in an error rather than a deletion.)
+          Usage: Use this operation to clean up streaming profiles that are no longer needed or to rollback changes on a built-in profile. For a custom profile that you no longer use, deleting it frees up its name and removes clutter from your configuration. For a built-in profile that you previously customized, deleting (reverting) it will discard your overrides and return to Cloudinary's default profile settings. Be cautious to only use this on profiles you truly want to remove or reset, especially if they might be referenced in existing media delivery URLs.
+          When Not to Use: Avoid using this on a built-in profile that you have not altered, because the operation will not succeed in that case. If your intention is to modify a profile's settings rather than remove it entirely, use **update-streaming-profile** instead of deletion. Also, do not use this for simply disabling a profile—built-in profiles cannot be deleted from the system, so if you don't want to use a built-in profile, you can just refrain from using it without calling this operation.
+          Output: On success, the API returns a confirmation message indicating that the profile was deleted (for custom profiles) or reverted to defaults (for built-in profiles). No detailed profile object is returned upon deletion—just the status message. If the profile could not be deleted (for example, if it was not found or was an unmodified built-in), an error message will be returned instead indicating the reason.
       operationId: deleteStreamingProfile
       summary: Delete custom streaming profile or revert built-in profile to the original settings
       tags:
