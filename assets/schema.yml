@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Assets API
-  version: 0.2.0
+  version: 0.2.1
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -301,7 +301,7 @@ paths:
   /v1_1/{cloud_name}/{resource_type}/download:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
-      - ref: ../shared/parameters.yml#/resource_type
+      - $ref: '#/components/parameters/resource_type'
     get:
       x-speakeasy-mcp:
         name: download-asset
@@ -3717,6 +3717,17 @@ components:
           - raw
           - auto
         default: auto
+    resource_type:
+      name: resource_type
+      in: path
+      required: true
+      schema:
+        type: string
+        description: The type the of asset.
+        enum:
+          - image
+          - video
+          - raw
     next_cursor:
       name: next_cursor
       in: query
@@ -3781,17 +3792,6 @@ components:
             - etag
         description: |
           A comma-separated list of fields to include in the response. The following fields are always included in the response: public_id, and asset_id.
-    resource_type:
-      name: resource_type
-      in: path
-      required: true
-      schema:
-        type: string
-        description: The type the of asset.
-        enum:
-          - image
-          - video
-          - raw
     colors:
       name: colors
       in: query
