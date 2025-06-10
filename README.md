@@ -6,6 +6,7 @@ This repository contains publicly accessible OpenAPI schemas for various APIs, e
 
 - **Assets API**: Manages Cloudinary assets including images, videos, and raw files with comprehensive upload, retrieval, and management capabilities.
 - **Config API**: Handles configuration management including upload presets, metadata fields, streaming profiles, and various settings.
+- **Structured Metadata API**: Manages structured metadata fields, rules, and associated data for enhanced asset organization and searchability.
 - **Analysis API**: Provides endpoints for performing and retrieving various analytical operations including AI-powered content analysis.
 - **Permissions API**: Manages user permissions, roles, and related access controls.
 - **Provisioning API**: Handles resource provisioning, management, and related tasks.

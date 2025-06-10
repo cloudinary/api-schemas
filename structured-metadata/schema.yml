@@ -1,0 +1,1130 @@
+openapi: 3.1.0
+info:
+  title: Cloudinary Structured Metadata API
+  version: 0.2.2
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: Cloudinary Support
+    email: support@cloudinary.com
+    url: https://support.cloudinary.com
+  termsOfService: https://cloudinary.com/tou
+servers:
+  - url: https://{region}.cloudinary.com
+    description: Regional API endpoints for optimal performance.
+    variables:
+      region:
+        default: api
+        description: Regional endpoint selection
+        enum:
+          - api
+          - api-eu
+          - api-ap
+  - url: https://{host}
+    description: Custom domains for enterprise deployments.
+    variables:
+      host:
+        default: api.cloudinary.com
+        description: API host domain.
+security:
+  - basicAuth: []
+tags:
+  - name: metadata_fields
+    description: Enables you to manage structured metadata fields.
+  - name: metadata_rules
+    description: Enables you to set up dependencies and relationships between structured metadata fields and options.
+paths:
+  /v1_1/{cloud_name}/metadata_fields:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    post:
+      x-speakeasy-mcp:
+        name: create-metadata-field
+        scopes:
+          - admin
+        description: |
+          Purpose: Creates a new structured metadata field that can be used to store custom information with your assets. Metadata fields define the schema for storing structured data like product information, content tags, or custom attributes that can be searched and filtered.
+          Usage: Use this to establish custom data structures for your assets, enabling rich content organization and searchability. Essential for content management workflows, asset categorization, and building custom asset management interfaces.
+          Example request: {"type": "string", "label": "Product Category", "external_id": "product_category", "mandatory": false, "default_value": "uncategorized"}
+          Parameters: type(field data type - string/integer/date/enum/set), label(human-readable field name), external_id(unique field identifier), mandatory(whether field is required), default_value(default field value), datasource(for enum/set types - predefined values), validation(validation rules), restrictions(field access restrictions)
+          When Not to Use: Don't create fields for data that changes frequently or is better suited for tags. Avoid creating too many fields as this can impact performance and user experience.
+          Output: Returns created metadata field configuration: external_id(unique identifier), type(field type), label(display name), mandatory(required status), default_value(default value), datasource(available values for enum/set types), validation(field rules), created_at(creation timestamp)
+          Example output: {"external_id":"product_category","type":"string","label":"Product Category","mandatory":false,"default_value":"uncategorized","created_at":"2023-01-15T10:00:00Z"}
+      operationId: createMetadataField
+      summary: Creates a new structured metadata field in your account
+      description: Creates a new metadata field with the specified properties and configuration.
+      tags:
+        - metadata_fields
+      responses:
+        '200':
+          description: metadata field created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/metadata_field'
+    get:
+      x-speakeasy-mcp:
+        name: list-metadata-fields
+        scopes:
+          - builder
+        description: |
+          Purpose: Retrieves a comprehensive list of all structured metadata fields configured in your Cloudinary account, providing the schema and configuration details for each field used to organize and categorize your assets.
+          Usage: Use this to discover available metadata fields, build dynamic forms, audit metadata configurations, or understand the data structure available for asset organization. Essential for metadata management interfaces and asset organization workflows.
+          Example request: GET /metadata_fields?external_ids=product_category,brand_name (no request body required)
+          Parameters: external_ids(filter by specific field identifiers - if not provided, returns all fields)
+          When Not to Use: Don't use for retrieving a single field's details (use get-metadata-field instead) or for high-frequency polling as metadata schemas change infrequently.
+          Output: Returns array of metadata field configurations: metadata_fields(array of field objects). Each field contains: external_id(unique identifier), type(field data type), label(human-readable name), mandatory(required status), default_value(default value), datasource(available values for enum/set), validation(field rules), created_at(creation timestamp), updated_at(last modification time)
+          Example output: {"metadata_fields":[{"external_id":"product_category","type":"string","label":"Product Category","mandatory":false,"default_value":"uncategorized"},{"external_id":"price","type":"integer","label":"Price","mandatory":true}]}
+      operationId: listMetadataFields
+      summary: Lists all structured metadata fields defined in your Cloudinary product environment
+      description: Retrieves a list of all metadata fields in the product environment based on the provided filters.
+      tags:
+        - metadata_fields
+      parameters:
+        - name: external_ids
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          description: The external IDs of the metadata fields to retrieve. if not provided, all metadata fields will be returned.
+      responses:
+        '200':
+          description: metadata fields retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata_fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/metadata_field'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/{external_id}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The external ID of the metadata field to retrieve.
+    get:
+      x-speakeasy-mcp:
+        name: get-metadata-field
+        scopes:
+          - admin
+        description: |
+          Purpose: Retrieves comprehensive details about a specific structured metadata field using its external ID, providing complete configuration information including data type, validation rules, and available values for enum/set fields.
+          Usage: Use this to inspect metadata field configurations, build dynamic forms based on field types, validate field settings, or understand field constraints before updating. Essential for metadata management interfaces and field-specific operations.
+          Example request: GET /metadata_fields/product_category (external_id in URL path)
+          Parameters: external_id(unique field identifier from URL path)
+          When Not to Use: Don't use for listing multiple fields (use list-metadata-fields instead) or for high-frequency polling as metadata schemas change infrequently.
+          Output: Returns complete metadata field configuration: external_id(unique identifier), type(field data type), label(human-readable name), mandatory(required status), default_value(default value), datasource(available values for enum/set types), validation(field constraints), restrictions(access limitations), created_at(creation timestamp), updated_at(last modification time)
+          Example output: {"external_id":"product_category","type":"enum","label":"Product Category","mandatory":false,"default_value":"electronics","datasource":{"values":[{"value":"electronics","position":1},{"value":"clothing","position":2}]},"created_at":"2023-01-15T10:00:00Z"}
+      operationId: getMetadataField
+      summary: Retrieves the definition of a specific structured metadata field by its identifier (external_id)
+      description: Retrieves detailed information about the specified metadata field.
+      tags:
+        - metadata_fields
+      responses:
+        '200':
+          description: metadata field retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    put:
+      x-speakeasy-mcp:
+        name: update-metadata-field
+        scopes:
+          - admin
+        description: |
+          Purpose: Updates the configuration properties of an existing structured metadata field, allowing you to modify field labels, validation rules, default values, and datasource options without recreating the field.
+          Usage: Use this to refine metadata field configurations as requirements evolve, such as updating validation rules, changing labels, adding new enum values, or modifying default values. Essential for maintaining current metadata schemas and improving data quality.
+          Example request: {"label": "Updated Product Category", "default_value": "general", "datasource": {"values": [{"value": "electronics", "position": 1}, {"value": "clothing", "position": 2}, {"value": "books", "position": 3}]}}
+          Parameters: external_id(field identifier from URL path), plus updatable field properties: label(display name), default_value(default field value), datasource(available values for enum/set), validation(field constraints), mandatory(required status), restrictions(access controls)
+          When Not to Use: Avoid changing field types after creation as this can break existing data. Don't update fields that are actively used in production without careful testing. Be cautious with mandatory field changes as this affects existing assets.
+          Output: Returns updated metadata field configuration: external_id(unique identifier), type(field data type), label(updated name), mandatory(required status), default_value(updated default), datasource(updated values), validation(updated rules), updated_at(modification timestamp)
+          Example output: {"external_id":"product_category","type":"enum","label":"Updated Product Category","mandatory":false,"default_value":"general","datasource":{"values":[{"value":"electronics","position":1},{"value":"clothing","position":2},{"value":"books","position":3}]},"updated_at":"2023-01-15T14:30:00Z"}
+      operationId: updateMetadataField
+      summary: Updates the configuration of an existing metadata field
+      description: Updates the properties and configuration of the specified metadata field.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/metadata_field'
+      responses:
+        '200':
+          description: metadata field updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-metadata-field
+        scopes:
+          - builder
+        description: |
+          Purpose: Permanently removes a structured metadata field from your Cloudinary account, including all associated data, values, and configurations. This action also removes the field from any assets that currently have values for this field.
+          Usage: Use this to clean up unused metadata fields, remove deprecated data structures, or reorganize metadata schemas when fields are no longer needed. Essential for maintaining clean metadata organization and reducing schema complexity.
+          Example request: DELETE /metadata_fields/old_product_field (external_id in URL path)
+          Parameters: external_id(field identifier from URL path)
+          Warning: This is irreversible and will permanently delete all field data from assets. Ensure the field is not needed for production workflows before deletion.
+          When Not to Use: Don't delete fields that are still being used in production applications or contain valuable data. Avoid deletion without backing up field data if it might be needed later.
+          Output: Returns deletion confirmation: message(deletion status confirmation)
+          Example output: {"message": "Field deleted successfully"}
+      operationId: deleteMetadataField
+      summary: Deletes a structured metadata field definition from your account
+      description: Permanently deletes the specified metadata field and all its associated data.
+      tags:
+        - metadata_fields
+      responses:
+        '200':
+          description: metadata field deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/datasource/search:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    post:
+      operationId: searchMetadataFieldDatasource
+      summary: Search across all metadata field datasources
+      description: Performs a search across all metadata field datasources to find matching values.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                term:
+                  type: string
+                  description: The term to search for. Can be any substring of the value.
+                max_results:
+                  type: integer
+                  default: 100
+                  description: The maximum number of results to return.
+      responses:
+        '200':
+          description: search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field_id:
+                      type: string
+                      description: The external ID of the metadata field.
+                    id:
+                      type: string
+                      description: The external ID of the option.
+                    value:
+                      type: string
+                      description: The value of the option.
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/order:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    put:
+      operationId: reorderMetadataFields
+      summary: Reorder all metadata fields
+      description: Changes the display order of all metadata fields based on specified criteria.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order_by:
+                  type: string
+                  enum:
+                    - label
+                    - created_at
+                    - external_id
+                  description: The field to order by.
+                direction:
+                  type: string
+                  enum:
+                    - asc
+                    - desc
+                  description: The direction to order by.
+              required:
+                - order_by
+      responses:
+        '200':
+          description: metadata fields reordered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata_fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/metadata_field'
+        '400':
+          description: invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/{external_id}/reorder:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The external ID of the metadata field to reorder.
+    put:
+      operationId: reorderMetadataField
+      summary: Change position of metadata field
+      description: Changes the display position of a specific metadata field within the list.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                position:
+                  type: integer
+                  description: The position of the metadata field.
+              required:
+                - position
+      responses:
+        '200':
+          description: metadata fields reordered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata_fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/metadata_field'
+        '400':
+          description: invalid position
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/{external_id}/datasource:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The external ID of the metadata field to update the datasource for.
+    put:
+      x-speakeasy-mcp:
+        name: update-metadata-datasource-values
+        scopes:
+          - builder
+        description: |
+          Purpose: Updates the predefined values available for enum and set metadata fields, allowing you to add new options, modify existing values, reorder choices, or activate/deactivate specific values without recreating the entire field.
+          Usage: Use this to maintain current option lists for categorical metadata fields, such as adding new product categories, reordering selection options, or temporarily disabling specific values. Essential for keeping enum/set fields relevant and well-organized.
+          Example request: {"values": [{"external_id": "electronics", "value": "Electronics", "position": 1, "state": "active"}, {"external_id": "clothing", "value": "Clothing & Apparel", "position": 2, "state": "active"}, {"external_id": "books", "value": "Books", "position": 3, "state": "inactive"}]}
+          Parameters: external_id(field identifier from URL path), values array containing: external_id(unique value identifier), value(display text), position(sort order), state(active/inactive status)
+          When Not to Use: Don't use for string/integer/date field types that don't have datasources. Avoid frequent updates to stable option lists. Be careful when deactivating values that are actively used in production.
+          Output: Returns updated datasource configuration: values array with external_id(unique identifier), value(display text), position(sort order), state(activation status), created_at(creation timestamp), updated_at(modification time)
+          Example output: {"values":[{"external_id":"electronics","value":"Electronics","position":1,"state":"active","updated_at":"2023-01-15T15:00:00Z"},{"external_id":"clothing","value":"Clothing & Apparel","position":2,"state":"active","updated_at":"2023-01-15T15:00:00Z"}]}
+      operationId: updateMetadataFieldDatasource
+      summary: Updates the allowed values (the datasource) for a specified metadata field
+      description: Updates the values in a metadata field's datasource, including adding, modifying, or changing the order of values.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      external_id:
+                        type: string
+                        description: The external ID of the datasource value.
+                      value:
+                        type: string
+                        description: The value of the option.
+                      position:
+                        type: integer
+                        description: The position of the option.
+                      state:
+                        type: string
+                        enum:
+                          - active
+                          - inactive
+                        description: The state of the option.
+      responses:
+        '200':
+          description: datasource updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/metadata_field_datasource_value'
+        '400':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-metadata-datasource-values
+        scopes:
+          - builder
+        description: |
+          Purpose: Permanently removes specific predefined values from enum and set metadata fields using their external IDs, effectively removing these options from the available choices for asset metadata assignment.
+          Usage: Use this to clean up unused enum values, remove deprecated options, or streamline selection lists by eliminating outdated choices. Essential for maintaining clean, relevant option lists in categorical metadata fields.
+          Example request: {"external_ids": ["old_category_1", "deprecated_option", "unused_value"]}
+          Parameters: external_id(field identifier from URL path), external_ids array(list of value identifiers to remove)
+          Warning: This permanently removes values and may affect assets that currently use these values. Consider setting values to "inactive" state instead for safer option management.
+          When Not to Use: Don't delete values that are actively used in production assets. Avoid deletion if you might need to restore the values later - use inactive state instead.
+          Output: Returns updated datasource configuration: values array with remaining active values and their properties
+          Example output: {"values":[{"external_id":"electronics","value":"Electronics","position":1,"state":"active"},{"external_id":"clothing","value":"Clothing","position":2,"state":"active"}]}
+      operationId: deleteMetadataFieldDatasource
+      summary: Removes one or more allowed values from a metadata field's datasource
+      description: Removes specific values from a metadata field's datasource by their external IDs.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                external_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: The external IDs of the datasource values to delete.
+              required:
+                - external_ids
+      responses:
+        '200':
+          description: datasource values deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field_datasource_values_array'
+        '400':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/{external_id}/datasource/search:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The external ID of the metadata field to search the datasource for.
+    post:
+      operationId: searchDatasourceInMDField
+      summary: Search datasource values in a metadata field
+      description: Performs a search within a specific metadata field's datasource to find matching values, with support for exact or partial matches.
+      tags:
+        - metadata_fields
+      parameters:
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 255
+          description: The maximum number of results to return.
+        - name: term
+          in: query
+          required: false
+          schema:
+            type: string
+          description: The term to search for. can be any substring of the value.
+        - name: exact_match
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Whether to search for an exact match.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payload:
+                  type: object
+                  description: Metadata payload for rule-based inference
+      responses:
+        '200':
+          description: search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field_datasource_values_array'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/{external_id}/datasource_restore:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The external ID of the metadata field to restore the datasource values for.
+    post:
+      operationId: restoreMetadataFieldDatasource
+      summary: Restore datasource values
+      description: Restores datasource values that have been deleted.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                external_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: The external IDs of the datasource values to restore.
+      responses:
+        '200':
+          description: datasource values restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field_datasource_values_array'
+        '400':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_rules:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    post:
+      x-speakeasy-mcp:
+        name: create-metadata-rule
+        scopes:
+          - builder
+        description: |
+          Purpose: Creates automated metadata rules that populate metadata fields based on asset properties or conditions, enabling dynamic content organization and reducing manual tagging overhead.
+          Usage: Use this to automate metadata assignment based on upload conditions like file names, folder paths, tags, or other asset properties. Essential for implementing consistent metadata workflows and automatic content categorization.
+          Example request: {"metadata_field_id": "product_category", "name": "Auto-tag electronics", "condition": {"resource_type": "image", "tags": {"$in": ["electronics", "gadgets"]}}, "result": {"value": "electronics"}, "state": "active", "position": 1}
+          Parameters: metadata_field_id(target field ID), name(rule description), condition(trigger criteria), result(value to assign), state(active/inactive), position(execution order)
+          When Not to Use: Don't create overlapping rules that might conflict. Avoid complex conditions that could slow down upload processing. Be careful with broad conditions that might incorrectly categorize assets.
+          Output: Returns created metadata rule: external_id(unique rule identifier), metadata_field_id(target field), name(rule name), condition(trigger criteria), result(assigned value), state(activation status), position(execution order), created_at(creation time)
+          Example output: {"external_id":"rule_123","metadata_field_id":"product_category","name":"Auto-tag electronics","condition":{"tags":{"$in":["electronics","gadgets"]}},"result":{"value":"electronics"},"state":"active","position":1,"created_at":"2023-01-15T16:00:00Z"}
+      operationId: createMetadataRule
+      summary: Creates a new conditional metadata rule
+      description: Creates a new metadata rule with the specified properties and configuration.
+      tags:
+        - metadata_rules
+      responses:
+        '200':
+          description: metadata rule created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_rule_response'
+        '400':
+          description: validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/metadata_rule_create'
+    get:
+      x-speakeasy-mcp:
+        name: list-metadata-rules
+        scopes:
+          - builder
+        description: |
+          Purpose: Retrieves all automated metadata rules configured in your Cloudinary account, providing complete visibility into your metadata automation workflows and rule configurations.
+          Usage: Use this to audit existing metadata rules, understand current automation logic, troubleshoot metadata assignment issues, or review rule configurations before creating new ones. Essential for metadata rule management and workflow optimization.
+          Example request: GET /metadata_rules
+          Parameters: None required - returns all rules in the account
+          When Not to Use: Not needed for simple metadata operations that don't involve automation. Avoid frequent polling as metadata rules change infrequently.
+          Output: Returns comprehensive rule list: metadata_rules array containing external_id(unique identifiers), metadata_field_id(target fields), name(rule descriptions), condition(trigger criteria), result(assigned values), state(activation status), position(execution order), created_at(creation timestamps), updated_at(modification times)
+          Example output: {"metadata_rules":[{"external_id":"rule_123","metadata_field_id":"product_category","name":"Auto-tag electronics","condition":{"tags":{"$in":["electronics"]}},"result":{"value":"electronics"},"state":"active","position":1,"created_at":"2023-01-15T16:00:00Z"}]}
+      operationId: listMetadataRules
+      summary: Retrieves a list of all conditional metadata rules defined in your accountcloudinary
+      description: Retrieves a list of all metadata rules in the cloud.
+      tags:
+        - metadata_rules
+      responses:
+        '200':
+          description: metadata rules retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata_rules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/metadata_rule_response'
+        '401':
+          description: authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_rules/{external_id}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The unique identifier of the metadata rule.
+    put:
+      x-speakeasy-mcp:
+        name: update-metadata-rule
+        scopes:
+          - builder
+        description: |
+          Purpose: Updates the configuration of existing automated metadata rules, allowing you to modify conditions, results, execution order, or activation status without recreating the rule from scratch.
+          Usage: Use this to refine metadata automation logic as requirements evolve, fix rule conditions that aren't working correctly, change rule priorities through position updates, or temporarily disable rules. Essential for maintaining effective metadata workflows.
+          Example request: {"name": "Updated auto-tag rule", "condition": {"resource_type": "image", "tags": {"$in": ["electronics", "gadgets", "tech"]}}, "result": {"value": "technology"}, "state": "active", "position": 2}
+          Parameters: external_id(rule identifier from URL path), plus updatable properties: name(rule description), condition(trigger criteria), result(assigned value), state(active/inactive), position(execution order)
+          When Not to Use: Avoid updating rules that are actively processing uploads without testing. Don't change critical production rules during peak hours. Be careful with condition changes that might affect existing asset categorization.
+          Output: Returns updated metadata rule: external_id(unique identifier), metadata_field_id(target field), name(updated description), condition(updated criteria), result(updated value), state(current status), position(execution order), updated_at(modification time)
+          Example output: {"external_id":"rule_123","metadata_field_id":"product_category","name":"Updated auto-tag rule","condition":{"tags":{"$in":["electronics","gadgets","tech"]}},"result":{"value":"technology"},"state":"active","position":2,"updated_at":"2023-01-15T17:00:00Z"}
+      operationId: updateMetadataRule
+      summary: Updates an existing conditional metadata rule's definition
+      description: Updates the properties and configuration of an existing metadata rule.
+      tags:
+        - metadata_rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/metadata_rule_update'
+      responses:
+        '200':
+          description: metadata rule updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_rule_response'
+        '400':
+          description: validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata rule not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-metadata-rule
+        scopes:
+          - builder
+        description: |
+          Purpose: Permanently removes automated metadata rules from your Cloudinary account, stopping their execution for future uploads and cleaning up unused automation configurations.
+          Usage: Use this to remove obsolete automation rules, clean up metadata workflows, or eliminate rules that are causing incorrect categorization. Essential for maintaining clean, efficient metadata automation and preventing rule conflicts.
+          Example request: DELETE /metadata_rules/rule_123 (external_id in URL path)
+          Parameters: external_id(rule identifier from URL path)
+          Warning: This permanently removes the rule and stops its execution for future uploads. Existing assets with metadata assigned by this rule will retain their current values.
+          When Not to Use: Don't delete rules that are still needed for production workflows. Avoid deletion if you might need the rule logic later - consider setting to "inactive" state instead.
+          Output: Returns deletion confirmation: success(boolean status indicating successful removal)
+          Example output: {"success": true}
+      operationId: deleteMetadataRule
+      summary: Deletes a conditional metadata rule by its ID
+      description: Permanently deletes a metadata rule.
+      tags:
+        - metadata_rules
+      responses:
+        '200':
+          description: metadata rule deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata rule not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  parameters:
+    cloud_name:
+      name: cloud_name
+      in: path
+      required: true
+      schema:
+        type: string
+        description: The cloud name of your product environment.
+  schemas:
+    metadata_field:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - string
+            - integer
+            - date
+            - enum
+            - set
+          description: The type of the metadata field.
+        external_id:
+          type: string
+          maxLength: 255
+          description: The external ID of the metadata field.
+        label:
+          type: string
+          maxLength: 255
+          description: The label of the metadata field.
+        mandatory:
+          type:
+            - boolean
+            - 'null'
+          description: Whether the metadata field is mandatory.
+        default_value:
+          type:
+            - string
+            - integer
+            - 'null'
+          description: The default value of the metadata field.
+        default_disabled:
+          type:
+            - boolean
+            - 'null'
+          description: Whether the default value is disabled.
+        validation:
+          type:
+            - object
+            - 'null'
+          description: The validation defined for the metadata field.
+        restrictions:
+          type:
+            - object
+            - 'null'
+          description: The restrictions defined for the metadata field.
+          properties:
+            readonly_ui:
+              type: boolean
+              description: Whether the metadata field is read-only in the UI. when true, the metadata field can only be updated via the API.
+        datasource:
+          type:
+            - object
+            - 'null'
+          description: The datasource defined for the metadata field.
+          properties:
+            values:
+              type: array
+              items:
+                type: object
+                properties:
+                  external_id:
+                    type: string
+                    description: The external ID of the option.
+                  value:
+                    type: string
+                    description: The value of the option.
+                  position:
+                    type: integer
+                    description: The position of the option.
+                  state:
+                    type: string
+                    enum:
+                      - active
+                      - inactive
+                    description: The state of the option.
+        allow_dynamic_list_values:
+          type:
+            - boolean
+            - 'null'
+          description: Whether the metadata field allows adding new options to the datasource dynamically.
+      required:
+        - type
+        - label
+    api_error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+          required:
+            - message
+      required:
+        - error
+    metadata_field_datasource_value:
+      type: object
+      properties:
+        external_id:
+          type: string
+          description: The external ID of the datasource value.
+        value:
+          type: string
+          description: The value of the option.
+    metadata_field_datasource_values_array:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/metadata_field_datasource_value'
+    metadata_rule_base:
+      type: object
+      properties:
+        metadata_field_id:
+          type: string
+          description: The ID of the metadata field this rule applies to.
+        name:
+          type: string
+          description: A descriptive name for the metadata rule.
+        condition:
+          type: object
+          description: The condition that triggers this rule. Ensure it adheres to the metadata rule condition schema.
+        result:
+          type: object
+          description: The result to apply when the condition is met, should adhere to the metadata rule result schema.
+        state:
+          type: string
+          enum:
+            - active
+            - inactive
+          description: The state of the rule.
+        position:
+          type: integer
+          description: The position/order of this rule relative to other rules.
+      example:
+        external_id: '1234567890'
+        metadata_field_id: abcdefghij
+        name: My Rule
+        condition:
+          metadata_field_id: qrstuvwxyz
+          populated: true
+        result:
+          apply_value:
+            value: my value
+            mode: default
+    metadata_rule_response:
+      allOf:
+        - $ref: '#/components/schemas/metadata_rule_base'
+        - type: object
+          properties:
+            external_id:
+              type: string
+              description: The unique identifier of the metadata rule.
+            condition_signature:
+              type: string
+              description: A signature representing the condition structure.
+    metadata_rule_create:
+      allOf:
+        - $ref: '#/components/schemas/metadata_rule_base'
+      required:
+        - metadata_field_id
+        - name
+        - condition
+        - result
+    metadata_rule_update:
+      allOf:
+        - $ref: '#/components/schemas/metadata_rule_base'
+        - type: object
+          properties:
+            external_id:
+              type: string
+              description: The unique identifier of the metadata rule.
+x-speakeasy-globals:
+  parameters: null

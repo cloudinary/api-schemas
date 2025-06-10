@@ -1,6 +1,7 @@
 schemas:
   - assets
   - config
+  - structured-metadata
   - analysis
   - permissions
   - provisioning
