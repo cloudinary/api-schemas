@@ -1,0 +1,7 @@
+overlay: 1.0.0
+info:
+  title: Remove multipart/form-data from upload request body
+  version: 0.0.0
+actions:
+  - target: $.components.requestBodies.upload_request_body.content["multipart/form-data"]
+    remove: true 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Assets API
-  version: 0.2.1
+  version: 0.2.4
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -76,6 +76,7 @@ paths:
       tags:
         - upload
       x-speakeasy-mcp:
+        name: upload-asset
         scopes:
           - librarian
           - builder
@@ -143,6 +144,7 @@ paths:
       tags:
         - upload
       x-speakeasy-mcp:
+        disabled: true
         scopes:
           - librarian
       parameters:

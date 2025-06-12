@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Structured Metadata API
-  version: 0.2.2
+  version: 0.2.4
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -1089,16 +1089,17 @@ components:
           type: integer
           description: The position/order of this rule relative to other rules.
       example:
-        external_id: '1234567890'
-        metadata_field_id: abcdefghij
+        metadata_field_id: smd-field-1
         name: My Rule
         condition:
-          metadata_field_id: qrstuvwxyz
+          metadata_field_id: smd-field-2
           populated: true
         result:
           apply_value:
             value: my value
             mode: default
+        state: active
+        position: 1
     metadata_rule_response:
       allOf:
         - $ref: '#/components/schemas/metadata_rule_base'
@@ -1110,6 +1111,20 @@ components:
             condition_signature:
               type: string
               description: A signature representing the condition structure.
+      example:
+        external_id: '1234567890'
+        metadata_field_id: smd-field-1
+        name: My Rule
+        condition:
+          metadata_field_id: smd-field-2
+          populated: true
+        condition_signature: dGhlIGZveCBqdW1wZWQgb3ZlciB0aGUgbGF6eSBkb2c
+        result:
+          apply_value:
+            value: my value
+            mode: default
+        state: active
+        position: 1
     metadata_rule_create:
       allOf:
         - $ref: '#/components/schemas/metadata_rule_base'
@@ -1118,13 +1133,32 @@ components:
         - name
         - condition
         - result
+      example:
+        metadata_field_id: smd-field-1
+        name: My Rule
+        condition:
+          metadata_field_id: smd-field-2
+          populated: true
+        result:
+          apply_value:
+            value: my value
+            mode: default
+        state: active
+        position: 1
     metadata_rule_update:
       allOf:
         - $ref: '#/components/schemas/metadata_rule_base'
-        - type: object
-          properties:
-            external_id:
-              type: string
-              description: The unique identifier of the metadata rule.
+      example:
+        metadata_field_id: smd-field-1
+        name: My Rule
+        condition:
+          metadata_field_id: smd-field-2
+          populated: true
+        result:
+          apply_value:
+            value: my value
+            mode: default
+        state: active
+        position: 1
 x-speakeasy-globals:
   parameters: null
