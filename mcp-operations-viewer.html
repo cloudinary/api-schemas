@@ -555,10 +555,29 @@
     let allData = [];
     let predefinedSchemas = [];
     
+    // URL parameter management
+    function updateURL(schemaDir) {
+      if (schemaDir) {
+        const url = new URL(window.location);
+        url.searchParams.set('schema', schemaDir);
+        window.history.replaceState({}, '', url);
+      } else {
+        // Remove schema parameter for custom upload
+        const url = new URL(window.location);
+        url.searchParams.delete('schema');
+        window.history.replaceState({}, '', url);
+      }
+    }
+
+    function getSchemaFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('schema');
+    }
+
     // State preservation functions
     function saveMCPState() {
       const activeTab = document.querySelector('.schema-tab.active');
-      const activeSchemaDir = getSchemaDirectoryFromTab(activeTab);
+      const activeSchemaDir = activeTab?.dataset.schemaDir || '';
       
       const state = {
         activeSchema: activeTab?.textContent || '',
@@ -581,43 +600,15 @@
           timestamp: Date.now()
         }));
       }
-    }
-
-    // Helper function to map tab titles to schema directories
-    function getSchemaDirectoryFromTab(tab) {
-      if (!tab) return '';
-      const title = tab.textContent;
       
-      // Map tab titles to schema directory names
-      const titleToDir = {
-        'Cloudinary Assets API': 'assets',
-        'Cloudinary Config API': 'config', 
-        'Analyze API (Beta)': 'analysis',
-        'Cloudinary Account Permissions API': 'permissions',
-        'Cloudinary Account Provisioning API': 'provisioning',
-        'Video Live Streaming': 'video-live-streaming'
-      };
-      
-      return titleToDir[title] || '';
+      // Update URL to reflect active schema
+      updateURL(activeSchemaDir);
     }
 
     // Helper function to find tab by schema directory
     function getTabBySchemaDirectory(schemaDir) {
-      const dirToTitle = {
-        'assets': 'Cloudinary Assets API',
-        'config': 'Cloudinary Config API',
-        'analysis': 'Analyze API (Beta)', 
-        'permissions': 'Cloudinary Account Permissions API',
-        'provisioning': 'Cloudinary Account Provisioning API',
-        'video-live-streaming': 'Video Live Streaming'
-      };
-      
-      const targetTitle = dirToTitle[schemaDir];
-      if (targetTitle) {
-        return Array.from(document.querySelectorAll('.schema-tab'))
-          .find(tab => tab.textContent === targetTitle);
-      }
-      return null;
+      return Array.from(document.querySelectorAll('.schema-tab'))
+        .find(tab => tab.dataset.schemaDir === schemaDir);
     }
 
     // Load predefined schemas
@@ -657,12 +648,15 @@
         console.log('No predefined schemas found, showing standalone upload'); // Debug log
         schemaSelectionDiv.style.display = 'none';
         standaloneUploadDiv.style.display = 'block';
+        // Clear URL parameter for standalone mode
+        updateURL(null);
         return;
       }
       
       console.log('Creating tabs for schemas:', predefinedSchemas); // Debug log
       const tabsContainer = document.getElementById('schemaTabs');
       const savedState = loadMCPState();
+      const urlSchemaDir = getSchemaFromURL(); // Check URL first
       let tabToActivate = null;
       
       for (const schema of predefinedSchemas) {
@@ -674,6 +668,7 @@
           const tab = document.createElement('button');
           tab.className = 'schema-tab';
           tab.textContent = schemaContent.info?.title || schema.charAt(0).toUpperCase() + schema.slice(1);
+          tab.dataset.schemaDir = schema; // Store schema directory directly in the tab
           tab.onclick = () => {
             console.log('Tab clicked for schema:', schema); // Debug log
             loadPredefinedSchema(schemaPath, tab);
@@ -681,16 +676,20 @@
           tabsContainer.appendChild(tab);
           console.log('Created tab for schema:', schema, 'with title:', tab.textContent); // Debug log
           
-          // Check if this tab should be activated based on saved state
-          if (savedState && savedState.activeSchema === tab.textContent) {
+          // Priority order: URL parameter > saved state > first tab
+          if (urlSchemaDir && urlSchemaDir === schema) {
+            // URL parameter takes highest priority
+            tabToActivate = { tab, schemaPath };
+            console.log('Tab selected from URL:', schema);
+          } else if (!tabToActivate && savedState && savedState.activeSchema === tab.textContent) {
             tabToActivate = { tab, schemaPath };
           } else if (!tabToActivate && tabsContainer.children.length === 1) {
-            // Default to first tab if no saved state
+            // Default to first tab if no URL param or saved state
             tabToActivate = { tab, schemaPath };
           }
           
-          // Check for shared state override (from index page)
-          if (savedState && savedState.activeSchemaDir === schema) {
+          // Check for shared state override (from index page) - but only if no URL param
+          if (!urlSchemaDir && savedState && savedState.activeSchemaDir === schema) {
             tabToActivate = { tab, schemaPath };
           }
         } catch (error) {
@@ -1044,6 +1043,9 @@
       // Clear active predefined schema tabs
       document.querySelectorAll('.schema-tab').forEach(tab => tab.classList.remove('active'));
       
+      // Clear URL parameter when uploading custom file
+      updateURL(null);
+      
       const reader = new FileReader();
       reader.onload = function(evt) {
         processYamlContent(evt.target.result);
@@ -1055,6 +1057,9 @@
     $('#fileInputStandalone').on('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
+      
+      // Clear URL parameter when uploading custom file
+      updateURL(null);
       
       const reader = new FileReader();
       reader.onload = function(evt) {

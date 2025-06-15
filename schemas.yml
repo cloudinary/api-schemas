@@ -1,6 +1,6 @@
 schemas:
-  - assets
-  - config
+  - asset-management
+  - environment-config
   - structured-metadata
   - analysis
   - permissions

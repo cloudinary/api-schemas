@@ -124,9 +124,10 @@
 <header>
   <nav id="nav-container"></nav>
   <div style="display: flex; align-items: center; gap: 15px;">
-    <a href="mcp-operations-viewer.html" style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px; transition: background-color 0.2s;" 
+    <a href="#" id="mcp-analyzer-link" style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px; transition: background-color 0.2s;" 
        onmouseover="this.style.backgroundColor='#218838'" 
-       onmouseout="this.style.backgroundColor='#28a745'">
+       onmouseout="this.style.backgroundColor='#28a745'"
+       onclick="navigateToMCPAnalyzer(event)">
       🔍 MCP Analyzer
     </a>
     <select id="viewer-select">
@@ -157,30 +158,56 @@
 
   async function renderNavButtons(schemaDirs) {
     const nav = document.getElementById('nav-container');
-    schemaDirs.forEach(async dir => {
+    for (const dir of schemaDirs) {
       const schemaPath = `${dir}/schema.yml`;
       const schemaContent = await fetchYaml(schemaPath);
       const button = document.createElement('button');
       button.innerText = schemaContent.info.title || dir;
+      button.dataset.schemaDir = dir; // Store schema directory for URL persistence
       button.onclick = () => {
         currentSchemaPath = schemaPath;
         renderViewer();
         setActiveButton(button);
       };
       nav.appendChild(button);
-    });
+    }
   }
 
   document.getElementById('viewer-select').onchange = renderViewer;
+
+  // URL parameter management
+  function updateURL(schemaDir, viewer) {
+    const url = new URL(window.location);
+    if (schemaDir) {
+      url.searchParams.set('schema', schemaDir);
+    } else {
+      url.searchParams.delete('schema');
+    }
+    if (viewer) {
+      url.searchParams.set('viewer', viewer);
+    } else {
+      url.searchParams.delete('viewer');
+    }
+    window.history.replaceState({}, '', url);
+  }
+
+  function getParametersFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return {
+      schema: urlParams.get('schema'),
+      viewer: urlParams.get('viewer')
+    };
+  }
 
   // State preservation functions
   function saveState() {
     // Extract schema directory name for cross-page compatibility
     const schemaDir = currentSchemaPath ? currentSchemaPath.split('/')[0] : '';
+    const viewer = document.getElementById('viewer-select').value;
     const state = {
       selectedSchema: currentSchemaPath,
       selectedSchemaDir: schemaDir, // Add normalized identifier
-      selectedViewer: document.getElementById('viewer-select').value,
+      selectedViewer: viewer,
       timestamp: Date.now()
     };
     localStorage.setItem('api-docs-state', JSON.stringify(state));
@@ -190,6 +217,9 @@
       activeSchemaDir: schemaDir,
       timestamp: Date.now()
     }));
+    
+    // Update URL to reflect current state
+    updateURL(schemaDir, viewer);
   }
 
   function loadState() {
@@ -229,6 +259,16 @@
     saveState(); // Save state when schema changes
   }
 
+  function navigateToMCPAnalyzer(event) {
+    event.preventDefault();
+    const schemaDir = currentSchemaPath ? currentSchemaPath.split('/')[0] : '';
+    let url = 'mcp-operations-viewer.html';
+    if (schemaDir) {
+      url += `?schema=${schemaDir}`;
+    }
+    window.location.href = url;
+  }
+
   function renderViewer() {
     const viewerType = document.getElementById('viewer-select').value;
     const container = document.getElementById('viewer-container');
@@ -255,19 +295,38 @@
     const schemaDirs = await loadSchemasConfig();
     await renderNavButtons(schemaDirs);
     
+    // Get URL parameters first (highest priority)
+    const urlParams = getParametersFromURL();
+    
     // Try to restore saved state
     const savedState = loadState();
     let initialSchema = schemaDirs.length > 0 ? `${schemaDirs[0]}/schema.yml` : '';
     let initialViewer = 'stoplight';
     
-    if (savedState) {
-      // Restore viewer selection
-      if (savedState.selectedViewer) {
-        document.getElementById('viewer-select').value = savedState.selectedViewer;
-        initialViewer = savedState.selectedViewer;
+    // Priority order: URL parameters > saved state > defaults
+    
+    // Determine initial viewer
+    if (urlParams.viewer) {
+      // URL parameter takes highest priority
+      document.getElementById('viewer-select').value = urlParams.viewer;
+      initialViewer = urlParams.viewer;
+      console.log('Viewer selected from URL:', urlParams.viewer);
+    } else if (savedState && savedState.selectedViewer) {
+      // Saved state second priority
+      document.getElementById('viewer-select').value = savedState.selectedViewer;
+      initialViewer = savedState.selectedViewer;
+    }
+    
+    // Determine initial schema
+    if (urlParams.schema) {
+      // URL parameter takes highest priority
+      const matchingSchema = schemaDirs.find(dir => dir === urlParams.schema);
+      if (matchingSchema) {
+        initialSchema = `${matchingSchema}/schema.yml`;
+        console.log('Schema selected from URL:', urlParams.schema);
       }
-      
-      // Restore schema selection - prioritize shared state
+    } else if (savedState) {
+      // Saved state second priority - prioritize shared state
       const targetSchemaDir = savedState.selectedSchemaDir || savedState.selectedSchema?.split('/')[0];
       if (targetSchemaDir) {
         const matchingSchema = schemaDirs.find(dir => dir === targetSchemaDir);
@@ -284,10 +343,10 @@
       // Set the active button based on the restored schema
       setTimeout(() => {
         const buttons = document.querySelectorAll('nav button');
-        const targetButton = Array.from(buttons).find(btn => {
-          const schemaDir = initialSchema.split('/')[0];
-          return btn.onclick.toString().includes(schemaDir);
-        });
+        const targetSchemaDir = initialSchema.split('/')[0];
+        const targetButton = Array.from(buttons).find(btn => 
+          btn.dataset.schemaDir === targetSchemaDir
+        );
         if (targetButton) {
           setActiveButton(targetButton);
         } else if (buttons.length > 0) {
