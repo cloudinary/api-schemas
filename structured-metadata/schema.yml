@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Structured Metadata API
-  version: 0.2.4
+  version: 0.3.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -29,6 +29,9 @@ servers:
         description: API host domain.
 security:
   - basicAuth: []
+  - oauth2:
+      - asset_management
+      - upload
 tags:
   - name: metadata_fields
     description: Enables you to manage structured metadata fields.
@@ -943,6 +946,16 @@ components:
     basicAuth:
       type: http
       scheme: basic
+    oauth2:
+      type: oauth2
+      description: OAuth2 Authorization Code flow for user authentication
+      flows:
+        authorizationCode:
+          authorizationUrl: https://oauth.cloudinary.com/oauth2/auth
+          tokenUrl: https://oauth.cloudinary.com/oauth2/token
+          scopes:
+            asset_management: Allows managing assets, including reading, updating, and deleting.
+            upload: Allows uploading new assets.
   parameters:
     cloud_name:
       name: cloud_name
