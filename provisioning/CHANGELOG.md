@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.3](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.1.2...provisioning-api-v0.1.3) (2025-07-03)
+
+
+### Features
+
+* Add support for `billing_usage` API ([cbefc8a](https://github.com/CloudinaryLtd/public-interfaces/commit/cbefc8a698aba86093cffce4c463617ce40bc351))
+
+
+### Bug Fixes
+
+* Fix support for `429 Too Many Requests` HTTP status code ([3bc3d1d](https://github.com/CloudinaryLtd/public-interfaces/commit/3bc3d1d387ad7fd74af265837235fe3e93361705))
+* Make `role` optional in `createUser ` API ([fe44e15](https://github.com/CloudinaryLtd/public-interfaces/commit/fe44e15659f3a25c97b3610b9232977cbd0b860f))
+
 ## [0.1.2](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.1.1...provisioning-api-v0.1.2) (2024-11-10)
 
 

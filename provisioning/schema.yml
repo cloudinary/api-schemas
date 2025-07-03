@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Cloudinary Account Provisioning API
-  version: 0.1.2 # x-release-please-version
+  version: 0.1.3 # x-release-please-version
   description: |
     Accounts with provisioning API access can create and manage their **product environments**, **users** and **user groups** using the RESTful Provisioning API. 
 
@@ -61,6 +61,12 @@ tags:
     externalDocs:
       description: Learn more about user groups management.
       url: https://cloudinary.com/documentation/provisioning_api#user_groups
+  - name: Billing usage
+    description: |
+      Access billing usage information for your account and product environments.
+    externalDocs:
+      description: Learn more about billing and usage information.
+      url: https://cloudinary.com/documentation/provisioning_api#billing_usage
 
 security:
   - basicAuth: [ ]
@@ -1056,6 +1062,63 @@ paths:
         '429':
           $ref: '#/components/responses/429TooManyRequests'
 
+  /billing_usage:
+    get:
+      tags:
+        - Billing Usage
+      summary: Get billing usage information
+      description: |
+        Retrieve billing usage metrics for your account and product environments, 
+        including storage, bandwidth, requests, and transformations.
+
+        If `year` is provided:
+          - **Annual subscription**: Returns the single annual usage cycle that began in the specified year (if any).
+          - **Monthly subscription**: Returns all monthly usage cycles that began in the specified year.
+
+        If `year` is not provided:
+          - Returns usage for the year in which the current active subscription period began.
+          - If no active subscription exists, an empty list is returned.
+      operationId: getBillingUsage
+      parameters:
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 2000
+            maximum: 2100
+          description: The year to retrieve billing usage for. Behavior depends on subscription type (see above).
+          example: 2024
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingUsageResponse"
+              examples:
+                ProPAYG:
+                  $ref: "#/components/examples/BillingUsageResponse_ProPAYG"
+                AdvancedExtraPAYG:
+                  $ref: "#/components/examples/BillingUsageResponse_AdvancedExtraPAYG"
+                AdvancedPAYG:
+                  $ref: "#/components/examples/BillingUsageResponse_AdvancedPAYG"
+                ProPAYGPlus:
+                  $ref: "#/components/examples/BillingUsageResponse_ProPAYGPlus"
+                MultiPlan:
+                  $ref: "#/components/examples/BillingUsageResponse_MultiPlan"
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '403':
+          $ref: '#/components/responses/403NotAllowed'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '429':
+          $ref: '#/components/responses/429TooManyRequests'
+
 components:
   schemas:
     ProductEnvironmentRequest:
@@ -1116,7 +1179,7 @@ components:
           type: string
         name:
           type: string
-          description: The name of the product environment.
+          description: The cloud name of the product environment.
         enabled:
           type: boolean
           description: Whether the product environment is enabled or disabled.
@@ -1416,6 +1479,178 @@ components:
             message:
               type: string
               example: "error"
+
+    BillingUsageResponse:
+      type: array
+      items:
+        type: object
+        properties:
+          plan_name:
+            type: string
+            description: The name of the plan (e.g., "Pro PAYG", "Advanced PAYG").
+          metric_usage:
+            type: array
+            items:
+              type: object
+              properties:
+                metric:
+                  type: string
+                  description: The type of metric being measured (e.g., "credit").
+                limit:
+                  type: number
+                  description: The limit for this metric in the plan.
+                cycles:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      from_day:
+                        type: string
+                        format: date
+                        description: The start date of the billing cycle.
+                        example: "2024-08-21"
+                      to_day:
+                        type: string
+                        format: date
+                        description: The end date of the billing cycle.
+                        example: "2024-09-20"
+                      usage:
+                        type: number
+                        description: Total usage for this cycle.
+                        example: 25641.55
+                      breakdown:
+                        type: object
+                        description: Usage breakdown by asset type and operation.
+                        properties:
+                          storage_image:
+                            type: number
+                            description: Storage usage for images.
+                          storage_video:
+                            type: number
+                            description: Storage usage for videos.
+                          storage_raw:
+                            type: number
+                            description: Storage usage for raw files.
+                          transformations_image:
+                            type: number
+                            description: Transformation usage for images.
+                          transformations_video:
+                            type: number
+                            description: Transformation usage for videos.
+                          bandwidth_image:
+                            type: number
+                            description: Bandwidth usage for images.
+                          bandwidth_video:
+                            type: number
+                            description: Bandwidth usage for videos.
+                          bandwidth_raw:
+                            type: number
+                            description: Bandwidth usage for raw files.
+                          image_impressions:
+                            type: number
+                            description: Number of times images were delivered (impressions).
+                          video_seconds:
+                            type: number
+                            description: Video delivery usage measured in billing seconds (actual viewed duration multiplied by a resolution-based ratio).
+                        additionalProperties: false
+                      product_environment_breakdown:
+                        type: array
+                        description: Optional breakdown by product environment. May not be present in all responses.
+                        items:
+                          $ref: '#/components/schemas/CloudAssetTypeBreakdown'
+                monthly_cycles:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      from_day:
+                        type: string
+                        format: date
+                        description: The start date of the monthly billing cycle.
+                      to_day:
+                        type: string
+                        format: date
+                        description: The end date of the monthly billing cycle.
+                      usage:
+                        type: number
+                        description: Total usage for this monthly cycle.
+                      breakdown:
+                        type: object
+                        description: Usage breakdown by asset type and operation for the monthly cycle.
+                        properties:
+                          storage_image:
+                            type: number
+                            description: Storage usage for images.
+                          storage_video:
+                            type: number
+                            description: Storage usage for videos.
+                          storage_raw:
+                            type: number
+                            description: Storage usage for raw files.
+                          transformations_image:
+                            type: number
+                            description: Transformation usage for images.
+                          transformations_video:
+                            type: number
+                            description: Transformation usage for videos.
+                          bandwidth_image:
+                            type: number
+                            description: Bandwidth usage for images.
+                          bandwidth_video:
+                            type: number
+                            description: Bandwidth usage for videos.
+                          bandwidth_raw:
+                            type: number
+                            description: Bandwidth usage for raw files.
+                          image_impressions:
+                            type: number
+                            description: Number of times images were delivered (impressions).
+                          video_seconds:
+                            type: number
+                            description: Video delivery usage measured in billing seconds (actual viewed duration multiplied by a resolution-based ratio).
+                        additionalProperties: false
+                      product_environment_breakdown:
+                        type: array
+                        description: Optional breakdown by product environment for the monthly cycle. May not be present in all responses.
+                        items:
+                          $ref: '#/components/schemas/CloudAssetTypeBreakdown'
+
+    CloudAssetTypeBreakdown:
+      type: object
+      properties:
+        storage_image:
+          type: number
+          description: Storage usage for images in this product environment.
+        storage_video:
+          type: number
+          description: Storage usage for videos in this product environment.
+        storage_raw:
+          type: number
+          description: Storage usage for raw files in this product environment.
+        transformations_image:
+          type: number
+          description: Transformation usage for images in this product environment.
+        transformations_video:
+          type: number
+          description: Transformation usage for videos in this product environment.
+        bandwidth_image:
+          type: number
+          description: Bandwidth usage for images in this product environment.
+        bandwidth_video:
+          type: number
+          description: Bandwidth usage for videos in this product environment.
+        bandwidth_raw:
+          type: number
+          description: Bandwidth usage for raw files in this product environment.
+        image_impressions:
+          type: number
+          description: Number of times images were delivered (impressions) in this product environment.
+        video_seconds:
+          type: number
+          description: Video delivery usage measured in billing seconds (actual viewed duration multiplied by a resolution-based ratio).
+        cloud_name:
+          type: string
+          description: The name of the product environment.
 
   securitySchemes:
     basicAuth:
@@ -1763,3 +1998,200 @@ components:
       summary: User group users example
       value:
         users: [ ]
+
+    # The following are all valid examples of BillingUsageResponse for different plans and scenarios.
+    BillingUsageResponse_ProPAYG:
+      summary: Get billing usage example for a Pro PAYG plan
+      value:
+        - plan_name: "Pro PAYG"
+          metric_usage:
+            - metric: "credit"
+              limit: 2750
+              cycles:
+                - from_day: "2024-08-21"
+                  to_day: "2024-09-20"
+                  usage: 25641.55
+                  breakdown:
+                    storage_image: 7971.55
+                    storage_video: 1575.58
+                    storage_raw: 0
+                    transformations_image: 9603.73
+                    transformations_video: 2290.76
+                    bandwidth_image: 2972.57
+                    bandwidth_video: 1227.22
+                    bandwidth_raw: 0.14
+                  product_environment_breakdown:
+                    - storage_image: 0.04
+                      storage_video: 0.09
+                      storage_raw: 0
+                      transformations_image: 0
+                      transformations_video: 0
+                      bandwidth_image: 0
+                      bandwidth_video: 0
+                      bandwidth_raw: 0
+                      cloud_name: "Remix"
+    BillingUsageResponse_AdvancedExtraPAYG:
+      summary: Get billing usage example for an Advanced Extra PAYG + plan
+      value:
+        - plan_name: "Advanced Extra PAYG +"
+          metric_usage:
+            - metric: "credit"
+              limit: 1350
+              cycles:
+                - from_day: "2025-02-05"
+                  to_day: "2025-03-04"
+                  usage: 2300
+                  breakdown:
+                    storage_image: 517.71
+                    storage_video: 0.22
+                    storage_raw: 0
+                    transformations_image: 59.39
+                    transformations_video: 0
+                    video_seconds: 790.21
+                    bandwidth_raw: 0
+                    image_impressions: 932.46
+                  product_environment_breakdown:
+                    - storage_image: 0.04
+                      storage_video: 0.11
+                      storage_raw: 0
+                      transformations_image: 0
+                      transformations_video: 0
+                      video_seconds: 0
+                      bandwidth_raw: 0
+                      image_impressions: 0
+                      cloud_name: "iCaddy"
+                    - storage_image: 517.67
+                      storage_video: 0.11
+                      storage_raw: 0
+                      transformations_image: 59.39
+                      transformations_video: 0
+                      video_seconds: 790.21
+                      bandwidth_raw: 0
+                      image_impressions: 932.46
+                      cloud_name: "RSVP.com.au"
+    BillingUsageResponse_AdvancedPAYG:
+      summary: Get billing usage example for an Advanced PAYG plan
+      value:
+        - plan_name: "Advanced PAYG"
+          metric_usage:
+            - metric: "credit"
+              limit: 600
+              cycles:
+                - from_day: "2024-08-26"
+                  to_day: "2024-09-18"
+                  usage: 1830.25
+                  breakdown:
+                    storage_image: 1.98
+                    storage_video: 0.43
+                    storage_raw: 0.01
+                    transformations_image: 0.4
+                    transformations_video: 0
+                    bandwidth_image: 1827.43
+                    bandwidth_video: 0
+                    bandwidth_raw: 0
+                  product_environment_breakdown:
+                    - storage_image: 1.98
+                      storage_video: 0.43
+                      storage_raw: 0.01
+                      transformations_image: 0.4
+                      transformations_video: 0
+                      bandwidth_image: 1827.43
+                      bandwidth_video: 0
+                      bandwidth_raw: 0
+                      cloud_name: "dg0ldwymk"
+    BillingUsageResponse_ProPAYGPlus:
+      summary: Get billing usage example for a Pro PAYG + plan
+      value:
+        - plan_name: "Pro PAYG +"
+          metric_usage:
+            - metric: "credit"
+              limit: 2750
+              cycles:
+                - from_day: "2025-01-14"
+                  to_day: "2025-02-04"
+                  usage: 1718.16
+                  breakdown:
+                    storage_image: 642.18
+                    storage_video: 0.24
+                    storage_raw: 0
+                    transformations_image: 59.66
+                    transformations_video: 0
+                    video_seconds: 0.02
+                    bandwidth_raw: 0
+                    image_impressions: 1016.06
+                  product_environment_breakdown:
+                    - storage_image: 0.05
+                      storage_video: 0.14
+                      storage_raw: 0
+                      transformations_image: 0
+                      transformations_video: 0
+                      video_seconds: 0
+                      bandwidth_raw: 0
+                      image_impressions: 0
+                      cloud_name: "iCaddy"
+                    - storage_image: 642.13
+                      storage_video: 0.1
+                      storage_raw: 0
+                      transformations_image: 59.66
+                      transformations_video: 0
+                      video_seconds: 0.02
+                      bandwidth_raw: 0
+                      image_impressions: 1016.06
+                      cloud_name: "RSVP.com.au"
+    BillingUsageResponse_MultiPlan:
+      summary: Get billing usage example for multiple plans in a single response
+      value:
+        - plan_name: "Advanced PAYG"
+          metric_usage:
+            - metric: "credit"
+              limit: 600
+              cycles:
+                - from_day: "2024-08-26"
+                  to_day: "2024-09-18"
+                  usage: 1830.25
+                  breakdown:
+                    storage_image: 1.98
+                    storage_video: 0.43
+                    storage_raw: 0.01
+                    transformations_image: 0.4
+                    transformations_video: 0
+                    bandwidth_image: 1827.43
+                    bandwidth_video: 0
+                    bandwidth_raw: 0
+                  product_environment_breakdown:
+                    - storage_image: 1.98
+                      storage_video: 0.43
+                      storage_raw: 0.01
+                      transformations_image: 0.4
+                      transformations_video: 0
+                      bandwidth_image: 1827.43
+                      bandwidth_video: 0
+                      bandwidth_raw: 0
+                      cloud_name: "dg0ldwymk"
+        - plan_name: "Advanced Extra PAYG"
+          metric_usage:
+            - metric: "credit"
+              limit: 1350
+              cycles:
+                - from_day: "2024-09-19"
+                  to_day: "2024-09-25"
+                  usage: 1133.49
+                  breakdown:
+                    storage_image: 4.25
+                    storage_video: 0.91
+                    storage_raw: 0.02
+                    transformations_image: 0.27
+                    transformations_video: 0
+                    bandwidth_image: 1128.03
+                    bandwidth_video: 0
+                    bandwidth_raw: 0
+                  product_environment_breakdown:
+                    - storage_image: 4.25
+                      storage_video: 0.91
+                      storage_raw: 0.02
+                      transformations_image: 0.27
+                      transformations_video: 0
+                      bandwidth_image: 1128.03
+                      bandwidth_video: 0
+                      bandwidth_raw: 0
+                      cloud_name: "dg0ldwymk"
