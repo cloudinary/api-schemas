@@ -3,7 +3,7 @@ info:
   title: Cloudinary signature based authentication modifications
   version: 0.0.0
 actions:
-  - target: $.components 
+  - target: $.components
     update:
       parameters:
         cloud_name:
@@ -21,6 +21,11 @@ actions:
   - target: $.paths.*.parameters[?(@.name=='cloud_name' && @.in=='path')]
     remove: true
   - target: $.paths.*.*.parameters[?(@.name=='cloud_name' && @.in=='path')]
+    remove: true
+  # remove existing $ref references to cloud_name parameter to prevent duplicates
+  - target: $.paths.*.parameters[?(@['$ref']=='#/components/parameters/cloud_name')]
+    remove: true
+  - target: $.paths.*.*.parameters[?(@['$ref']=='#/components/parameters/cloud_name')]
     remove: true
   # add the cloud_name parameter to every path item
   - target: $.paths.*
