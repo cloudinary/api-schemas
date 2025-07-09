@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Cloudinary Account Provisioning API
-  version: 0.1.4 # x-release-please-version
+  version: 0.1.5 # x-release-please-version
   description: |
     Accounts with provisioning API access can create and manage their **product environments**, **users** and **user groups** using the RESTful Provisioning API. 
 
@@ -2029,7 +2029,7 @@ components:
                       bandwidth_image: 0
                       bandwidth_video: 0
                       bandwidth_raw: 0
-                      cloud_name: "Remix"
+                      cloud_name: "myproduct"
     BillingUsageResponse_AdvancedExtraPAYG:
       summary: Get billing usage example for an Advanced Extra PAYG + plan
       value:
@@ -2059,7 +2059,7 @@ components:
                       video_seconds: 0
                       bandwidth_raw: 0
                       image_impressions: 0
-                      cloud_name: "iCaddy"
+                      cloud_name: "myproduct1"
                     - storage_image: 517.67
                       storage_video: 0.11
                       storage_raw: 0
@@ -2068,7 +2068,7 @@ components:
                       video_seconds: 790.21
                       bandwidth_raw: 0
                       image_impressions: 932.46
-                      cloud_name: "RSVP.com.au"
+                      cloud_name: "myproduct2"
     BillingUsageResponse_AdvancedPAYG:
       summary: Get billing usage example for an Advanced PAYG plan
       value:
@@ -2098,7 +2098,7 @@ components:
                       bandwidth_image: 1827.43
                       bandwidth_video: 0
                       bandwidth_raw: 0
-                      cloud_name: "dg0ldwymk"
+                      cloud_name: "myproduct"
     BillingUsageResponse_ProPAYGPlus:
       summary: Get billing usage example for a Pro PAYG + plan
       value:
@@ -2128,7 +2128,7 @@ components:
                       video_seconds: 0
                       bandwidth_raw: 0
                       image_impressions: 0
-                      cloud_name: "iCaddy"
+                      cloud_name: "myproduct1"
                     - storage_image: 642.13
                       storage_video: 0.1
                       storage_raw: 0
@@ -2137,7 +2137,7 @@ components:
                       video_seconds: 0.02
                       bandwidth_raw: 0
                       image_impressions: 1016.06
-                      cloud_name: "RSVP.com.au"
+                      cloud_name: "myproduct2"
     BillingUsageResponse_MultiPlan:
       summary: Get billing usage example for multiple plans in a single response
       value:
@@ -2167,7 +2167,7 @@ components:
                       bandwidth_image: 1827.43
                       bandwidth_video: 0
                       bandwidth_raw: 0
-                      cloud_name: "dg0ldwymk"
+                      cloud_name: "myproduct"
         - plan_name: "Advanced Extra PAYG"
           metric_usage:
             - metric: "credit"
@@ -2194,4 +2194,4 @@ components:
                       bandwidth_image: 1128.03
                       bandwidth_video: 0
                       bandwidth_raw: 0
-                      cloud_name: "dg0ldwymk"
+                      cloud_name: "myproduct"

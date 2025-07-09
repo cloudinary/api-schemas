@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.1.4...provisioning-api-v0.1.5) (2025-07-09)
+
+
+### Bug Fixes
+
+* **provisioning:** Fix `billing_usage` examples ([caa61c3](https://github.com/CloudinaryLtd/public-interfaces/commit/caa61c36aadb5d2532160c48fecaf05f801d4e23))
+
 ## [0.1.4](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.1.3...provisioning-api-v0.1.4) (2025-07-09)
 
 
