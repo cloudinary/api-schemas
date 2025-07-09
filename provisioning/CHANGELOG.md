@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.1.3...provisioning-api-v0.1.4) (2025-07-09)
+
+
+### Bug Fixes
+
+* **provisioning:** Fix `Billing Usage` tag name ([d43cfc1](https://github.com/CloudinaryLtd/public-interfaces/commit/d43cfc1bbc02dba70ca7a169e7c5dd27b64ba1c1))
+
 ## [0.1.3](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.1.2...provisioning-api-v0.1.3) (2025-07-03)
 
 

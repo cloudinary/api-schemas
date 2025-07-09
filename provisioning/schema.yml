@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Cloudinary Account Provisioning API
-  version: 0.1.3 # x-release-please-version
+  version: 0.1.4 # x-release-please-version
   description: |
     Accounts with provisioning API access can create and manage their **product environments**, **users** and **user groups** using the RESTful Provisioning API. 
 
@@ -61,7 +61,7 @@ tags:
     externalDocs:
       description: Learn more about user groups management.
       url: https://cloudinary.com/documentation/provisioning_api#user_groups
-  - name: Billing usage
+  - name: Billing Usage
     description: |
       Access billing usage information for your account and product environments.
     externalDocs:
