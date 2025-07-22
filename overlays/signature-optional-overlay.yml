@@ -1,0 +1,41 @@
+overlay: 1.0.0
+info:
+  title: Make signature parameters optional
+  version: 0.0.0
+actions:
+  # Make signature_parameters schema optional by removing required fields
+  - target: $.components.schemas.signature_parameters.required
+    remove: true
+
+  # Remove examples from signature_parameters schema
+  - target: $.components.schemas.signature_parameters.example
+    remove: true
+
+  - target: $.components.schemas.signature_parameters.properties.api_key.example
+    remove: true
+
+  - target: $.components.schemas.signature_parameters.properties.signature.example
+    remove: true
+
+  - target: $.components.schemas.signature_parameters.properties.timestamp.example
+    remove: true
+
+  # Make individual parameter components optional
+  - target: $.components.parameters.api_key_query.required
+    update: false
+
+  - target: $.components.parameters.signature_query.required
+    update: false
+
+  - target: $.components.parameters.timestamp_query.required
+    update: false
+
+  # Remove examples from individual parameter components
+  - target: $.components.parameters.api_key_query.example
+    remove: true
+
+  - target: $.components.parameters.signature_query.example
+    remove: true
+
+  - target: $.components.parameters.timestamp_query.example
+    remove: true

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Environment Config API
-  version: 0.3.0
+  version: 0.3.1
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -74,23 +74,8 @@ paths:
           schema:
             type: boolean
           description: Whether to return only named (`true`) or unnamed (`false`) transformations. If this parameter isn't included, both named and unnamed transformations will be returned.
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 500
-            default: 10
-          description: Maximum number of transformations to return.
-          example: 20
-        - name: next_cursor
-          in: query
-          required: false
-          schema:
-            type: string
-          description: When a request has more results to return than `max_results`, the `next_cursor` value is returned as part of the response. You can then specify this value as the `next_cursor` parameter of a following request.
-          example: 8edbc61040178db60b0973ca9494bf3a
+        - $ref: '#/components/parameters/max_results_query'
+        - $ref: '#/components/parameters/next_cursor_query'
       responses:
         '200':
           description: Transformations retrieved successfully
@@ -391,6 +376,12 @@ paths:
                   - message
                   - name
                   - external_id
+        '400':
+          description: request error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
         '401':
           description: authentication error
           content:
@@ -447,11 +438,7 @@ paths:
             enum:
               - asc
               - desc
-        - name: next_cursor
-          in: query
-          required: false
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/next_cursor_query'
       responses:
         '200':
           description: upload presets retrieved
@@ -507,6 +494,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/upload_preset'
+        '400':
+          description: request error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
         '401':
           description: authentication error
           content:
@@ -550,6 +543,12 @@ paths:
                 required:
                   - message
                   - external_id
+        '400':
+          description: request error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
         '401':
           description: authentication error
           content:
@@ -600,6 +599,12 @@ paths:
                 required:
                   - message
                   - external_id
+        '400':
+          description: request error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
         '401':
           description: authentication error
           content:
@@ -642,21 +647,8 @@ paths:
           description: Get details of a specific mapping by folder name
           schema:
             type: string
-        - name: next_cursor
-          in: query
-          required: false
-          description: For pagination - value from the previous response to get the next page of results
-          schema:
-            type: string
-        - name: max_results
-          in: query
-          required: false
-          description: Maximum number of results to return per request (1-500)
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 500
-            default: 10
+        - $ref: '#/components/parameters/next_cursor_query'
+        - $ref: '#/components/parameters/max_results_query'
       responses:
         '200':
           description: Upload mappings retrieved successfully
@@ -1498,6 +1490,23 @@ components:
       schema:
         type: string
         description: The cloud name of your product environment.
+    max_results_query:
+      name: max_results
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+        default: 10
+      description: The maximum number of results to return. Default is 10.
+    next_cursor_query:
+      name: next_cursor
+      in: query
+      required: false
+      schema:
+        type: string
+      description: The cursor for pagination. Use the next_cursor value from a previous response to get the next page of results.
     transformation:
       name: transformation
       in: path
@@ -1675,8 +1684,25 @@ components:
           type: boolean
           description: Whether to trigger automatic generation of video chapters. Chapters will be generated and saved as a .vtt file with -chapters appended to the public ID of the video. You can enable chapters as part of the Cloudinary Video Player. Relevant for videos only.
         auto_transcription:
-          type: boolean
-          description: Whether to trigger automatic generation of video transcription. Transcription will be generated and saved as a .vtt file with -transcription appended to the public ID of the video. Relevant for videos only.
+          oneOf:
+            - type: boolean
+              description: Whether to trigger automatic generation of video transcription. Transcription will be generated and saved as a .vtt file with -transcription appended to the public ID of the video. Relevant for videos only.
+              example: true
+            - type: object
+              description: Configuration object for automatic video transcription with translation options.
+              properties:
+                translate:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of target language codes for transcription translation.
+                  example:
+                    - pl-PL
+                    - he-IL
+              example:
+                translate:
+                  - pl-PL
+                  - he-IL
         cinemagraph_analysis:
           type: boolean
           description: Whether to return a cinemagraph analysis value for the media asset between 0 and 1, where 0 means the asset is not a cinemagraph and 1 means the asset is a cinemagraph. Relevant for animated images and video only. A static image will return 0.
@@ -1794,9 +1820,11 @@ components:
           type: string
           description: A comma-separated list of tag names to assign to the asset.
         callback:
+          deprecated: true
+          x-speakeasy-deprecation-message: The callback parameter is deprecated. Not relevant for modern browsers. Starting July 2025 new customers will not be able to use this parameter.
           type: string
           description: |
-            A URL to redirect to after the upload/explicit is completed instead of returning the upload response. 
+            A URL to redirect to after the upload/explicit is completed instead of returning the upload response.
             Signed upload result parameters are added to the callback URL. This parameter is ignored for XHR (Ajax XMLHttpRequest) or JavaScript Fetch API upload requests.
             Note: This parameter is relevant for direct uploads from a form in the browser. It is automatically set if you perform direct upload from the browser using Cloudinary's SDKs and the jQuery plugin.
     upload_other_parameters:
@@ -1984,6 +2012,16 @@ components:
             unsigned:
               type: boolean
               description: Whether the upload preset allows unsigned uploads.
+            parameter_whitelist:
+              oneOf:
+                - type: array
+                  items:
+                    type: string
+                - type: string
+                  enum:
+                    - none
+              description: |
+                The parameters that are allowed be used in an upload request utilizing this preset. If not specified or empty array, all parameters are allowed. If "none", no parameters are allowed.
     upload_mapping:
       type: object
       description: Represents an upload mapping
