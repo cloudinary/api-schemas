@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.1.5...provisioning-api-v0.1.6) (2025-08-10)
+
+
+### Features
+
+* Add support for `include_prodenv_breakdown` in `billing_usage` API ([12260d8](https://github.com/CloudinaryLtd/public-interfaces/commit/12260d88af991ef721f5486982ea15fe96edb531))
+
 ## [0.1.5](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.1.4...provisioning-api-v0.1.5) (2025-07-09)
 
 

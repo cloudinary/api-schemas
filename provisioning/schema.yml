@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Cloudinary Account Provisioning API
-  version: 0.1.5 # x-release-please-version
+  version: 0.1.6 # x-release-please-version
   description: |
     Accounts with provisioning API access can create and manage their **product environments**, **users** and **user groups** using the RESTful Provisioning API. 
 
@@ -1078,6 +1078,8 @@ paths:
         If `year` is not provided:
           - Returns usage for the year in which the current active subscription period began.
           - If no active subscription exists, an empty list is returned.
+
+        **Note**: Usage metrics are updated daily, so calling this endpoint once per day gives you the latest data.
       operationId: getBillingUsage
       parameters:
         - name: year
@@ -1086,10 +1088,15 @@ paths:
           schema:
             type: integer
             format: int32
-            minimum: 2000
-            maximum: 2100
           description: The year to retrieve billing usage for. Behavior depends on subscription type (see above).
           example: 2024
+        - name: include_prodenv_breakdown
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: |
+            Whether to include usage details by product environment. **Default**: false.
       responses:
         '200':
           description: Successful operation
