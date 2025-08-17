@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Asset Management API
-  version: 0.3.1
+  version: 0.3.2
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -343,6 +343,7 @@ paths:
     get:
       x-speakeasy-mcp:
         name: download-asset
+        disabled: true
         scopes:
           - admin
         description: |
