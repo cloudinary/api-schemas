@@ -1,0 +1,14 @@
+overlay: 1.0.0
+info:
+  title: Restrict generate_archive mode to create only
+  version: 0.0.1
+actions:
+  - target: $.paths["/v1_1/{cloud_name}/{resource_type}/generate_archive"].post.requestBody.content["application/json"].schema.allOf[?(@.type=='object')].properties.mode.enum
+    remove: true
+  - target: $.paths["/v1_1/{cloud_name}/{resource_type}/generate_archive"].post.requestBody.content["application/json"].schema.allOf[?(@.type=='object')].properties.mode
+    update:
+      enum:
+        - create
+      description: |
+        The method for generating and delivering the archive. Only "create" is supported:
+        create - Creates and stores the archive as a raw asset, returning URLs in the response
