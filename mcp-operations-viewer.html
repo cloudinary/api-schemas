@@ -250,27 +250,27 @@
     }
 
     /* Operation ID colors based on HTTP method - more specific to override Bootstrap */
-    #apiTable .operation-id-get { 
+    #apiTable .operation-id-get {
       background-color: #cfe2ff !important; /* light blue background */
       color: #0a58ca !important; /* darker blue text */
     }
-    #apiTable .operation-id-post { 
+    #apiTable .operation-id-post {
       background-color: #d1e7dd !important; /* light green background */
       color: #0f5132 !important; /* darker green text */
     }
-    #apiTable .operation-id-put { 
+    #apiTable .operation-id-put {
       background-color: #ffe3d1 !important; /* light orange background */
       color: #b85c0a !important; /* darker orange text */
     }
-    #apiTable .operation-id-delete { 
+    #apiTable .operation-id-delete {
       background-color: #f8d7da !important; /* light red background */
       color: #842029 !important; /* darker red text */
     }
-    #apiTable .operation-id-patch { 
+    #apiTable .operation-id-patch {
       background-color: #e2d9f3 !important; /* light purple background */
       color: #432874 !important; /* darker purple text */
     }
-    #apiTable .operation-id-other { 
+    #apiTable .operation-id-other {
       background-color: #e9ecef !important; /* light gray background */
       color: #495057 !important; /* darker gray text */
     }
@@ -373,7 +373,7 @@
         margin-top: 1rem;
         padding: 0 0.5rem;
       }
-      
+
       .cloudinary-title {
         font-size: 1.8rem;
       }
@@ -394,7 +394,7 @@
       .schema-tabs {
         flex-direction: column;
       }
-      
+
       .table-responsive {
         font-size: 0.875rem;
         overflow-x: auto;
@@ -414,13 +414,13 @@
 </head>
 <body>
   <img src="https://cloudinary-res.cloudinary.com/image/upload/f_auto,q_auto/v1/logo/for_white_bg/cloudinary_logo_for_white_bg.svg" alt="Cloudinary" class="cloudinary-logo">
-  
+
   <div class="container">
     <div class="cloudinary-header text-center">
       <div class="container">
         <div style="position: absolute; top: 1rem; left: 1rem; z-index: 10;">
-          <a href="index.html" style="background-color: #007bff; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px; transition: background-color 0.2s; display: inline-flex; align-items: center; gap: 8px;" 
-             onmouseover="this.style.backgroundColor='#0056b3'" 
+          <a href="index.html" style="background-color: #007bff; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px; transition: background-color 0.2s; display: inline-flex; align-items: center; gap: 8px;"
+             onmouseover="this.style.backgroundColor='#0056b3'"
              onmouseout="this.style.backgroundColor='#007bff'">
             📚 API Docs
           </a>
@@ -435,7 +435,7 @@
       <div class="schema-tabs" id="schemaTabs">
         <!-- Schema tabs will be populated dynamically -->
       </div>
-      
+
       <div class="file-upload-section">
         <h5 class="mb-3">Or upload your own YAML file:</h5>
         <input type="file" id="fileInput" accept=".yml,.yaml" class="form-control">
@@ -554,7 +554,8 @@
     let dataTable;
     let allData = [];
     let predefinedSchemas = [];
-    
+    let exportFileName = 'cloudinary-mcp-operations-analysis.csv';
+
     // URL parameter management
     function updateURL(schemaDir) {
       if (schemaDir) {
@@ -578,7 +579,7 @@
     function saveMCPState() {
       const activeTab = document.querySelector('.schema-tab.active');
       const activeSchemaDir = activeTab?.dataset.schemaDir || '';
-      
+
       const state = {
         activeSchema: activeTab?.textContent || '',
         activeSchemaDir: activeSchemaDir, // Add normalized identifier
@@ -592,7 +593,7 @@
         timestamp: Date.now()
       };
       localStorage.setItem('mcp-viewer-state', JSON.stringify(state));
-      
+
       // Also save to shared state for index page
       if (activeSchemaDir) {
         localStorage.setItem('shared-schema-state', JSON.stringify({
@@ -600,7 +601,7 @@
           timestamp: Date.now()
         }));
       }
-      
+
       // Update URL to reflect active schema
       updateURL(activeSchemaDir);
     }
@@ -642,7 +643,7 @@
       predefinedSchemas = await loadSchemasConfig();
       const schemaSelectionDiv = document.querySelector('.schema-selection');
       const standaloneUploadDiv = document.querySelector('.standalone-upload');
-      
+
       // If no schemas available, hide schema selection and show standalone upload
       if (!predefinedSchemas || predefinedSchemas.length === 0) {
         console.log('No predefined schemas found, showing standalone upload'); // Debug log
@@ -652,19 +653,19 @@
         updateURL(null);
         return;
       }
-      
+
       console.log('Creating tabs for schemas:', predefinedSchemas); // Debug log
       const tabsContainer = document.getElementById('schemaTabs');
       const savedState = loadMCPState();
       const urlSchemaDir = getSchemaFromURL(); // Check URL first
       let tabToActivate = null;
-      
+
       for (const schema of predefinedSchemas) {
         try {
           const schemaPath = `${schema}/schema.yml`;
           console.log('Attempting to load schema metadata from:', schemaPath); // Debug log
           const schemaContent = await fetchYaml(schemaPath);
-          
+
           const tab = document.createElement('button');
           tab.className = 'schema-tab';
           tab.textContent = schemaContent.info?.title || schema.charAt(0).toUpperCase() + schema.slice(1);
@@ -675,7 +676,7 @@
           };
           tabsContainer.appendChild(tab);
           console.log('Created tab for schema:', schema, 'with title:', tab.textContent); // Debug log
-          
+
           // Priority order: URL parameter > saved state > first tab
           if (urlSchemaDir && urlSchemaDir === schema) {
             // URL parameter takes highest priority
@@ -687,7 +688,7 @@
             // Default to first tab if no URL param or saved state
             tabToActivate = { tab, schemaPath };
           }
-          
+
           // Check for shared state override (from index page) - but only if no URL param
           if (!urlSchemaDir && savedState && savedState.activeSchemaDir === schema) {
             tabToActivate = { tab, schemaPath };
@@ -696,7 +697,7 @@
           console.warn(`Could not load schema: ${schema}`, error);
         }
       }
-      
+
       // Activate the appropriate tab
       if (tabToActivate) {
         setTimeout(() => {
@@ -711,27 +712,27 @@
       try {
         console.log('Loading schema from:', schemaPath); // Debug log
         const response = await fetch(schemaPath);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch schema: ${response.status} ${response.statusText}`);
         }
-        
+
         const yamlText = await response.text();
         console.log('Schema loaded successfully, content length:', yamlText.length); // Debug log
-        
+
         // Set active tab
         document.querySelectorAll('.schema-tab').forEach(tab => tab.classList.remove('active'));
         activeTab.classList.add('active');
-        
+
         // Process the schema
         processYamlContent(yamlText);
-        
+
         // Save state after successful load
         saveMCPState();
       } catch (error) {
         console.error('Error loading predefined schema:', error);
         alert('Error loading schema: ' + error.message);
-        
+
         // Remove active state from tab if loading failed
         activeTab.classList.remove('active');
       }
@@ -746,26 +747,26 @@
           $('#filterScopes').val(savedState.filters.scopes);
           $('#filterMethod').val(savedState.filters.method);
           $('#filterMCP').val(savedState.filters.mcp);
-          
+
           // Apply the restored filters
           applyFilters();
         }, 100);
       }
     }
-    
+
     function cell(content, missing, className = '') {
       const classes = [className, missing ? 'missing' : ''].filter(Boolean).join(' ');
       return `<td${classes ? ` class="${classes}"` : ''}>${content || (missing ? 'MISSING' : '')}</td>`;
     }
 
     function operationIdCell(operationId, method) {
-      const methodClass = method.toLowerCase() === 'get' ? 'operation-id-get' : 
-                         method.toLowerCase() === 'post' ? 'operation-id-post' : 
-                         method.toLowerCase() === 'put' ? 'operation-id-put' : 
-                         method.toLowerCase() === 'delete' ? 'operation-id-delete' : 
-                         method.toLowerCase() === 'patch' ? 'operation-id-patch' : 
+      const methodClass = method.toLowerCase() === 'get' ? 'operation-id-get' :
+                         method.toLowerCase() === 'post' ? 'operation-id-post' :
+                         method.toLowerCase() === 'put' ? 'operation-id-put' :
+                         method.toLowerCase() === 'delete' ? 'operation-id-delete' :
+                         method.toLowerCase() === 'patch' ? 'operation-id-patch' :
                          'operation-id-other';
-      
+
       return `<td class="operation-id-cell ${methodClass}">${operationId}</td>`;
     }
 
@@ -796,16 +797,16 @@
       const methods = [...new Set(data.map(row => row.method))].sort();
 
       // Populate dropdowns
-      $('#filterCategories').html('<option value="">All Categories</option>' + 
+      $('#filterCategories').html('<option value="">All Categories</option>' +
         categories.map(cat => `<option value="${cat}">${cat}</option>`).join(''));
-      
-      $('#filterToolName').html('<option value="">All Tools</option>' + 
+
+      $('#filterToolName').html('<option value="">All Tools</option>' +
         toolNames.map(tool => `<option value="${tool}">${tool}</option>`).join(''));
-      
-      $('#filterScopes').html('<option value="">All Scopes</option>' + 
+
+      $('#filterScopes').html('<option value="">All Scopes</option>' +
         scopes.map(scope => `<option value="${scope}">${scope}</option>`).join(''));
-      
-      $('#filterMethod').html('<option value="">All Methods</option>' + 
+
+      $('#filterMethod').html('<option value="">All Methods</option>' +
         methods.map(method => `<option value="${method}">${method}</option>`).join(''));
     }
 
@@ -877,9 +878,28 @@
         console.log('Processing YAML content...'); // Debug log
         const doc = jsyaml.load(yamlText);
         console.log('YAML parsed successfully, doc:', doc); // Debug log
-        
+
+        // Compute export file name from schema metadata
+        (function computeExportName() {
+          try {
+            const title = (doc && doc.info && doc.info.title) ? String(doc.info.title) : '';
+            const version = (doc && doc.info && doc.info.version) ? String(doc.info.version) : '';
+            const activeDir = document.querySelector('.schema-tab.active')?.dataset?.schemaDir || '';
+            const base = [title || activeDir || 'schema', version ? `v${version}` : '']
+              .filter(Boolean)
+              .join(' ');
+            const slug = base
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, '');
+            exportFileName = `${slug || 'schema'}-mcp-operations.csv`;
+          } catch (e) {
+            exportFileName = 'mcp-operations.csv';
+          }
+        })();
+
         allData = [];
-        
+
         if (!doc.paths) {
           console.error('No paths found in schema:', doc); // Debug log
           alert('No paths found in the OpenAPI schema');
@@ -899,16 +919,16 @@
             const toolCategory = tags.join(', ');
             const operationId = operation.operationId;
             const mcp = operation['x-speakeasy-mcp'] || {};
-            
+
             const toolName = mcp.name || '';
             const toolNameMissing = !toolName;
-            
+
             const scopes = Array.isArray(mcp.scopes) ? mcp.scopes.join(', ') : (mcp.scopes || '');
             const scopesMissing = !scopes;
-            
+
             const summary = operation.summary || '';
             const description = operation.description || '';
-            
+
             const mcpDescription = mcp.description || '';
             const mcpDescriptionMissing = !mcpDescription;
 
@@ -966,33 +986,33 @@
           </tr>`;
           tbody.append(row);
         });
-        
+
         console.log('Table body HTML after adding rows:', $('#apiTable tbody').html().length, 'characters'); // Debug log
         console.log('Table body rows count:', $('#apiTable tbody tr').length); // Debug log
-        
+
         // Use setTimeout to ensure DOM is updated before reinitializing DataTable
         setTimeout(() => {
           console.log('Reinitializing DataTable after timeout...'); // Debug log
-          
+
           // Reinitialize DataTable
           initializeDataTable();
-          
+
           // Force table redraw and update filters/summary
           if (dataTable) {
             dataTable.draw();
             console.log('DataTable redrawn'); // Debug log
           }
-          
+
           populateFilters(allData);
           updateSummary(allData);
-          
+
           console.log('Table updated successfully'); // Debug log
-          
+
           // Restore filter states if available
           const savedState = loadMCPState();
           restoreFilters(savedState);
         }, 10); // Small delay to allow DOM to update
-        
+
       } catch (error) {
         console.error('Error parsing YAML:', error);
         alert('Error parsing YAML file: ' + error.message);
@@ -1014,24 +1034,35 @@
 
     // Export functionality
     $('#exportBtn').on('click', function() {
-      const data = dataTable.data().toArray();
+      if (!dataTable) return;
       const headers = ['Category (tag)', 'Operation ID', 'Tool Name', 'Scopes', 'Summary', 'Description', 'MCP Description', 'API Endpoint', 'Method'];
-      
+
+      // Get DOM nodes for rows that match current filters (search: 'applied')
+      const rows = dataTable.rows({ search: 'applied' }).nodes().toArray();
+
       let csv = headers.join(',') + '\n';
-      data.forEach(row => {
-        const csvRow = $(row).find('td').map(function() {
-          let text = $(this).text().replace(/"/g, '""');
+      rows.forEach(tr => {
+        const cells = Array.from(tr.querySelectorAll('td'));
+        const csvRow = cells.map(td => {
+          // Use innerText to get human-readable text, collapse whitespace, escape quotes
+          const text = (td.innerText || '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .replace(/"/g, '""');
           return `"${text}"`;
-        }).get().join(',');
+        }).join(',');
         csv += csvRow + '\n';
       });
-      
-      const blob = new Blob([csv], { type: 'text/csv' });
+
+      // Prepend BOM for Excel compatibility
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'cloudinary-mcp-operations-analysis.csv';
+      a.download = exportFileName;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     });
 
@@ -1039,13 +1070,13 @@
     $('#fileInput').on('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
-      
+
       // Clear active predefined schema tabs
       document.querySelectorAll('.schema-tab').forEach(tab => tab.classList.remove('active'));
-      
+
       // Clear URL parameter when uploading custom file
       updateURL(null);
-      
+
       const reader = new FileReader();
       reader.onload = function(evt) {
         processYamlContent(evt.target.result);
@@ -1057,10 +1088,10 @@
     $('#fileInputStandalone').on('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
-      
+
       // Clear URL parameter when uploading custom file
       updateURL(null);
-      
+
       const reader = new FileReader();
       reader.onload = function(evt) {
         processYamlContent(evt.target.result);
@@ -1077,7 +1108,7 @@
       try {
         const saved = localStorage.getItem('mcp-viewer-state');
         let state = null;
-        
+
         if (saved) {
           state = JSON.parse(saved);
           // Only use if saved within last 24 hours
@@ -1085,7 +1116,7 @@
             state = null;
           }
         }
-        
+
         // Check for shared state from index page (higher priority for schema selection)
         const sharedState = localStorage.getItem('shared-schema-state');
         if (sharedState) {
@@ -1096,7 +1127,7 @@
             state.activeSchemaDir = shared.activeSchemaDir;
           }
         }
-        
+
         return state;
       } catch (e) {
         console.warn('Could not load saved MCP state:', e);
@@ -1105,4 +1136,4 @@
     }
   </script>
 </body>
-</html> 
+</html>
