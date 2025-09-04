@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Asset Management API
-  version: 0.3.2
+  version: 0.3.3
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -64,8 +64,8 @@ paths:
       operationId: upload
       summary: Uploads media assets (images, videos, raw files) to your Cloudinary product environment
       description: |
-        Uploads media assets (images, videos, raw files) to your Cloudinary product environment. The file is securely stored 
-        in the cloud with backup and revision history. Cloudinary automatically analyzes and saves important data about each 
+        Uploads media assets (images, videos, raw files) to your Cloudinary product environment. The file is securely stored
+        in the cloud with backup and revision history. Cloudinary automatically analyzes and saves important data about each
         asset, such as format, size, resolution, and prominent colors, which is indexed to enable searching on those attributes.
 
         Supports uploading from:
@@ -76,6 +76,8 @@ paths:
         - FTP addresses
 
         The uploaded asset is immediately available for transformation and delivery upon successful upload.
+
+        Transform media files using transformation syntax in delivery URLs, which creates derived files accessible immediately without re-uploading the original.
       tags:
         - upload
       x-speakeasy-mcp:
@@ -192,9 +194,9 @@ paths:
       operationId: uploadChunk
       summary: Upload a single chunk of a large file
       description: |
-        Uploads a single chunk of a large file as part of a chunked upload process. This enables efficient upload of 
+        Uploads a single chunk of a large file as part of a chunked upload process. This enables efficient upload of
         large files with the ability to resume interrupted uploads. Each request uploads one chunk of the file.
-        It is required for any files that are larger than 100 MB. This is often relevant for video files, as they 
+        It is required for any files that are larger than 100 MB. This is often relevant for video files, as they
         tend to have larger file sizes. Minimum chunk size is 5 MB.
       tags:
         - upload
@@ -259,7 +261,7 @@ paths:
       - $ref: '#/components/parameters/resource_type'
     post:
       x-speakeasy-mcp:
-        name: asset-public_id-rename
+        name: asset-rename
         scopes:
           - librarian
         description: |
@@ -270,7 +272,7 @@ paths:
           When Not to Use: Don't use if the asset is actively referenced in applications without updating those references. Avoid renaming during high-traffic periods if the asset is frequently accessed. Don't use for copying assets (this moves, not copies).
           Output: Returns updated asset information: public_id(new identifier), version(version number), signature(validation signature), resource_type(asset type), created_at(creation timestamp), bytes(file size), type(storage type), etag(entity tag)
           Example output: {"public_id":"products/new_image","version":1234567890,"signature":"abc123def456","resource_type":"image","created_at":"2023-01-15T10:00:00Z","bytes":45231,"type":"private","etag":"def789ghi012"}
-      summary: Updates an existing asset's identifier and optionally other metadata in your Cloudinary account
+      summary: Updates an existing asset's identifier (public ID) and optionally other metadata in your Cloudinary account
       tags:
         - assets
       operationId: renameAsset
@@ -584,6 +586,8 @@ paths:
       description: |
         Applies actions such as transformations, tags, or metadata updates to an existing asset without re-uploading it.
         This is useful for applying new transformations, adding tags, or updating metadata on assets that are already in your cloud.
+
+        Note: Always prefer delivery URL transformations over this method, unless eager transformations are specifically required.
       tags:
         - assets
       operationId: explicitAsset
@@ -664,7 +668,7 @@ paths:
           When Not to Use: Don't use for single asset downloads (use direct URLs). Avoid for extremely large collections that create oversized archives. Not suitable for real-time operations requiring immediate response.
           Output: Returns archive details (create mode) or binary archive data (download mode). Includes asset_id, secure_url, bytes, resource_count, file_count for created archives.
           Example output: {"asset_id":"abc123","public_id":"my_package.zip","version":1234567890,"secure_url":"https://res.cloudinary.com/demo/raw/upload/v1234567890/my_package.zip","bytes":1024000,"resource_count":2,"file_count":2}
-      summary: Creates an archive (ZIP or TGZ file) that contains a set of assets from
+      summary: Creates an archive (ZIP or TGZ file) that contains a set of assets from your product environment.
       description: Creates a downloadable ZIP or other archive format containing the specified resources.
       tags:
         - assets
@@ -2338,7 +2342,7 @@ paths:
           When Not to Use: Don't use this for per-asset statistics or real-time updates – the data is aggregated and updated periodically, meant for overall account monitoring. 
           Output: Returns a comprehensive JSON object containing: plan(account plan type), last_updated(last usage calculation date), date_requested(usage report date), credits(total credits used/limit), transformations(image/video transformation usage), storage(storage usage in bytes), bandwidth(bandwidth usage in bytes), resources(total number of assets), derived_resources(transformed assets count), requests(total API requests), objects(object detection usage), impressions(image impression count), seconds_delivered(video seconds delivered), aws_rek_tagging(AWS recognition usage/limits), google_speech(Google speech API usage/limits), google_video_tagging(Google video tagging usage/limits), google_tagging(Google image tagging usage/limits), cloudinary_ai(Cloudinary AI services usage/limits), object_detection(object detection usage/limits), clip(CLIP model usage/limits), ai_vision(AI vision services usage/limits), media_limits(file size/pixel limits)
       summary: Retrieves comprehensive usage metrics and account statistics
-      description: A report on the status of product environment usage, including storage, credits, bandwidth, requests, number of resources, and add-on usage.
+      description: A report on the status of product environment usage, including storage, credits, bandwidth, requests, number of resources, and add-on usage. No date parameter needed to get current usage statistics.
       tags:
         - usage
       operationId: getUsage
@@ -2812,8 +2816,8 @@ paths:
           When Not to Use: Don't use for deleting folders (use delete-folder instead). Avoid moving folders that are actively being used in production workflows during the operation. Don't use for individual asset moves (assets maintain their public IDs within the new folder path).
           Output: Returns details of the move operation showing both source and destination paths.
           Example output: {"from":{"name":"path","path":"old/path"},"to":{"name":"path","path":"new/path"}}
-      summary: Renames or moves an entire folder (along with all assets it contains) to a
-      description: Updates a folder's properties.
+      summary: Renames or moves an entire folder (along with all assets it contains) to a new location
+      description: Renames or moves an entire folder (along with all assets it contains) to a new location within your Cloudinary media library.
       tags:
         - folders
       operationId: updateFolder
@@ -3242,7 +3246,12 @@ paths:
     post:
       operationId: searchAssets
       summary: Provides a powerful query interface to filter and retrieve assets and their details
-      description: Returns a list of resources matching the specified search criteria. The API supports a variety of search parameters and returns a JSON response with the matching resources and their details.
+      description: |
+        Returns a list of resources matching the specified search criteria.
+
+        Uses Lucene-like query language to search by descriptive attributes (public_id, filename, folder, tags, context), file details (resource_type, format, bytes, width, height), embedded data (image_metadata), and analyzed data (face_count, colors, quality_score). Supports aggregate counts and complex Boolean expressions.
+
+        Examples: tags:shirt AND uploaded_at>1d, resource_type:image AND bytes>1mb, folder:products OR context.category:electronics
       tags:
         - search
       x-speakeasy-mcp:
@@ -3639,8 +3648,9 @@ components:
       in: path
       required: true
       schema:
-        $ref: '#/components/schemas/storage_type'
-        default: upload
+        allOf:
+          - $ref: '#/components/schemas/storage_type'
+          - default: upload
       description: The delivery type of the asset.
     max_results_folders_query:
       name: max_results
@@ -4032,7 +4042,11 @@ components:
     binary_upload_request:
       type: object
       allOf:
-        - $ref: '#/components/schemas/signature_parameters'
+        - anyOf:
+            - $ref: '#/components/schemas/signature_parameters'
+            - type: object
+              required:
+                - upload_preset
         - $ref: '#/components/schemas/upload_explicit_parameters'
         - $ref: '#/components/schemas/upload_other_parameters'
         - $ref: '#/components/schemas/upload_request_parameters'
@@ -4049,7 +4063,11 @@ components:
     upload_request:
       type: object
       allOf:
-        - $ref: '#/components/schemas/signature_parameters'
+        - anyOf:
+            - $ref: '#/components/schemas/signature_parameters'
+            - type: object
+              required:
+                - upload_preset
         - $ref: '#/components/schemas/upload_explicit_parameters'
         - $ref: '#/components/schemas/upload_other_parameters'
         - $ref: '#/components/schemas/upload_request_parameters'
@@ -5004,6 +5022,26 @@ components:
               example:
                 - /image/upload/w_100/sample
                 - /image/upload/w_200/sample
+    search_sort_pair:
+      type: object
+      additionalProperties:
+        type: string
+        enum:
+          - asc
+          - desc
+      minProperties: 1
+      maxProperties: 1
+      description: A single field-to-direction mapping. The object must contain exactly one key with value 'asc' or 'desc'.
+    search_sort_by:
+      type: array
+      items:
+        $ref: '#/components/schemas/search_sort_pair'
+      description: |
+        An array of single-key objects mapping a field to a sort direction. Each object must contain exactly one field name mapped to 'asc' or 'desc'.
+        Default: [{"created_at": "desc"}].
+      example:
+        - created_at: desc
+        - public_id: asc
     search_parameters:
       type: object
       description: Common parameters for resource search operations.
@@ -5013,13 +5051,7 @@ components:
           description: The search expression. Supports exact match, wildcard match, presence, greater/less than, and range. For details on building expressions, see the Search API documentation.
           example: resource_type:image AND tags:kitten
         sort_by:
-          type: array
-          items:
-            type: string
-          description: An array of key-value pairs for sorting. Each value is a key and direction (asc/desc). If no direction is specified, defaults to desc.
-          example:
-            - created_at
-            - public_id:asc
+          $ref: '#/components/schemas/search_sort_by'
         max_results:
           type: integer
           minimum: 1
