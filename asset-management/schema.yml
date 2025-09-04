@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Asset Management API
-  version: 0.3.3
+  version: 0.3.4
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -1225,10 +1225,7 @@ paths:
                     type: string
                     description: The access mode of the asset.
                   access_control:
-                    type: array
-                    items:
-                      type: object
-                    description: Access control settings for the asset.
+                    $ref: '#/components/schemas/access_control'
                   regions:
                     type: array
                     items:
@@ -2337,9 +2334,9 @@ paths:
         scopes:
           - admin
         description: |
-          Purpose: Provides a report on your product environment's usage, including storage, credits, bandwidth, requests, and asset counts. 
-          Usage: Use this operation to monitor account usage or retrieve usage metrics for a specific date (up to 3 months in the past). 
-          When Not to Use: Don't use this for per-asset statistics or real-time updates – the data is aggregated and updated periodically, meant for overall account monitoring. 
+          Purpose: Provides a report on your product environment's usage, including storage, credits, bandwidth, requests, and asset counts.
+          Usage: Use this operation to monitor account usage or retrieve usage metrics for a specific date (up to 3 months in the past).
+          When Not to Use: Don't use this for per-asset statistics or real-time updates – the data is aggregated and updated periodically, meant for overall account monitoring.
           Output: Returns a comprehensive JSON object containing: plan(account plan type), last_updated(last usage calculation date), date_requested(usage report date), credits(total credits used/limit), transformations(image/video transformation usage), storage(storage usage in bytes), bandwidth(bandwidth usage in bytes), resources(total number of assets), derived_resources(transformed assets count), requests(total API requests), objects(object detection usage), impressions(image impression count), seconds_delivered(video seconds delivered), aws_rek_tagging(AWS recognition usage/limits), google_speech(Google speech API usage/limits), google_video_tagging(Google video tagging usage/limits), google_tagging(Google image tagging usage/limits), cloudinary_ai(Cloudinary AI services usage/limits), object_detection(object detection usage/limits), clip(CLIP model usage/limits), ai_vision(AI vision services usage/limits), media_limits(file size/pixel limits)
       summary: Retrieves comprehensive usage metrics and account statistics
       description: A report on the status of product environment usage, including storage, credits, bandwidth, requests, number of resources, and add-on usage. No date parameter needed to get current usage statistics.
@@ -3862,6 +3859,78 @@ components:
             A URL to redirect to after the upload/explicit is completed instead of returning the upload response.
             Signed upload result parameters are added to the callback URL. This parameter is ignored for XHR (Ajax XMLHttpRequest) or JavaScript Fetch API upload requests.
             Note: This parameter is relevant for direct uploads from a form in the browser. It is automatically set if you perform direct upload from the browser using Cloudinary's SDKs and the jQuery plugin.
+    access_control_token:
+      type: object
+      description: Token-based access control that requires authentication to access the asset.
+      properties:
+        access_type:
+          type: string
+          enum:
+            - token
+          description: The type of access control to apply to the asset.
+        key:
+          type: string
+          pattern: ^[a-zA-Z0-9]+$
+          description: The authentication key identifier for token-based access. Default key is used if not specified or if set to 'default'.
+          example: prod2024
+        path:
+          type: string
+          description: The specific path pattern for which this access control applies.
+          example: /images/restricted/*
+      required:
+        - access_type
+      example:
+        access_type: token
+        key: prod2024
+    access_control_anonymous:
+      type: object
+      description: Anonymous access control that allows public access during a specified time range.
+      properties:
+        access_type:
+          type: string
+          enum:
+            - anonymous
+          description: The type of access control to apply to the asset.
+        start:
+          type: string
+          format: date-time
+          description: The start date and time (in ISO 8601 format) when anonymous access becomes available.
+          example: '2024-03-15T09:00:00Z'
+        end:
+          type: string
+          format: date-time
+          description: The end date and time (in ISO 8601 format) when anonymous access expires.
+          example: '2024-06-30T23:59:59Z'
+        path:
+          type: string
+          description: The specific path pattern for which this access control applies.
+          example: /images/public/*
+      required:
+        - access_type
+      example:
+        access_type: anonymous
+        start: '2024-03-15T09:00:00Z'
+        end: '2024-06-30T23:59:59Z'
+    access_control:
+      type: array
+      description: |
+        Restricts access to the asset by specifying one or more access types.
+        The asset is restricted unless at least one listed access type is valid.
+      items:
+        oneOf:
+          - $ref: '#/components/schemas/access_control_token'
+          - $ref: '#/components/schemas/access_control_anonymous'
+        discriminator:
+          propertyName: access_type
+          mapping:
+            token: '#/components/schemas/access_control_token'
+            anonymous: '#/components/schemas/access_control_anonymous'
+      example:
+        - access_type: token
+          key: prod2024
+        - access_type: anonymous
+          start: '2024-03-15T09:00:00Z'
+          end: '2024-06-30T23:59:59Z'
     upload_other_parameters:
       type: object
       properties:
@@ -3976,14 +4045,7 @@ components:
           minimum: 0
           maximum: 1
         access_control:
-          type: string
-          description: |
-            Restrict access to the asset by passing an array of access types for the asset. The asset is restricted unless one of the access types is valid.
-            Possible values for each access type:
-            - token requires either Token-based access or Cookie-based access for accessing the asset.
-            For example: access_type: "token"
-            - anonymous allows public access to the asset during a set time period. The anonymous access type can optionally include start and/or end dates (in ISO 8601 format) that define when the asset is publicly available. Note that you can only include a single 'anonymous' access type. For example:
-            access_type: "anonymous", start: "2017-12-15T12:00Z", end: "2018-01-20T12:00Z"
+          $ref: '#/components/schemas/access_control'
         eval:
           type: string
           description: Allows you to modify upload parameters by specifying custom logic with JavaScript. This can be useful for conditionally adding tags, contextual metadata, structured metadata or eager transformations depending on specific criteria of the uploaded file.
@@ -4476,11 +4538,9 @@ components:
         status:
           type: string
         access_control:
-          type:
-            - array
-            - 'null'
-          items:
-            type: object
+          anyOf:
+            - $ref: '#/components/schemas/access_control'
+            - type: 'null'
         etag:
           type: string
         derivatives:
@@ -4702,17 +4762,7 @@ components:
             - pixelz
           description: The background removal provider to use for the resource.
         access_control:
-          type: string
-          description: |
-            A JSON array of access_types for the asset. The asset is accessible as long as one of the access types is valid.
-            Possible values for each access type:
-              - 'token' - requires either Token-based access or Cookie-based access for accessing the resource.
-              - 'anonymous' - allows public access to the resource. The anonymous access type should also include start and end dates (in ISO 8601 format) defining when the resource is publicly available.
-          examples:
-            - - access_type: token
-            - - access_type: anonymous
-                start: 2017-12-15T12:00Z
-                end: 2018-01-20T12:00Z
+          $ref: '#/components/schemas/access_control'
       additionalProperties: false
     usage_response:
       type: object
@@ -5253,9 +5303,9 @@ components:
                   - authenticated
                 example: public
               access_control:
-                type:
-                  - object
-                  - 'null'
+                anyOf:
+                  - $ref: '#/components/schemas/access_control'
+                  - type: 'null'
                 description: The access control settings for the asset.
                 example: null
               etag:
