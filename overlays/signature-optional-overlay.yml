@@ -39,3 +39,12 @@ actions:
 
   - target: $.components.parameters.timestamp_query.example
     remove: true
+
+  # Remove the anyOf structure
+  - target: $.components.schemas.upload_request.allOf[0].anyOf
+    remove: true
+
+  # Replace the anyOf structure with direct signature_parameters reference
+  - target: $.components.schemas.upload_request.allOf[0]
+    update:
+      $ref: "#/components/schemas/signature_parameters"
