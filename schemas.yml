@@ -1,4 +1,5 @@
 schemas:
+  - api
   - asset-management
   - environment-config
   - structured-metadata

@@ -4,6 +4,7 @@ This repository contains publicly accessible OpenAPI schemas for various APIs, e
 
 ## Available Schemas
 
+- **Cloudinary API v1.1**: Comprehensive API covering uploads, asset management, metadata, transformations, streaming profiles, search capabilities, and more. This is the main API schema that encompasses core Cloudinary functionality.
 - **Asset Management API**: Manages Cloudinary assets including images, videos, and raw files with comprehensive upload, retrieval, and management capabilities.
 - **Environment Config API**: Handles configuration management including upload presets, metadata fields, streaming profiles, and various settings.
 - **Structured Metadata API**: Manages structured metadata fields, rules, and associated data for enhanced asset organization and searchability.
@@ -37,7 +38,7 @@ An advanced web-based tool for analyzing and visualizing MCP (Model Context Prot
 
 #### Usage
 
-1. **Select a Schema**: Click on one of the predefined schema tabs (Assets, Config, Analysis, etc.) or upload your own YAML file
+1. **Select a Schema**: Click on one of the predefined schema tabs (API, Assets, Config, Analysis, etc.) or upload your own YAML file
 2. **Analyze Operations**: The table will populate with all API operations and their MCP configurations
 3. **Filter Results**: Use the filter dropdowns to narrow down operations by specific criteria
 4. **Export Data**: Click the "Export Data" button to download results as CSV

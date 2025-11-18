@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Environment Config API
-  version: 0.3.1
+  version: 0.3.5
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -52,14 +52,9 @@ paths:
         name: list-transformations
         scopes:
           - admin
-        description: |
-          Purpose: Retrieves a comprehensive list of all transformations (both named and unnamed) in your Cloudinary account. Transformations define how images and videos are processed, resized, filtered, or optimized during delivery.
-          Usage: Use this to audit existing transformations, manage transformation inventory, or discover available transformation templates before creating new ones. Essential for transformation governance and optimization workflows.
-          Example request: GET /transformations?named=true&max_results=50 (no request body required)
-          Parameters: named(filter by named/unnamed transformations), max_results(limit response size 1-500), next_cursor(pagination token for additional results)
-          When Not to Use: Don't use for retrieving a single transformation's details - use get-transformation-details instead. Avoid frequent polling as transformation configurations change infrequently.
-          Output: Returns array of transformation objects with usage statistics: transformations(array of transformation objects), name(transformation identifier), allowed_for_strict(whether usable in strict mode), used(whether transformation has been applied to assets), derived_resource_count(number of derived resources using this transformation), next_cursor(pagination token if more results available)
-          Example output: {"transformations":[{"name":"c_fill,w_100,h_150","allowed_for_strict":false,"used":true,"derived_resource_count":15},{"name":"quality_auto","allowed_for_strict":true,"used":true,"derived_resource_count":234}],"next_cursor":"8edbc61040178db60b0973ca9494bf3a"}
+        title: List Transformations
+        readOnlyHint: true
+        idempotentHint: true
       summary: Lists all transformation definitions in your account (including named transformations
       description: |
         Retrieves a list of all transformations, which can be filtered to show either only named or unnamed transformations.
@@ -107,14 +102,9 @@ paths:
         name: get-transformation-details
         scopes:
           - admin
-        description: |
-          Purpose: Retrieves detailed information about a specific transformation, including its usage statistics, derived resources count, and configuration parameters. Transformations define how media assets are processed during delivery.
-          Usage: Use this to inspect transformation details, verify configuration parameters, or analyze usage statistics for specific transformations. Essential for transformation debugging and optimization analysis.
-          Example request: GET /transformations/c_fill,w_100,h_150 (transformation string in URL path)
-          Parameters: transformation(URL-encoded transformation string - either named transformation or full parameter string)
-          When Not to Use: Don't use for listing multiple transformations - use list-transformations instead. Not needed if you only want to apply the transformation without inspecting details.
-          Output: Returns comprehensive transformation details: name(transformation identifier), allowed_for_strict(strict mode compatibility), used(whether applied to assets), derived_resource_count(number of derived resources), transformation_string(full parameter string), max_width(maximum width if constrained), max_height(maximum height if constrained)
-          Example output: {"name":"c_fill,w_100,h_150","allowed_for_strict":false,"used":true,"derived_resource_count":15,"transformation_string":"c_fill,w_100,h_150"}
+        title: Get Transformation Details
+        readOnlyHint: true
+        idempotentHint: true
       summary: Retrieves details of a specific transformation
       description: |
         Retrieves details for a named or unnamed transformation.
@@ -160,14 +150,7 @@ paths:
         name: create-transformation
         scopes:
           - admin
-        description: |
-          Purpose: Creates a new named transformation that can be referenced by a simple name instead of using the full transformation parameter string. Named transformations provide reusable transformation templates that can be applied consistently across your applications.
-          Usage: Use this to create commonly-used transformation patterns that can be referenced by name rather than repeating complex parameter strings. Essential for establishing consistent media processing workflows and simplifying application code.
-          Example request: {"transformation": "c_fill,w_300,h_300,q_auto", "allowed_for_strict": true}
-          Parameters: transformation(complete transformation parameter string), allowed_for_strict(whether transformation can be used in strict mode - boolean)
-          When Not to Use: Don't create named transformations for one-time use cases or rarely-used parameter combinations. Avoid creating duplicates of existing named transformations - check existing transformations first using list-transformations.
-          Output: Returns creation confirmation with transformation name: message(creation status confirmation)
-          Example output: {"message": "created"}
+        title: Create Transformation
       summary: Creates a new named transformation (assigning a custom name to a set of transformation
       description: |
         Creates a new named transformation with the given name and transformation string.
@@ -222,14 +205,8 @@ paths:
         name: update-transformation
         scopes:
           - admin
-        description: |
-          Purpose: Updates the settings of an existing named or unnamed transformation, allowing you to modify the transformation string or change whether it's allowed in strict mode without creating a new transformation.
-          Usage: Use this to modify existing transformation configurations when requirements change, such as updating quality settings or adding new processing parameters. Essential for maintaining transformation consistency across applications.
-          Example request: {"allowed_for_strict": false, "unsafe_update": "c_fill,w_400,h_400,q_80"}
-          Parameters: allowed_for_strict(whether transformation can be used in strict mode), unsafe_update(new transformation parameter string - use with caution)
-          When Not to Use: Avoid updating transformations that are actively used in production without careful testing, as this affects all assets using that transformation. Don't use for creating new transformations - use create-transformation instead.
-          Output: Returns update confirmation: message(update status confirmation)
-          Example output: {"message": "updated"}
+        title: Update Transformation
+        idempotentHint: true
       summary: Updates the definition of an existing named transformation
       description: |
         Update an existing named or unnamed transformation.
@@ -278,14 +255,9 @@ paths:
         name: delete-transformation
         scopes:
           - admin
-        description: |
-          Purpose: Permanently removes a named or unnamed transformation from your Cloudinary account. This operation can also invalidate all derived resources (cached versions) that were generated using this transformation.
-          Usage: Use this to clean up unused transformations, remove deprecated transformation configurations, or manage transformation inventory. Essential for maintaining organized transformation catalogs and reducing account clutter.
-          Example request: DELETE /transformations/my_old_transformation?invalidate=true
-          Parameters: transformation(URL-encoded transformation string or name), invalidate(whether to invalidate derived resources using this transformation from CDN)
-          When Not to Use: Don't delete transformations that are still actively used in production applications, as this will break image/video delivery. Avoid deleting without testing if invalidate=true, as this affects cached content delivery.
-          Output: Returns deletion confirmation: message(deletion status confirmation)
-          Example output: {"message": "deleted"}
+        title: Delete Transformation
+        destructiveHint: true
+        idempotentHint: true
       summary: Deletes a named transformation from your account
       description: |
         Delete a named or unnamed transformation. Optionally invalidate derived resources generated using the named transformation.
@@ -344,15 +316,7 @@ paths:
         name: create-upload-preset
         scopes:
           - builder
-        description: |
-          Purpose: Creates a new named upload preset that defines default upload parameters and transformations. Upload presets streamline the upload process by pre-configuring settings like folder destinations, tags, transformations, and access controls for consistent file handling.
-          Usage: Use when you need to standardize upload configurations for different content types that require different processing rules (e.g., user profile photos need resizing and face detection, product catalog images need multiple size variants, temporary files need minimal processing). Essential for creating reusable upload workflows that ensure consistent processing and organization.
-          Example request: {"name": "temp-new-upload-preset", "unsigned": true, "use_filename": true, "unique_filename": false, "folder": "temp", "tags": "temp,test"}
-          Note: Cannot set overwrite=true for unsigned presets due to security restrictions.
-          Parameters - examples of parameters that can be used: name(preset identifier), unsigned(allows uploads without authentication), use_filename(preserves original filename), unique_filename(generates unique names), folder(destination folder), tags(comma-separated labels), overwrite(replace existing files - not allowed for unsigned), access_mode(public/authenticated), type(upload type), transformation(image/video processing), allowed_formats(permitted file types), backup(create backup copy), auto_tagging(AI tagging threshold), faces(face detection), colors(color analysis), quality_analysis(image quality check), moderation(content moderation service), notification_url(webhook endpoint), async(background processing), eager(generate derivatives), display_name(human readable name)
-          When Not to Use: Don't create upload presets for one-time uploads or when upload requirements frequently change. Avoid creating duplicates of existing presets - use update-upload-preset to modify existing configurations instead.
-          Output: Returns creation confirmation with preset identification details: message(creation status - "created"), name(preset identifier as specified), external_id(unique system-generated identifier for internal tracking)
-          Example output: {"message":"created","name":"temp-new-upload-preset","external_id":"26c944df-84f0-4bd3-afa6-1cb177fce5dc"}
+        title: Create Upload Preset
       operationId: createUploadPreset
       summary: Creates a new upload preset with specified configuration settings
       tags:
@@ -408,14 +372,9 @@ paths:
         name: list-upload-presets
         scopes:
           - builder
-        description: |
-          Purpose: Lists all upload presets defined in your Cloudinary product environment with their complete configuration settings. Upload presets contain predefined upload parameters that streamline file processing workflows.
-          Usage: Use when you need to audit existing upload configurations, build management interfaces, or understand available preset options before creating new ones. Essential for preset management and configuration discovery.
-          Example request: GET /upload_presets (no request body required)
-          Parameters: direction(asc/desc sort order), order_by(name/id/updated_at sort field), next_cursor(pagination token for additional results)
-          When Not to Use: Don't use for retrieving a single preset's details - use get-upload-preset-details instead. Avoid frequent polling as preset configurations rarely change.
-          Output: Returns array of preset objects with configuration details: presets(array containing preset objects), name(preset identifier), unsigned(authentication requirement), settings(configuration object with upload parameters), external_id(unique system identifier)
-          Example output: {"presets":[{"name":"Prepend Folder","unsigned":false,"settings":{"overwrite":"1","use_filename":"1","unique_filename":"0","use_filename_as_display_name":"1","use_asset_folder_as_public_id_prefix":"1","type":"upload"},"external_id":"6052708a-94b2-47e3-9368-c9de14032b72"}]}
+        title: List Upload Presets
+        readOnlyHint: true
+        idempotentHint: true
       operationId: listUploadPresets
       summary: Lists all upload presets configured in the account
       tags:
@@ -478,11 +437,9 @@ paths:
         name: get-upload-preset-details
         scopes:
           - builder
-        description: |
-          Purpose: Retrieves the configuration details of a specific upload preset (such as its allowed parameters and settings). 
-          Usage: Use this when you need to inspect or utilize a preset's settings (for example, to verify if unsigned uploading is enabled or what transformations are applied on upload by default). 
-          When Not to Use: Not required if you only need a list of preset names (use list-upload-presets for that). Also not useful if the preset name is unknown. 
-          Output: Returns a JSON object containing information on the upload preset profile. Some returned parameters examples: presets(array of preset objects), name(preset name), unsigned(allows unsigned uploads), settings(preset configuration object), external_id(unique preset identifier), transformation(default transformation string), tags(auto-applied tags), allowed_formats(permitted file formats), eager(transformations generated on upload), overwrite(overwrite existing files), use_filename(use original filename), unique_filename(ensure unique filenames), use_filename_as_display_name(filename as display name), use_asset_folder_as_public_id_prefix(folder prefix for public ID), type(upload type), moderation(content moderation settings), auto_transcription(automatic transcription settings), asset_folder(default upload folder), access_control(access permissions)
+        title: Get Upload Preset Details
+        readOnlyHint: true
+        idempotentHint: true
       operationId: getUploadPreset
       summary: Retrieves details of a single upload preset
       tags:
@@ -517,12 +474,8 @@ paths:
         name: update-upload-preset
         scopes:
           - builder
-        description: |
-          Purpose: Updates the settings of an existing upload preset. This lets you change parameters like allowed transformations, moderation settings, or whether unsigned uploads are allowed. 
-          Usage: Use this to modify a preset when requirements change (for example, enabling a new format or altering incoming transformation rules) without creating a new preset. 
-          Note 1: Should be used carefully, as updating upload_presets may impact existed production flows that uses the upload_preset profile that is being updated. consider creating new one with the modification and then change the production flow to the new one if the intent is to modify a production flow. Note 2: Cannot set overwrite=true for unsigned presets. , Note-3: Uses  this (PUT) method to update existing presets rather than creating new ones.
-          When Not to Use: Don't use for creating new presets (use create-upload-preset instead). Also, if the preset doesn't exist, you'd need to create it first. 
-          Output: Returns update confirmation with preset identifier: message(update status), external_id(unique system identifier)
+        title: Update Upload Preset
+        idempotentHint: true
       operationId: updateUploadPreset
       summary: Updates an existing upload preset's configuration settings
       tags:
@@ -575,11 +528,9 @@ paths:
         name: delete-upload-preset
         scopes:
           - builder
-        description: |
-          Purpose: Deletes an upload preset from your product environment, preventing any further uploads from using that preset. 
-          Usage: Use this to remove presets that are no longer needed or relevant (for example, a deprecated upload configuration). 
-          When Not to Use: Avoid deleting a preset that is still in active use by your applications or integrations; doing so will cause any uploads referencing it to act as expected in that upload preset profile that is deleted.
-          Output: Confirms the deletion of the preset (the preset will no longer appear in listing results).
+        title: Delete Upload Preset
+        destructiveHint: true
+        idempotentHint: true
       operationId: deleteUploadPreset
       summary: Deletes an upload preset from the account
       tags:
@@ -625,14 +576,9 @@ paths:
         name: list-upload-mappings
         scopes:
           - builder
-        description: |
-          Purpose: Retrieves all upload mappings configured in your Cloudinary account, which define custom URL structures for accessing assets in specific folders, enabling branded or custom domain delivery patterns.
-          Usage: Use this to audit existing URL mappings, understand current delivery configurations, troubleshoot URL routing issues, or review mappings before creating new ones. Essential for managing custom domain setups and branded asset delivery.
-          Example request: GET /upload_mappings?folder=products&max_results=50
-          Parameters: folder(optional - filter by specific folder), max_results(pagination limit 1-500), next_cursor(pagination token)
-          When Not to Use: Not needed for standard Cloudinary URL delivery. Avoid frequent polling as mappings change infrequently.
-          Output: Returns mapping list or single mapping: mappings array containing folder(folder path), template(URL pattern), external_id(unique identifier), created_at(creation time), plus total_entries(count) and next_cursor(pagination) for lists
-          Example output: {"mappings":[{"folder":"products","template":"https://cdn.example.com/{public_id}","external_id":"map_123","created_at":"2023-01-15T18:00:00Z"}],"total_entries":1}
+        title: List Upload Mappings
+        readOnlyHint: true
+        idempotentHint: true
       operationId: listUploadMappings
       summary: Retrieves a list of all upload mapping rules configured in your Cloudinary product environment
       description: |
@@ -698,14 +644,7 @@ paths:
         name: create-upload-mapping
         scopes:
           - builder
-        description: |
-          Purpose: Creates custom URL mappings that define how assets in specific folders are delivered through branded or custom domain URLs, enabling consistent branding and custom URL structures for asset delivery.
-          Usage: Use this to set up branded asset delivery, create custom domain mappings for specific folders, implement consistent URL patterns, or establish dedicated delivery paths for different content types. Essential for white-label solutions and custom branding.
-          Example request: {"folder": "products", "template": "https://cdn.mystore.com/images/{public_id}"}
-          Parameters: folder(target folder path), template(URL pattern with {public_id} placeholder)
-          When Not to Use: Don't create mappings for temporary folders or without proper DNS/domain setup. Avoid overly complex URL patterns that might cause routing issues.
-          Output: Returns creation confirmation: message(creation status), folder(mapped folder path), external_id(unique mapping identifier)
-          Example output: {"message": "created", "folder": "products", "external_id": "mapping_456"}
+        title: Create Upload Mapping
       operationId: createUploadMapping
       summary: Creates a new upload mapping
       description: Creates a new upload mapping for the specified folder
@@ -773,14 +712,8 @@ paths:
         name: update-upload-mapping
         scopes:
           - builder
-        description: |
-          Purpose: Updates existing URL mappings to modify custom delivery patterns for folders, allowing you to change domain endpoints, URL structures, or routing configurations without recreating the mapping.
-          Usage: Use this to update branded domains, modify URL patterns for existing folders, fix routing configurations, or migrate to new delivery endpoints while maintaining folder associations. Essential for maintaining current branded delivery setups.
-          Example request: {"folder": "products", "template": "https://newcdn.mystore.com/assets/{public_id}"}
-          Parameters: folder(existing folder path), template(updated URL pattern with {public_id} placeholder)
-          When Not to Use: Avoid updating production mappings without testing the new URLs. Don't change mappings during high-traffic periods as this affects asset delivery.
-          Output: Returns update confirmation: message(update status), external_id(unique mapping identifier)
-          Example output: {"message": "updated", "external_id": "mapping_456"}
+        title: Update Upload Mapping
+        idempotentHint: true
       operationId: updateUploadMapping
       summary: Updates an existing upload mapping by changing its remote URL template for a given
       description: Updates the URL template for an existing folder mapping
@@ -842,15 +775,9 @@ paths:
         name: delete-upload-mapping
         scopes:
           - builder
-        description: |
-          Purpose: Permanently removes custom URL mappings for specific folders, stopping branded or custom domain delivery for assets in those folders and reverting to standard Cloudinary URL patterns.
-          Usage: Use this to clean up unused mappings, remove deprecated custom domains, or eliminate mapping configurations that are no longer needed. Essential for maintaining clean URL routing and removing outdated branded delivery setups.
-          Example request: DELETE /upload_mappings?folder=old_products
-          Parameters: folder(folder path of mapping to remove)
-          Warning: This permanently removes the custom URL mapping and affects how assets in this folder are delivered. Ensure alternative delivery methods are in place if needed.
-          When Not to Use: Don't delete mappings that are actively used in production without confirming impact on asset delivery. Avoid deletion during high-traffic periods.
-          Output: Returns deletion confirmation: message(deletion status), external_id(unique identifier of deleted mapping)
-          Example output: {"message": "deleted", "external_id": "mapping_456"}
+        title: Delete Upload Mapping
+        destructiveHint: true
+        idempotentHint: true
       operationId: deleteUploadMapping
       summary: Deletes a folder upload mapping
       description: Permanently deletes the upload mapping for the specified folder
@@ -953,14 +880,9 @@ paths:
         name: list-triggers
         scopes:
           - admin
-        description: |
-          Purpose: Retrieves a comprehensive list of all event triggers and notification configurations in your Cloudinary account. Event triggers automatically send HTTP notifications to your specified URLs when specific events occur (like asset uploads, deletions, or transformations).
-          Usage: Use this to audit existing webhook configurations, manage event notification setups, or discover what events are currently being monitored. Essential for webhook management and event-driven integration monitoring.
-          Example request: GET /notifications/triggers?event_type=upload
-          Parameters: event_type(filter triggers by specific event type - upload, delete, transformation, etc.)
-          When Not to Use: Don't use for creating or modifying triggers (use create-trigger or update-trigger instead), real-time event processing, or when you need immediate notification delivery status.
-          Output: Returns array of trigger configurations: triggers(array of trigger objects), total(total count of triggers). Each trigger object contains: id(trigger identifier), uri(notification URL), event_type(triggering event), created_at(creation timestamp), updated_at(last modification time)
-          Example output: {"triggers":[{"id":"12345678","uri":"https://webhook.site/124","event_type":"upload","created_at":"2023-01-15T10:00:00Z","updated_at":"2023-01-15T10:00:00Z"}],"total":1}
+        title: List Triggers
+        readOnlyHint: true
+        idempotentHint: true
       operationId: listTrigger
       summary: Lists all webhook notification triggers configured for your product environmentcloudinary
       description: |
@@ -1018,19 +940,11 @@ paths:
         name: create-trigger
         scopes:
           - admin
-        description: |
-          Purpose: Creates a new event trigger that automatically sends HTTP POST notifications to your specified URL when specific Cloudinary events occur. This enables real-time integration and automation workflows based on asset lifecycle events.
-          Usage: Use this to set up webhook notifications for asset uploads, deletions, transformations, moderation results, or other events. Essential for building event-driven integrations, audit systems, and automated content workflows.
-          Example request: {"uri": "https://trigger.site/124", "event_type": "upload"}
-          Parameters: uri(webhook URL that will receive notifications), event_type(type of event to monitor - upload, delete, transformation, moderation, etc.)
-          Note: Your account supports up to 30 notification URLs per event type. Total triggers are limited by (unique event types × 30).
-          When Not to Use: Don't create triggers for events you don't need to process, as this increases notification volume. Avoid creating duplicate triggers for the same event type and URL combination.
-          Output: Returns created trigger configuration: id(unique trigger identifier), uri(notification URL), event_type(monitored event type), created_at(creation timestamp)
-          Example output: {"id":"12345678","uri":"https://trigger.site/124","event_type":"upload","created_at":"2023-01-15T10:00:00Z"}
+        title: Create Trigger
       operationId: createTrigger
       summary: Creates a new notification trigger (webhook) by specifying an event type and a destination
       description: |
-        Creates a new trigger. 
+        Creates a new trigger.
         Your product environment supports triggers up to a maximum determined by multiplying the number of unique event types by the limit of 30 notification URLs.
       tags:
         - triggers
@@ -1102,14 +1016,8 @@ paths:
         name: update-trigger
         scopes:
           - admin
-        description: |
-          Purpose: Updates the notification URL for an existing event trigger, allowing you to redirect webhook notifications to a new endpoint without recreating the trigger configuration.
-          Usage: Use this when you need to change the destination URL for webhook notifications due to infrastructure changes, endpoint migrations, or updated integration requirements. Essential for maintaining webhook continuity during system updates.
-          Example request: {"new_uri": "https://new-webhook.site/updated-endpoint"}
-          Parameters: id(trigger identifier from URL path), new_uri(updated webhook URL that will receive notifications)
-          When Not to Use: Don't use for changing event types (delete and recreate trigger instead) or for testing webhooks (use dedicated testing tools). Avoid frequent URL changes as this may disrupt notification delivery.
-          Output: Returns update confirmation: message(success confirmation - typically "ok")
-          Example output: {"message": "ok"}
+        title: Update Trigger
+        idempotentHint: true
       operationId: updateTrigger
       summary: Updates the callback URL of an existing webhook trigger in your Cloudinary account
       description: Updates a notification URL for a trigger.
@@ -1174,14 +1082,9 @@ paths:
         name: delete-trigger
         scopes:
           - admin
-        description: |
-          Purpose: Permanently removes an event trigger from your Cloudinary account, stopping all webhook notifications for the specified trigger configuration.
-          Usage: Use this to clean up unused triggers, remove deprecated webhook endpoints, or stop notifications that are no longer needed. Essential for maintaining organized webhook configurations and reducing unnecessary network traffic.
-          Example request: DELETE /notifications/triggers/c2c822dd1aa41ba6d81299df8b5ae949
-          Parameters: id(trigger identifier from URL path)
-          When Not to Use: Don't delete triggers that are still needed for production workflows. Avoid deleting without confirming the trigger ID, as this action cannot be undone.
-          Output: Returns deletion confirmation: message(success confirmation - typically "ok")
-          Example output: {"message": "ok"}
+        title: Delete Trigger
+        destructiveHint: true
+        idempotentHint: true
       operationId: deleteTrigger
       summary: Deletes a notification trigger
       description: Deletes a trigger.
@@ -1235,11 +1138,7 @@ paths:
         name: create-streaming-profile
         scopes:
           - builder
-        description: |
-          Purpose: Creates a new adaptive streaming profile in your Cloudinary account. You define a unique profile name and a set of video representations (each with specific transformation parameters like resolution, bitrate, codec, etc.) for adaptive bitrate streaming. This operation allows you to customize streaming profiles beyond the built-in ones by specifying exactly how videos should be encoded at various quality levels.
-          Usage: Use this operation when the existing built-in streaming profiles do not meet your requirements and you need a custom profile. For example, if you require different resolutions or advanced codecs (such as VP9 or H.265/HEVC for DASH streaming) that are not covered by the default profiles, you can create your own. Provide a profile name (not already in use) and an array of representation definitions. Once created, the new profile can be applied in video uploads (e.g., as an eager transformation) and for delivering videos using the `sp_<profile>` parameter.
-          When Not to Use: Do not create a new profile if an existing Cloudinary predefined profile already satisfies your needs, as that would be redundant. Also, avoid using this operation to change an existing profile's settings—if a profile exists but needs adjustments, use **update-streaming-profile** instead. Ensure the profile name you choose isn't already taken by another profile (attempting to recreate an existing name will result in an error).
-          Output: On success, returns the details of the newly created streaming profile. The response will include the profile's `name`, any `display_name` you set, and the list of `representations` (transformation specifications) for that profile, confirming that the profile was created.
+        title: Create Streaming Profile
       operationId: createStreamingProfile
       summary: Creates a new adaptive streaming profile in your Cloudinary account
       tags:
@@ -1289,11 +1188,9 @@ paths:
         name: list-streaming-profiles
         scopes:
           - builder
-        description: |
-          Purpose: Lists all adaptive streaming profiles (both built-in and custom) defined in your Cloudinary account, which are used to deliver videos via HLS/DASH adaptive bitrate streaming. This operation provides a complete overview of every streaming profile by name and details in the product environment.
-          Usage: Use this operation when you need to retrieve the full list of streaming profiles configured for your account. It's useful for auditing available profiles or populating a selection list in an application. Since it returns all profiles, you can identify both Cloudinary's predefined profiles and any custom profiles you've created.
-          When Not to Use: If you only require details of a single profile, avoid retrieving all profiles; use **get-streaming-profile** for a specific name instead. Also, do not use this if your goal is to create or modify profiles (use the respective **create** or **update** operations for those purposes).
-          Output: Returns an array of streaming profile definitions. The response includes each profile's information such as its `name`, `display_name`, whether it is a predefined (built-in) profile, and the list of video representations configured under that profile.
+        title: List Streaming Profiles
+        readOnlyHint: true
+        idempotentHint: true
       operationId: getStreamingProfiles
       summary: Lists all adaptive streaming profiles (both built-in and custom) defined in your Cloudinary account
       tags:
@@ -1333,11 +1230,9 @@ paths:
         name: get-streaming-profile
         scopes:
           - builder
-        description: |
-          Purpose: Retrieves the details of a single adaptive streaming profile by its name It returns the profile's full configuration, including all representation settings, so you can inspect exactly how that profile is defined.
-          Usage: Use this operation when you need information about one specific streaming profile. For example, to verify a custom profile's resolutions and bitrates or to display the configuration of a particular profile in a management interface. Simply provide the profile's name to get its attributes and settings.
-          When Not to Use: Avoid using this to fetch many profiles one by one; if you require multiple profiles or an overview of all profiles, use **list-streaming-profiles** instead. Also, do not use this operation for creating or updating profiles (it is read-only); use **create-streaming-profile** or **update-streaming-profile** for those tasks.
-          Output: Returns a single streaming profile object with its details. The output includes fields such as the profile's unique `external_id`, `name`, `display_name`, a `predefined` flag (indicating if it's a built-in profile), and an array of `representations` (each describing a video transformation for that profile).
+        title: Get Streaming Profile
+        readOnlyHint: true
+        idempotentHint: true
       operationId: getStreamingProfile
       summary: Retrieves the details of a single adaptive streaming profile by its name
       tags:
@@ -1371,11 +1266,8 @@ paths:
         name: update-streaming-profile
         scopes:
           - builder
-        description: |
-          Purpose: Modifies an existing adaptive streaming profile's configuration. You can update both custom and built-in profiles by providing a new set of video representations (transformations), which will replace the profile's previous representations entirely. This allows you to change the resolutions, bitrates, codecs, or other settings of the streaming profile while keeping the same profile name.
-          Usage: Use this operation to adjust an established streaming profile when requirements change. For example, you might add a lower-resolution fallback representation to a custom profile or tweak the bitrate of a built-in profile's entries to better suit your audience's bandwidth. To use it, provide the target profile's name and a full updated list of representations that should define the profile. The next time that profile is used for encoding, it will use these new settings.
-          When Not to Use: Do not call this for a profile name that doesn't exist in your account (it will fail with a 'not found' error — use **create-streaming-profile** first if needed). If a built-in profile already meets your needs as provided, there's no need to update it (unnecessary overrides can be avoided). Also, this operation is not for retrieving profile info (use **get-streaming-profile** for that) and not for removing profiles (use **delete-streaming-profile** if you intend to remove or reset a profile).
-          Output: Returns the streaming profile's details after the update, reflecting the new configuration. In the response, you will see the profile's name and properties with the updated list of representations, confirming the changes were applied successfully.
+        title: Update Streaming Profile
+        idempotentHint: true
       operationId: updateStreamingProfile
       summary: Modifies an existing adaptive streaming profile's configuration
       tags:
@@ -1428,11 +1320,9 @@ paths:
         name: delete-streaming-profile
         scopes:
           - builder
-        description: |
-          Purpose: Removes a streaming profile or reverts a built-in profile to its default settings. If the profile is a custom one, this operation permanently deletes it from your account. If the profile is a built-in Cloudinary profile that you have modified via an update, this will undo the customizations and restore the original preset values. (Attempting to delete a built-in profile that has never been modified will result in an error rather than a deletion.)
-          Usage: Use this operation to clean up streaming profiles that are no longer needed or to rollback changes on a built-in profile. For a custom profile that you no longer use, deleting it frees up its name and removes clutter from your configuration. For a built-in profile that you previously customized, deleting (reverting) it will discard your overrides and return to Cloudinary's default profile settings. Be cautious to only use this on profiles you truly want to remove or reset, especially if they might be referenced in existing media delivery URLs.
-          When Not to Use: Avoid using this on a built-in profile that you have not altered, because the operation will not succeed in that case. If your intention is to modify a profile's settings rather than remove it entirely, use **update-streaming-profile** instead of deletion. Also, do not use this for simply disabling a profile—built-in profiles cannot be deleted from the system, so if you don't want to use a built-in profile, you can just refrain from using it without calling this operation.
-          Output: On success, the API returns a confirmation message indicating that the profile was deleted (for custom profiles) or reverted to defaults (for built-in profiles). No detailed profile object is returned upon deletion—just the status message. If the profile could not be deleted (for example, if it was not found or was an unmodified built-in), an error message will be returned instead indicating the reason.
+        title: Delete Streaming Profile
+        destructiveHint: true
+        idempotentHint: true
       operationId: deleteStreamingProfile
       summary: Delete custom streaming profile or revert built-in profile to the original settings
       tags:
@@ -1827,6 +1717,44 @@ components:
             A URL to redirect to after the upload/explicit is completed instead of returning the upload response.
             Signed upload result parameters are added to the callback URL. This parameter is ignored for XHR (Ajax XMLHttpRequest) or JavaScript Fetch API upload requests.
             Note: This parameter is relevant for direct uploads from a form in the browser. It is automatically set if you perform direct upload from the browser using Cloudinary's SDKs and the jQuery plugin.
+    access_control_item:
+      type: object
+      description: Access control rule that defines when and how the asset can be accessed.
+      required:
+        - access_type
+      properties:
+        access_type:
+          type: string
+          enum:
+            - token
+            - anonymous
+          description: The type of access control to apply to the asset.
+        key:
+          type: string
+          pattern: ^[a-zA-Z0-9]+$
+          description: The authentication key identifier for token-based access. Default key is used if not specified or if set to 'default'.
+          example: prod2024
+        start:
+          type: string
+          description: The start date and time (in ISO 8601 format) when anonymous access becomes available.
+          example: '2024-03-15T09:00:00Z'
+        end:
+          type: string
+          description: The end date and time (in ISO 8601 format) when anonymous access expires.
+          example: '2024-06-30T23:59:59Z'
+    access_control:
+      type: array
+      description: |
+        Restricts access to the asset by specifying one or more access types.
+        The asset is restricted unless at least one listed access type is valid.
+      items:
+        $ref: '#/components/schemas/access_control_item'
+      example:
+        - access_type: token
+          key: prod2024
+        - access_type: anonymous
+          start: '2024-03-15T09:00:00Z'
+          end: '2024-06-30T23:59:59Z'
     upload_other_parameters:
       type: object
       properties:
@@ -1941,14 +1869,7 @@ components:
           minimum: 0
           maximum: 1
         access_control:
-          type: string
-          description: |
-            Restrict access to the asset by passing an array of access types for the asset. The asset is restricted unless one of the access types is valid.
-            Possible values for each access type:
-            - token requires either Token-based access or Cookie-based access for accessing the asset.
-            For example: access_type: "token"
-            - anonymous allows public access to the asset during a set time period. The anonymous access type can optionally include start and/or end dates (in ISO 8601 format) that define when the asset is publicly available. Note that you can only include a single 'anonymous' access type. For example:
-            access_type: "anonymous", start: "2017-12-15T12:00Z", end: "2018-01-20T12:00Z"
+          $ref: '#/components/schemas/access_control'
         eval:
           type: string
           description: Allows you to modify upload parameters by specifying custom logic with JavaScript. This can be useful for conditionally adding tags, contextual metadata, structured metadata or eager transformations depending on specific criteria of the uploaded file.

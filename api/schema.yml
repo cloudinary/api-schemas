@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Cloudinary Asset Management API
+  title: Cloudinary API v1.1
   version: 0.3.5
   license:
     name: MIT
@@ -35,14 +35,30 @@ security:
 tags:
   - name: upload
     description: Uploads files to the active product environment.
+  - name: upload_presets
+    description: Enables you to manage upload presets.
+  - name: metadata_fields
+    description: Enables you to manage structured metadata fields.
+  - name: metadata_rules
+    description: Enables you to set up dependencies and relationships between structured metadata fields and options.
+  - name: upload_mappings
+    description: Enables you to manage upload mappings
   - name: assets
     description: Enables you to manage all the resources (assets) stored in your product environment.
   - name: asset_relations
     description: Enables you to manage relationships between assets.
   - name: metadata
     description: Enables you to manage the custom metadata (tags/context/structured metadata) stored with specific assets.
+  - name: moderations
+    description: Enables you to manage moderation definitions.
+  - name: streaming_profiles
+    description: Enables you to manage streaming profiles
   - name: video_analytics
     description: Gets video analytics
+  - name: transformations
+    description: Enables you to manage named and unnamed transformations.
+  - name: triggers
+    description: Enables you to manage event triggers and notifications.
   - name: explode
     description: Generates derived images from a multi-frame/page file.
   - name: tags
@@ -1232,6 +1248,1928 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/transformations:
+    get:
+      x-speakeasy-mcp:
+        name: list-transformations
+        scopes:
+          - admin
+        title: List Transformations
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Lists all transformation definitions in your account (including named transformations
+      description: |
+        Retrieves a list of all transformations, which can be filtered to show either only named or unnamed transformations.
+      tags:
+        - transformations
+      operationId: listTransformations
+      parameters:
+        - $ref: '#/components/parameters/cloud_name'
+        - name: named
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Whether to return only named (`true`) or unnamed (`false`) transformations. If this parameter isn't included, both named and unnamed transformations will be returned.
+        - $ref: '#/components/parameters/max_results_query'
+        - $ref: '#/components/parameters/next_cursor_query'
+      responses:
+        '200':
+          description: Transformations retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/list_response'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/transformations/{transformation}:
+    get:
+      x-speakeasy-mcp:
+        name: get-transformation-details
+        scopes:
+          - admin
+        title: Get Transformation Details
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Retrieves details of a specific transformation
+      description: |
+        Retrieves details for a named or unnamed transformation.
+      tags:
+        - transformations
+      operationId: getTransformation
+      parameters:
+        - $ref: '#/components/parameters/cloud_name'
+        - $ref: '#/components/parameters/transformation'
+      responses:
+        '200':
+          description: Transformation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/transformation_info'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: Transformation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    post:
+      x-speakeasy-mcp:
+        name: create-transformation
+        scopes:
+          - admin
+        title: Create Transformation
+      summary: Creates a new named transformation (assigning a custom name to a set of transformation
+      description: |
+        Creates a new named transformation with the given name and transformation string.
+      tags:
+        - transformations
+      operationId: createTransformation
+      parameters:
+        - $ref: '#/components/parameters/cloud_name'
+        - $ref: '#/components/parameters/transformation_name'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/create_request'
+      responses:
+        '200':
+          description: Transformation created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '409':
+          description: Conflict (transformation already exists)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    put:
+      x-speakeasy-mcp:
+        name: update-transformation
+        scopes:
+          - admin
+        title: Update Transformation
+        idempotentHint: true
+      summary: Updates the definition of an existing named transformation
+      description: |
+        Update an existing named or unnamed transformation.
+      tags:
+        - transformations
+      operationId: updateTransformation
+      parameters:
+        - $ref: '#/components/parameters/cloud_name'
+        - $ref: '#/components/parameters/transformation'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/update_request'
+      responses:
+        '200':
+          description: Transformation updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-transformation
+        scopes:
+          - admin
+        title: Delete Transformation
+        destructiveHint: true
+        idempotentHint: true
+      summary: Deletes a named transformation from your account
+      description: |
+        Delete a named or unnamed transformation. Optionally invalidate derived resources generated using the named transformation.
+      tags:
+        - transformations
+      operationId: deleteTransformation
+      parameters:
+        - $ref: '#/components/parameters/cloud_name'
+        - $ref: '#/components/parameters/transformation'
+        - name: invalidate
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Invalidate derived resources generated using the deleted transformation from CDN.
+          example: true
+      responses:
+        '200':
+          description: Transformation deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: Transformation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/upload_presets:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    post:
+      x-speakeasy-mcp:
+        name: create-upload-preset
+        scopes:
+          - builder
+        title: Create Upload Preset
+      operationId: createUploadPreset
+      summary: Creates a new upload preset with specified configuration settings
+      tags:
+        - upload_presets
+      parameters: []
+      responses:
+        '200':
+          description: upload preset created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  message:
+                    type: string
+                  external_id:
+                    type: string
+                required:
+                  - message
+                  - name
+                  - external_id
+        '400':
+          description: request error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '409':
+          description: preset exists error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/upload_preset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/upload_preset'
+    get:
+      x-speakeasy-mcp:
+        name: list-upload-presets
+        scopes:
+          - builder
+        title: List Upload Presets
+        readOnlyHint: true
+        idempotentHint: true
+      operationId: listUploadPresets
+      summary: Lists all upload presets configured in the account
+      tags:
+        - upload_presets
+      parameters:
+        - name: order_by
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - name
+              - id
+              - updated_at
+        - name: direction
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+        - $ref: '#/components/parameters/next_cursor_query'
+      responses:
+        '200':
+          description: upload presets retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  presets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/upload_preset'
+                required:
+                  - presets
+        '400':
+          description: request error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/upload_presets/{name}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      x-speakeasy-mcp:
+        name: get-upload-preset-details
+        scopes:
+          - builder
+        title: Get Upload Preset Details
+        readOnlyHint: true
+        idempotentHint: true
+      operationId: getUploadPreset
+      summary: Retrieves details of a single upload preset
+      tags:
+        - upload_presets
+      responses:
+        '200':
+          description: upload preset retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/upload_preset'
+        '400':
+          description: request error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: preset not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    put:
+      x-speakeasy-mcp:
+        name: update-upload-preset
+        scopes:
+          - builder
+        title: Update Upload Preset
+        idempotentHint: true
+      operationId: updateUploadPreset
+      summary: Updates an existing upload preset's configuration settings
+      tags:
+        - upload_presets
+      parameters: []
+      responses:
+        '200':
+          description: upload preset updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  external_id:
+                    type: string
+                required:
+                  - message
+                  - external_id
+        '400':
+          description: request error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: preset not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/upload_preset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/upload_preset'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-upload-preset
+        scopes:
+          - builder
+        title: Delete Upload Preset
+        destructiveHint: true
+        idempotentHint: true
+      operationId: deleteUploadPreset
+      summary: Deletes an upload preset from the account
+      tags:
+        - upload_presets
+      responses:
+        '200':
+          description: upload preset deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  external_id:
+                    type: string
+                required:
+                  - message
+                  - external_id
+        '400':
+          description: request error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: preset not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    post:
+      x-speakeasy-mcp:
+        name: create-metadata-field
+        scopes:
+          - admin
+        title: Create Metadata Field
+      operationId: createMetadataField
+      summary: Creates a new structured metadata field in your account
+      description: Creates a new metadata field with the specified properties and configuration.
+      tags:
+        - metadata_fields
+      responses:
+        '200':
+          description: metadata field created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/metadata_field'
+    get:
+      x-speakeasy-mcp:
+        name: list-metadata-fields
+        scopes:
+          - builder
+        title: List Metadata Fields
+        readOnlyHint: true
+        idempotentHint: true
+      operationId: listMetadataFields
+      summary: Lists all structured metadata fields defined in your Cloudinary product environment
+      description: Retrieves a list of all metadata fields in the product environment based on the provided filters.
+      tags:
+        - metadata_fields
+      parameters:
+        - name: external_ids
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          description: The external IDs of the metadata fields to retrieve. if not provided, all metadata fields will be returned.
+      responses:
+        '200':
+          description: metadata fields retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata_fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/metadata_field'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/{external_id}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The external ID of the metadata field to retrieve.
+    get:
+      x-speakeasy-mcp:
+        name: get-metadata-field
+        scopes:
+          - admin
+        title: Get Metadata Field
+        readOnlyHint: true
+        idempotentHint: true
+      operationId: getMetadataField
+      summary: Retrieves the definition of a specific structured metadata field by its identifier (external_id)
+      description: Retrieves detailed information about the specified metadata field.
+      tags:
+        - metadata_fields
+      responses:
+        '200':
+          description: metadata field retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    put:
+      x-speakeasy-mcp:
+        name: update-metadata-field
+        scopes:
+          - admin
+        title: Update Metadata Field
+        idempotentHint: true
+      operationId: updateMetadataField
+      summary: Updates the configuration of an existing metadata field
+      description: Updates the properties and configuration of the specified metadata field.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/metadata_field'
+      responses:
+        '200':
+          description: metadata field updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field'
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-metadata-field
+        scopes:
+          - builder
+        title: Delete Metadata Field
+        destructiveHint: true
+        idempotentHint: true
+      operationId: deleteMetadataField
+      summary: Deletes a structured metadata field definition from your account
+      description: Permanently deletes the specified metadata field and all its associated data.
+      tags:
+        - metadata_fields
+      responses:
+        '200':
+          description: metadata field deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/datasource/search:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    post:
+      operationId: searchMetadataFieldDatasource
+      summary: Search across all metadata field datasources
+      description: Performs a search across all metadata field datasources to find matching values.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                term:
+                  type: string
+                  description: The term to search for. Can be any substring of the value.
+                max_results:
+                  type: integer
+                  default: 100
+                  description: The maximum number of results to return.
+      responses:
+        '200':
+          description: search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field_id:
+                      type: string
+                      description: The external ID of the metadata field.
+                    id:
+                      type: string
+                      description: The external ID of the option.
+                    value:
+                      type: string
+                      description: The value of the option.
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/order:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    put:
+      operationId: reorderMetadataFields
+      summary: Reorder all metadata fields
+      description: Changes the display order of all metadata fields based on specified criteria.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order_by:
+                  type: string
+                  enum:
+                    - label
+                    - created_at
+                    - external_id
+                  description: The field to order by.
+                direction:
+                  type: string
+                  enum:
+                    - asc
+                    - desc
+                  description: The direction to order by.
+              required:
+                - order_by
+      responses:
+        '200':
+          description: metadata fields reordered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata_fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/metadata_field'
+        '400':
+          description: invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/{external_id}/reorder:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The external ID of the metadata field to reorder.
+    put:
+      operationId: reorderMetadataField
+      summary: Change position of metadata field
+      description: Changes the display position of a specific metadata field within the list.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                position:
+                  type: integer
+                  description: The position of the metadata field.
+              required:
+                - position
+      responses:
+        '200':
+          description: metadata fields reordered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata_fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/metadata_field'
+        '400':
+          description: invalid position
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/{external_id}/datasource:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The external ID of the metadata field to update the datasource for.
+    put:
+      x-speakeasy-mcp:
+        name: update-metadata-datasource-values
+        scopes:
+          - builder
+        title: Update Metadata Datasource Values
+        idempotentHint: true
+      operationId: updateMetadataFieldDatasource
+      summary: Updates the allowed values (the datasource) for a specified metadata field
+      description: Updates the values in a metadata field's datasource, including adding, modifying, or changing the order of values.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      external_id:
+                        type: string
+                        description: The external ID of the datasource value.
+                      value:
+                        type: string
+                        description: The value of the option.
+                      position:
+                        type: integer
+                        description: The position of the option.
+                      state:
+                        type: string
+                        enum:
+                          - active
+                          - inactive
+                        description: The state of the option.
+      responses:
+        '200':
+          description: datasource updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/metadata_field_datasource_value'
+        '400':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-metadata-datasource-values
+        scopes:
+          - builder
+        title: Delete Metadata Datasource Values
+        destructiveHint: true
+        idempotentHint: true
+      operationId: deleteMetadataFieldDatasource
+      summary: Removes one or more allowed values from a metadata field's datasource
+      description: Removes specific values from a metadata field's datasource by their external IDs.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                external_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: The external IDs of the datasource values to delete.
+              required:
+                - external_ids
+      responses:
+        '200':
+          description: datasource values deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field_datasource_values_array'
+        '400':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/{external_id}/datasource/search:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The external ID of the metadata field to search the datasource for.
+    post:
+      operationId: searchDatasourceInMDField
+      summary: Search datasource values in a metadata field
+      description: Performs a search within a specific metadata field's datasource to find matching values, with support for exact or partial matches.
+      tags:
+        - metadata_fields
+      parameters:
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 255
+          description: The maximum number of results to return.
+        - name: term
+          in: query
+          required: false
+          schema:
+            type: string
+          description: The term to search for. can be any substring of the value.
+        - name: exact_match
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Whether to search for an exact match.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payload:
+                  type: object
+                  description: Metadata payload for rule-based inference
+      responses:
+        '200':
+          description: search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field_datasource_values_array'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_fields/{external_id}/datasource_restore:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The external ID of the metadata field to restore the datasource values for.
+    post:
+      operationId: restoreMetadataFieldDatasource
+      summary: Restore datasource values
+      description: Restores datasource values that have been deleted.
+      tags:
+        - metadata_fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                external_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: The external IDs of the datasource values to restore.
+      responses:
+        '200':
+          description: datasource values restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_field_datasource_values_array'
+        '400':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_rules:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    post:
+      x-speakeasy-mcp:
+        name: create-metadata-rule
+        scopes:
+          - builder
+        title: Create Metadata Rule
+      operationId: createMetadataRule
+      summary: Creates a new conditional metadata rule
+      description: Creates a new metadata rule with the specified properties and configuration.
+      tags:
+        - metadata_rules
+      responses:
+        '200':
+          description: metadata rule created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_rule_response'
+        '400':
+          description: validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/metadata_rule_create'
+    get:
+      x-speakeasy-mcp:
+        name: list-metadata-rules
+        scopes:
+          - builder
+        title: List Metadata Rules
+        readOnlyHint: true
+        idempotentHint: true
+      operationId: listMetadataRules
+      summary: Retrieves a list of all conditional metadata rules defined in your accountcloudinary
+      description: Retrieves a list of all metadata rules in the cloud.
+      tags:
+        - metadata_rules
+      responses:
+        '200':
+          description: metadata rules retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata_rules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/metadata_rule_response'
+        '401':
+          description: authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/metadata_rules/{external_id}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: external_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The unique identifier of the metadata rule.
+    put:
+      x-speakeasy-mcp:
+        name: update-metadata-rule
+        scopes:
+          - builder
+        title: Update Metadata Rule
+        idempotentHint: true
+      operationId: updateMetadataRule
+      summary: Updates an existing conditional metadata rule's definition
+      description: Updates the properties and configuration of an existing metadata rule.
+      tags:
+        - metadata_rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/metadata_rule_update'
+      responses:
+        '200':
+          description: metadata rule updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata_rule_response'
+        '400':
+          description: validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata rule not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-metadata-rule
+        scopes:
+          - builder
+        title: Delete Metadata Rule
+        destructiveHint: true
+        idempotentHint: true
+      operationId: deleteMetadataRule
+      summary: Deletes a conditional metadata rule by its ID
+      description: Permanently deletes a metadata rule.
+      tags:
+        - metadata_rules
+      responses:
+        '200':
+          description: metadata rule deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '403':
+          description: insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: metadata rule not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/upload_mappings:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    get:
+      x-speakeasy-mcp:
+        name: list-upload-mappings
+        scopes:
+          - builder
+        title: List Upload Mappings
+        readOnlyHint: true
+        idempotentHint: true
+      operationId: listUploadMappings
+      summary: Retrieves a list of all upload mapping rules configured in your Cloudinary product environment
+      description: |
+        Returns a list of all upload mappings defined for your account.
+        Upload mappings allow you to map an upload preset to a specific folder and URL template.
+      tags:
+        - upload_mappings
+      parameters:
+        - name: folder
+          in: query
+          required: false
+          description: Get details of a specific mapping by folder name
+          schema:
+            type: string
+        - $ref: '#/components/parameters/next_cursor_query'
+        - $ref: '#/components/parameters/max_results_query'
+      responses:
+        '200':
+          description: Upload mappings retrieved successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    description: List response
+                    properties:
+                      mappings:
+                        type: array
+                        description: Array of upload mapping objects
+                        items:
+                          $ref: '#/components/schemas/upload_mapping'
+                      total_entries:
+                        type: integer
+                        description: Total number of mappings
+                      next_cursor:
+                        type: string
+                        description: Cursor for getting the next page of results
+                    required:
+                      - mappings
+                      - total_entries
+                  - $ref: '#/components/schemas/upload_mapping'
+                    description: Single mapping response when using folder parameter
+        '400':
+          description: Validation error (e.g. invalid next_cursor)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: Authentication error - Invalid API key or secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: Mapping not found for the specified folder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    post:
+      x-speakeasy-mcp:
+        name: create-upload-mapping
+        scopes:
+          - builder
+        title: Create Upload Mapping
+      operationId: createUploadMapping
+      summary: Creates a new upload mapping
+      description: Creates a new upload mapping for the specified folder
+      tags:
+        - upload_mappings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folder:
+                  type: string
+                  description: The folder name for the mapping
+                  example: my_folder
+                template:
+                  type: string
+                  description: The template URL
+                  example: http://example.com/files
+              required:
+                - folder
+                - template
+      responses:
+        '200':
+          description: Upload mapping created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: created
+                  folder:
+                    type: string
+                    description: The folder name that was created
+                  external_id:
+                    type: string
+                    description: Unique identifier for the mapping
+                required:
+                  - message
+                  - folder
+                  - external_id
+        '400':
+          description: Validation error (e.g. invalid template format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: Authentication error - Invalid API key or secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '409':
+          description: A mapping for this folder already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    put:
+      x-speakeasy-mcp:
+        name: update-upload-mapping
+        scopes:
+          - builder
+        title: Update Upload Mapping
+        idempotentHint: true
+      operationId: updateUploadMapping
+      summary: Updates an existing upload mapping by changing its remote URL template for a given
+      description: Updates the URL template for an existing folder mapping
+      tags:
+        - upload_mappings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folder:
+                  type: string
+                  description: The folder name of the mapping to update
+                template:
+                  type: string
+                  description: The new URL template
+              required:
+                - folder
+                - template
+      responses:
+        '200':
+          description: Upload mapping updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: updated
+                  external_id:
+                    type: string
+                    description: Unique identifier of the updated mapping
+                required:
+                  - message
+                  - external_id
+        '400':
+          description: Validation error (e.g. invalid template format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: Authentication error - Invalid API key or secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: No mapping found for the specified folder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-upload-mapping
+        scopes:
+          - builder
+        title: Delete Upload Mapping
+        destructiveHint: true
+        idempotentHint: true
+      operationId: deleteUploadMapping
+      summary: Deletes a folder upload mapping
+      description: Permanently deletes the upload mapping for the specified folder
+      tags:
+        - upload_mappings
+      parameters:
+        - name: folder
+          in: query
+          required: true
+          description: The folder name of the mapping to delete
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Upload mapping deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: deleted
+                  external_id:
+                    type: string
+                    description: Unique identifier of the deleted mapping
+                required:
+                  - message
+                  - external_id
+        '401':
+          description: Authentication error - Invalid API key or secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: No mapping found for the specified folder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/upload_mappings/replace:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    put:
+      operationId: replaceUploadMappings
+      summary: Replaces all upload mappings
+      tags:
+        - upload_mappings
+      responses:
+        '200':
+          description: upload mappings replaced
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '400':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mappings:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      folder:
+                        type: string
+                      template:
+                        type: string
+                    required:
+                      - folder
+                      - template
+              required:
+                - mappings
+  /v1_1/{cloud_name}/triggers:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    get:
+      x-speakeasy-mcp:
+        name: list-triggers
+        scopes:
+          - admin
+        title: List Triggers
+        readOnlyHint: true
+        idempotentHint: true
+      operationId: listTrigger
+      summary: Lists all webhook notification triggers configured for your product environmentcloudinary
+      description: |
+        Retrieves a list of all event triggers and notifications within your product environment.
+      tags:
+        - triggers
+      parameters:
+        - name: event_type
+          in: query
+          required: false
+          description: The type of event that will trigger the notification response.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Triggers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: List response
+                properties:
+                  triggers:
+                    type: array
+                    description: List of trigger objects.
+                    items:
+                      $ref: '#/components/schemas/trigger_info'
+                  total:
+                    type: integer
+                    description: Total number of triggers.
+                    example: 1
+                required:
+                  - triggers
+                  - total
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: Invalid value a for parameter event_type
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: Invalid credentials
+    post:
+      x-speakeasy-mcp:
+        name: create-trigger
+        scopes:
+          - admin
+        title: Create Trigger
+      operationId: createTrigger
+      summary: Creates a new notification trigger (webhook) by specifying an event type and a destination
+      description: |
+        Creates a new trigger.
+        Your product environment supports triggers up to a maximum determined by multiplying the number of unique event types by the limit of 30 notification URLs.
+      tags:
+        - triggers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uri:
+                  type: string
+                  description: The URL that will receive the notification response.
+                  format: uri
+                  example: https://trigger.site/124
+                event_type:
+                  type: string
+                  description: The type of event that will trigger the notification response.
+                  example: upload
+              required:
+                - uri
+                - event_type
+      responses:
+        '201':
+          description: Trigger created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/trigger_info'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: limit_reached
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: Invalid credentials
+        '409':
+          description: Validation error - Record already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: record_already_exists
+  /v1_1/{cloud_name}/triggers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          description: The ID of the trigger to update.
+          example: c2c822dd1aa41ba6d81299df8b5ae949
+    put:
+      x-speakeasy-mcp:
+        name: update-trigger
+        scopes:
+          - admin
+        title: Update Trigger
+        idempotentHint: true
+      operationId: updateTrigger
+      summary: Updates the callback URL of an existing webhook trigger in your Cloudinary account
+      description: Updates a notification URL for a trigger.
+      tags:
+        - triggers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                new_uri:
+                  type: string
+                  format: uri
+                  example: http://example.com
+                  description: The updated URL that will receive the notification response.
+              required:
+                - new_uri
+      responses:
+        '200':
+          description: Trigger updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: ok
+                required:
+                  - message
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+              example:
+                error:
+                  message: missing_attributes
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: Invalid credentials
+        '404':
+          description: No trigger found with the specified id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: record_not_found
+    delete:
+      x-speakeasy-mcp:
+        name: delete-trigger
+        scopes:
+          - admin
+        title: Delete Trigger
+        destructiveHint: true
+        idempotentHint: true
+      operationId: deleteTrigger
+      summary: Deletes a notification trigger
+      description: Deletes a trigger.
+      tags:
+        - triggers
+      responses:
+        '200':
+          description: Trigger deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: ok
+                required:
+                  - message
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: invalid_or_malformed_attribute
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: Invalid credentials
+        '404':
+          description: No trigger found with the specified id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: record_not_found
   /v1_1/{cloud_name}/resources:
     get:
       summary: Get resource types
@@ -1324,7 +3262,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/list_response'
+                $ref: '#/components/schemas/components-list_response'
         '400':
           description: Bad request
           content:
@@ -1386,7 +3324,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/list_response'
+                $ref: '#/components/schemas/components-list_response'
         '400':
           description: Bad request
           content:
@@ -1448,7 +3386,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/list_response'
+                $ref: '#/components/schemas/components-list_response'
         '400':
           description: Bad request
           content:
@@ -1492,7 +3430,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/list_response'
+                $ref: '#/components/schemas/components-list_response'
         '400':
           description: Bad request
           content:
@@ -1543,7 +3481,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/list_response'
+                $ref: '#/components/schemas/components-list_response'
         '400':
           description: Bad request
           content:
@@ -1594,7 +3532,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/list_response'
+                $ref: '#/components/schemas/components-list_response'
         '400':
           description: Bad request
           content:
@@ -1652,7 +3590,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/list_response'
+                $ref: '#/components/schemas/components-list_response'
         '400':
           description: Bad request
           content:
@@ -1840,7 +3778,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/list_response'
+                $ref: '#/components/schemas/components-list_response'
               examples:
                 getResourceResponseExample:
                   $ref: '#/components/examples/GetResourceResponseExample'
@@ -2674,6 +4612,233 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/streaming_profiles:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    post:
+      x-speakeasy-mcp:
+        name: create-streaming-profile
+        scopes:
+          - builder
+        title: Create Streaming Profile
+      operationId: createStreamingProfile
+      summary: Creates a new adaptive streaming profile in your Cloudinary account
+      tags:
+        - streaming_profiles
+      parameters: []
+      responses:
+        '200':
+          description: Streaming profile created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/streaming_profile'
+                required:
+                  - data
+        '400':
+          description: Invalid request error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '409':
+          description: Profile name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/streaming_profile_create'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/streaming_profile_create'
+    get:
+      x-speakeasy-mcp:
+        name: list-streaming-profiles
+        scopes:
+          - builder
+        title: List Streaming Profiles
+        readOnlyHint: true
+        idempotentHint: true
+      operationId: getStreamingProfiles
+      summary: Lists all adaptive streaming profiles (both built-in and custom) defined in your Cloudinary account
+      tags:
+        - streaming_profiles
+      parameters: []
+      responses:
+        '200':
+          description: Streaming profiles retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/streaming_profile'
+                required:
+                  - data
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+  /v1_1/{cloud_name}/streaming_profiles/{name}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          description: The name of the streaming profile
+    get:
+      x-speakeasy-mcp:
+        name: get-streaming-profile
+        scopes:
+          - builder
+        title: Get Streaming Profile
+        readOnlyHint: true
+        idempotentHint: true
+      operationId: getStreamingProfile
+      summary: Retrieves the details of a single adaptive streaming profile by its name
+      tags:
+        - streaming_profiles
+      responses:
+        '200':
+          description: Streaming profile retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/streaming_profile'
+                required:
+                  - data
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+    put:
+      x-speakeasy-mcp:
+        name: update-streaming-profile
+        scopes:
+          - builder
+        title: Update Streaming Profile
+        idempotentHint: true
+      operationId: updateStreamingProfile
+      summary: Modifies an existing adaptive streaming profile's configuration
+      tags:
+        - streaming_profiles
+      parameters: []
+      responses:
+        '200':
+          description: Streaming profile updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/streaming_profile'
+                required:
+                  - message
+                  - data
+        '400':
+          description: Invalid request error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/streaming_profile_update'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/streaming_profile_update'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-streaming-profile
+        scopes:
+          - builder
+        title: Delete Streaming Profile
+        destructiveHint: true
+        idempotentHint: true
+      operationId: deleteStreamingProfile
+      summary: Delete custom streaming profile or revert built-in profile to the original settings
+      tags:
+        - streaming_profiles
+      responses:
+        '200':
+          description: Streaming profile deleted or reverted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '400':
+          description: Cannot delete predefined profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
   /v1_1/{cloud_name}/folders/{folder}:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
@@ -3309,6 +5474,47 @@ components:
         pattern: ^[0-9a-f]{32}$
       description: The asset ID of the resource. Must be a 32-character hexadecimal string.
       example: f4e6579cf84dd9cf5683b21f5b30c7d9
+    max_results_query:
+      name: max_results
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+        default: 10
+      description: The maximum number of results to return. Default is 10.
+    next_cursor_query:
+      name: next_cursor
+      in: query
+      required: false
+      schema:
+        type: string
+      description: The cursor for pagination. Use the next_cursor value from a previous response to get the next page of results.
+    transformation:
+      name: transformation
+      in: path
+      required: true
+      schema:
+        type: string
+      description: |
+        The transformation identifier. Can be either a named transformation (e.g., 'small_profile_thumbnail') or a transformation string (e.g., 'w_100,h_150,c_fill,g_auto').
+      examples:
+        named:
+          summary: Named transformation
+          value: small_profile_thumbnail
+        string:
+          summary: Transformation string
+          value: w_100,h_150,c_fill,g_auto
+    transformation_name:
+      name: transformation
+      in: path
+      required: true
+      schema:
+        type: string
+        example: small_profile_thumbnail
+      description: |
+        The valid transformation name to create.
     list_storage_type_query:
       name: type
       in: query
@@ -3506,23 +5712,6 @@ components:
         pattern: ^[0-9a-f]{32}$
       description: The asset ID of the resource. Must be a 32-character hexadecimal string.
       example: f4e6579cf84dd9cf5683b21f5b30c7d9
-    max_results_query:
-      name: max_results
-      in: query
-      required: false
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 500
-        default: 10
-      description: The maximum number of results to return. Default is 10.
-    next_cursor_query:
-      name: next_cursor
-      in: query
-      required: false
-      schema:
-        type: string
-      description: The cursor for pagination. Use the next_cursor value from a previous response to get the next page of results.
     storage_type:
       name: type
       in: path
@@ -4279,6 +6468,410 @@ components:
           description: The asset folder path. Only included when folder decoupling is enabled.
       required:
         - result
+    transformation_summary:
+      type: object
+      properties:
+        name:
+          type: string
+          example: t_small_profile_thumbnail
+        allowed_for_strict:
+          type: boolean
+          example: true
+        used:
+          type: boolean
+          example: false
+        named:
+          type: boolean
+          example: true
+    list_response:
+      type: object
+      properties:
+        transformations:
+          type: array
+          items:
+            $ref: '#/components/schemas/transformation_summary'
+        next_cursor:
+          type:
+            - string
+            - 'null'
+    transformation_info:
+      type: object
+      properties:
+        name:
+          type: string
+          example: small_profile_thumbnail
+        allowed_for_strict:
+          type: boolean
+          description: |
+            Whether to allow this named transformation when [strict transformations](https://cloudinary.com/documentation/control_access_to_media#strict_transformations) are enabled.
+          example: true
+        used:
+          type: boolean
+          example: true
+        named:
+          type: boolean
+          example: true
+        info:
+          type: array
+          description: API transformation parameters
+          items:
+            type: object
+            properties:
+              width:
+                type: integer
+              height:
+                type: integer
+              crop:
+                type: string
+              gravity:
+                type: string
+          example:
+            - width: 100
+              height: 150
+              crop: fill
+              gravity: auto
+        derived:
+          type: array
+          items:
+            type: object
+            properties:
+              public_id:
+                type: string
+                example: sample_image
+              resource_type:
+                type: string
+                example: image
+              type:
+                type: string
+                example: upload
+              format:
+                type: string
+                example: jpg
+              url:
+                type: string
+                example: http://res.cloudinary.com/demo/image/upload/v1620000000/sample_image.jpg
+              secure_url:
+                type: string
+                example: https://res.cloudinary.com/demo/image/upload/v1620000000/sample_image.jpg
+              bytes:
+                type: integer
+                example: 123456
+              id:
+                type: string
+                example: 1234abcd5678efgh
+        next_cursor:
+          type: string
+          example: eyJvZmZzZXQiOjEwMH0=
+    allowed_for_strict:
+      type: boolean
+      description: |
+        Whether to allow this named transformation when strict transformations are enabled. Strict transformations prevent transformations from being dynamically applied to media assets.
+      example: true
+    update_request:
+      type: object
+      properties:
+        unsafe_update:
+          type: string
+          description: |
+            Required when modifying the transformation parameters of an existing named transformation. The new transformation definition for the named transformation.
+            Because the changed definition can be unsafe for (significantly change) assets in production, the change is applied only to newly generated derived assets that reference this named transformation.
+
+            To apply the change to existing derived assets using this named transformation, invalidate them so that they'll be regenerated with the new definition when next requested.
+          example: w_200,h_200,c_fill,g_face
+        allowed_for_strict:
+          $ref: '#/components/schemas/allowed_for_strict'
+    create_request:
+      type: object
+      required:
+        - transformation
+      properties:
+        transformation:
+          type: string
+          description: A valid transformation string.
+          example: w_100,h_150,c_fill,g_auto
+        allowed_for_strict:
+          $ref: '#/components/schemas/allowed_for_strict'
+    upload_preset:
+      allOf:
+        - $ref: '#/components/schemas/upload_explicit_parameters'
+        - $ref: '#/components/schemas/upload_other_parameters'
+        - type: object
+          properties:
+            name:
+              type: string
+              description: The name of the upload preset when creating or modifying an upload preset.
+            disallow_public_id:
+              type: boolean
+              description: |
+                When using unsigned upload with an upload preset, this parameter prevents specifying a public ID. Relevant only for unsigned upload presets.
+            unsigned:
+              type: boolean
+              description: Whether the upload preset allows unsigned uploads.
+            parameter_whitelist:
+              oneOf:
+                - type: array
+                  items:
+                    type: string
+                - type: string
+                  enum:
+                    - none
+              description: |
+                The parameters that are allowed be used in an upload request utilizing this preset. If not specified or empty array, all parameters are allowed. If "none", no parameters are allowed.
+    metadata_field:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - string
+            - integer
+            - date
+            - enum
+            - set
+          description: The type of the metadata field.
+        external_id:
+          type: string
+          maxLength: 255
+          description: The external ID of the metadata field.
+        label:
+          type: string
+          maxLength: 255
+          description: The label of the metadata field.
+        mandatory:
+          type:
+            - boolean
+            - 'null'
+          description: Whether the metadata field is mandatory.
+        default_value:
+          type:
+            - string
+            - integer
+            - 'null'
+          description: The default value of the metadata field.
+        default_disabled:
+          type:
+            - boolean
+            - 'null'
+          description: Whether the default value is disabled.
+        validation:
+          type:
+            - object
+            - 'null'
+          description: The validation defined for the metadata field.
+        restrictions:
+          type:
+            - object
+            - 'null'
+          description: The restrictions defined for the metadata field.
+          properties:
+            readonly_ui:
+              type: boolean
+              description: Whether the metadata field is read-only in the UI. when true, the metadata field can only be updated via the API.
+        datasource:
+          type:
+            - object
+            - 'null'
+          description: The datasource defined for the metadata field.
+          properties:
+            values:
+              type: array
+              items:
+                type: object
+                properties:
+                  external_id:
+                    type: string
+                    description: The external ID of the option.
+                  value:
+                    type: string
+                    description: The value of the option.
+                  position:
+                    type: integer
+                    description: The position of the option.
+                  state:
+                    type: string
+                    enum:
+                      - active
+                      - inactive
+                    description: The state of the option.
+        allow_dynamic_list_values:
+          type:
+            - boolean
+            - 'null'
+          description: Whether the metadata field allows adding new options to the datasource dynamically.
+      required:
+        - type
+        - label
+    metadata_field_datasource_value:
+      type: object
+      properties:
+        external_id:
+          type: string
+          description: The external ID of the datasource value.
+        value:
+          type: string
+          description: The value of the option.
+    metadata_field_datasource_values_array:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/metadata_field_datasource_value'
+    metadata_rule_base:
+      type: object
+      properties:
+        metadata_field_id:
+          type: string
+          description: The ID of the metadata field this rule applies to.
+        name:
+          type: string
+          description: A descriptive name for the metadata rule.
+        condition:
+          type: object
+          description: The condition that triggers this rule. Ensure it adheres to the metadata rule condition schema.
+        result:
+          type: object
+          description: The result to apply when the condition is met, should adhere to the metadata rule result schema.
+        state:
+          type: string
+          enum:
+            - active
+            - inactive
+          description: The state of the rule.
+        position:
+          type: integer
+          description: The position/order of this rule relative to other rules.
+      example:
+        metadata_field_id: smd-field-1
+        name: My Rule
+        condition:
+          metadata_field_id: smd-field-2
+          populated: true
+        result:
+          apply_value:
+            value: my value
+            mode: default
+        state: active
+        position: 1
+    metadata_rule_response:
+      allOf:
+        - $ref: '#/components/schemas/metadata_rule_base'
+        - type: object
+          properties:
+            external_id:
+              type: string
+              description: The unique identifier of the metadata rule.
+            condition_signature:
+              type: string
+              description: A signature representing the condition structure.
+      example:
+        external_id: '1234567890'
+        metadata_field_id: smd-field-1
+        name: My Rule
+        condition:
+          metadata_field_id: smd-field-2
+          populated: true
+        condition_signature: dGhlIGZveCBqdW1wZWQgb3ZlciB0aGUgbGF6eSBkb2c
+        result:
+          apply_value:
+            value: my value
+            mode: default
+        state: active
+        position: 1
+    metadata_rule_create:
+      allOf:
+        - $ref: '#/components/schemas/metadata_rule_base'
+      required:
+        - metadata_field_id
+        - name
+        - condition
+        - result
+      example:
+        metadata_field_id: smd-field-1
+        name: My Rule
+        condition:
+          metadata_field_id: smd-field-2
+          populated: true
+        result:
+          apply_value:
+            value: my value
+            mode: default
+        state: active
+        position: 1
+    metadata_rule_update:
+      allOf:
+        - $ref: '#/components/schemas/metadata_rule_base'
+      example:
+        metadata_field_id: smd-field-1
+        name: My Rule
+        condition:
+          metadata_field_id: smd-field-2
+          populated: true
+        result:
+          apply_value:
+            value: my value
+            mode: default
+        state: active
+        position: 1
+    upload_mapping:
+      type: object
+      description: Represents an upload mapping
+      properties:
+        folder:
+          type: string
+          description: The folder name
+          example: my_folder
+        template:
+          type: string
+          description: The template URL
+          example: http://example.com/files
+        external_id:
+          type: string
+          description: Unique identifier for the mapping
+        upload_preset_name:
+          type:
+            - string
+            - 'null'
+          description: Name of an upload preset if one is associated
+      required:
+        - folder
+        - template
+        - external_id
+    uri_type:
+      type: string
+      enum:
+        - webhook
+        - flow
+    trigger_info:
+      type: object
+      properties:
+        id:
+          type: string
+          example: c2c822dd1aa41ba6d81299df8b5ae949
+        product_environment_id:
+          type: string
+          example: 7fabb2ff3d687d05b63134cf8fa006ba16
+        uri_type:
+          $ref: '#/components/schemas/uri_type'
+          example: webhook
+        uri:
+          type: string
+          format: uri
+          example: http://example.com
+        event_type:
+          type: string
+          example: all
+        created_at:
+          type: string
+          format: date-time
+          example: '2025-05-13T09:40:29+00:00'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2025-05-13T09:40:29+00:00'
+      required:
+        - uri
+        - uri_type
     list_storage_type:
       type: string
       enum:
@@ -4415,7 +7008,7 @@ components:
                 format: uri
                 description: The secure URL for accessing the derived resource
                 example: https://res.cloudinary.com/demo/image/upload/w_300,h_100/sample
-    list_response:
+    components-list_response:
       type: object
       properties:
         resources:
@@ -4780,6 +7373,122 @@ components:
             asset_id: f12345a5c789c
           - message: success
             asset_id: bbb0efc00c0f12
+    streaming_profile:
+      type: object
+      properties:
+        external_id:
+          type: string
+          description: The unique identifier of the streaming profile
+          example: f6360c4d-4f62-48b7-b56b-8c49d1bd6dcf
+        name:
+          type: string
+          description: The name of the streaming profile
+          example: hd_1080p
+        display_name:
+          type: string
+          description: The display name of the streaming profile
+          example: HD 1080p
+        predefined:
+          type: boolean
+          description: Whether this is a predefined streaming profile
+          example: false
+        representations:
+          type: array
+          description: The list of representations in the streaming profile
+          items:
+            type: object
+            properties:
+              transformation:
+                type: array
+                description: The transformation parameters for this representation
+                items:
+                  type: object
+                  additionalProperties: true
+          example:
+            - transformation:
+                - width: 1920
+                  height: 1080
+                  crop: scale
+                  video_codec: h264
+                  bit_rate: 2500k
+                  audio_codec: aac
+                  audio_bitrate: 128k
+                  fps: 30
+            - transformation:
+                - width: 1280
+                  height: 720
+                  crop: scale
+                  video_codec: h264
+                  bit_rate: 1500k
+                  audio_codec: aac
+                  audio_bitrate: 128k
+                  fps: 30
+      required:
+        - external_id
+        - name
+        - predefined
+      example:
+        external_id: sp_123456789
+        name: hd_1080p
+        display_name: HD 1080p
+        predefined: false
+        representations:
+          - transformation:
+              - width: 1920
+                height: 1080
+                crop: scale
+                video_codec: h264
+                bit_rate: 2500k
+                audio_codec: aac
+                audio_bitrate: 128k
+                fps: 30
+          - transformation:
+              - width: 1280
+                height: 720
+                crop: scale
+                video_codec: h264
+                bit_rate: 1500k
+                audio_codec: aac
+                audio_bitrate: 128k
+                fps: 30
+    streaming_profile_create:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the streaming profile
+          example: hd_1080p
+        display_name:
+          type: string
+          description: The display name of the streaming profile
+          example: HD 1080p
+        representations:
+          type: string
+          description: A JSON string containing the list of representations with transformation parameters as strings
+          example: '[{"transformation":"w_1920,h_1080,c_scale/vc_h264,br_2500k/ac_aac,abr_128k/fps_30"},{"transformation":"w_1280,h_720,c_scale/vc_h264,br_1500k/ac_aac,abr_128k/fps_30"}]'
+      required:
+        - name
+        - representations
+      example:
+        name: hd_1080p
+        display_name: HD 1080p
+        representations: '[{"transformation":"w_1920,h_1080,c_scale/vc_h264,br_2500k/ac_aac,abr_128k/fps_30"},{"transformation":"w_1280,h_720,c_scale/vc_h264,br_1500k/ac_aac,abr_128k/fps_30"}]'
+    streaming_profile_update:
+      type: object
+      properties:
+        display_name:
+          type: string
+          description: The display name of the streaming profile
+          example: HD 1080p Updated
+        representations:
+          type: string
+          description: A JSON string containing the list of representations with transformation parameters as strings
+          example: '[{"transformation":"w_1920,h_1080,c_scale/vc_h264,br_3000k/ac_aac,abr_192k/fps_30"},{"transformation":"w_1280,h_720,c_scale/vc_h264,br_2000k/ac_aac,abr_192k/fps_30"}]'
+      required:
+        - representations
+      example:
+        display_name: HD 1080p Updated
+        representations: '[{"transformation":"w_1920,h_1080,c_scale/vc_h264,br_3000k/ac_aac,abr_192k/fps_30"},{"transformation":"w_1280,h_720,c_scale/vc_h264,br_2000k/ac_aac,abr_192k/fps_30"}]'
     folder:
       type: object
       properties:
