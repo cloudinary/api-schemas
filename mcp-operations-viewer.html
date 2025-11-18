@@ -811,6 +811,8 @@
     }
 
     function applyFilters() {
+      if (!dataTable) return;
+
       const categoryFilter = $('#filterCategories').val();
       const toolNameFilter = $('#filterToolName').val();
       const scopesFilter = $('#filterScopes').val();
@@ -955,7 +957,7 @@
         console.log('Processed operations count:', allData.length); // Debug log
 
         // Destroy DataTable first if it exists
-        if ($.fn.DataTable.isDataTable('#apiTable')) {
+        if ($.fn.DataTable && $.fn.DataTable.isDataTable && $.fn.DataTable.isDataTable('#apiTable')) {
           console.log('Destroying existing DataTable...'); // Debug log
           $('#apiTable').DataTable().destroy();
           console.log('DataTable destroyed'); // Debug log
@@ -1028,7 +1030,9 @@
     // Clear all filters
     $('#clearFilters').on('click', function() {
       $('#filterCategories, #filterToolName, #filterScopes, #filterMethod, #filterMCP').val('');
-      dataTable.columns().search('').draw();
+      if (dataTable) {
+        dataTable.columns().search('').draw();
+      }
       saveMCPState(); // Save state when filters are cleared
     });
 
