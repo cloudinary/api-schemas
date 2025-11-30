@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Environment Config API
-  version: 0.3.5
+  version: 0.3.6
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -2014,7 +2014,9 @@ components:
           description: The name of the streaming profile
           example: hd_1080p
         display_name:
-          type: string
+          type:
+            - string
+            - 'null'
           description: The display name of the streaming profile
           example: HD 1080p
         predefined:
@@ -2088,7 +2090,9 @@ components:
           description: The name of the streaming profile
           example: hd_1080p
         display_name:
-          type: string
+          type:
+            - string
+            - 'null'
           description: The display name of the streaming profile
           example: HD 1080p
         representations:
@@ -2106,7 +2110,9 @@ components:
       type: object
       properties:
         display_name:
-          type: string
+          type:
+            - string
+            - 'null'
           description: The display name of the streaming profile
           example: HD 1080p Updated
         representations:
