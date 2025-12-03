@@ -1,0 +1,175 @@
+overlay: 1.0.0
+info:
+  title: Metadata Rules detailed schema definitions
+  version: 1.0.0
+  description: |
+    Adds detailed schema definitions for condition and result objects.
+    These schemas mirror smd_condition_schema.json and smd_result_schema.json.
+actions:
+  # Replace condition with full schema reference
+  - target: $.components.schemas.metadata_rule_base.properties.condition
+    update:
+      $ref: "#/components/schemas/smd_condition"
+  # Replace result with full schema reference
+  - target: $.components.schemas.metadata_rule_base.properties.result
+    update:
+      $ref: "#/components/schemas/action_exp"
+  # Add detailed schema components
+  - target: $.components.schemas
+    update:
+      smd_condition:
+        description: The condition that triggers this metadata rule. Can be either a logical expression (and/or) or an atomic condition.
+        oneOf:
+          - $ref: "#/components/schemas/logic_exp"
+          - $ref: "#/components/schemas/cond_exp"
+        example:
+          metadata_field_id: "category"
+          equals: "employee"
+
+      logic_exp:
+        type: object
+        description: Logical expression that combines multiple conditions using AND or OR operators.
+        properties:
+          and:
+            type: array
+            items:
+              oneOf:
+                - $ref: "#/components/schemas/logic_exp"
+                - $ref: "#/components/schemas/cond_exp"
+            minItems: 1
+            description: All conditions in this array must be true.
+          or:
+            type: array
+            items:
+              oneOf:
+                - $ref: "#/components/schemas/logic_exp"
+                - $ref: "#/components/schemas/cond_exp"
+            minItems: 1
+            description: At least one condition in this array must be true.
+        oneOf:
+          - required: [and]
+          - required: [or]
+        example:
+          or:
+            - metadata_field_id: "delivery_type"
+              equals: "maritime"
+            - metadata_field_id: "delivery_type"
+              equals: "aerial"
+
+      cond_exp:
+        type: object
+        description: Atomic condition that evaluates a single metadata field.
+        properties:
+          metadata_field_id:
+            type: string
+            description: The external ID of the metadata field to evaluate.
+            example: "category"
+          populated:
+            type: boolean
+            description: Whether the metadata field should have a value (true) or be empty (false).
+            example: true
+          includes:
+            type: array
+            items:
+              type: string
+            description: Values that must be included in the metadata field (for set/array fields).
+            example: ["electronics", "gadgets"]
+          equals:
+            oneOf:
+              - type: string
+                example: "employee"
+              - type: array
+                items:
+                  type: string
+                example: ["employee", "contractor"]
+              - type: "null"
+            description: The exact value(s) the metadata field should match.
+        required: [metadata_field_id]
+        minProperties: 2
+        additionalProperties: false
+        example:
+          metadata_field_id: "category"
+          equals: "employee"
+
+      action_exp:
+        type: object
+        description: The result/action to apply when the condition is met.
+        properties:
+          enable:
+            type: boolean
+            description: Whether to enable (true) or disable (false) the metadata field when the condition is met.
+            example: true
+          activate_values:
+            oneOf:
+              - type: string
+                enum: [all]
+                description: Activate all possible values for enum/set fields.
+              - $ref: "#/components/schemas/options_exp"
+            description: Controls which enum/set options are available for selection.
+            example: "all"
+          apply_value:
+            $ref: "#/components/schemas/value_exp"
+          set_mandatory:
+            type: boolean
+            description: Whether to make the metadata field required (true) or optional (false).
+            example: false
+        minProperties: 1
+        additionalProperties: false
+        example:
+          enable: true
+          activate_values: "all"
+
+      options_exp:
+        type: object
+        description: Specifies which enum/set options to activate.
+        properties:
+          external_ids:
+            oneOf:
+              - type: array
+                items:
+                  type: string
+              - type: "null"
+            description: Array of external IDs for the enum/set options to activate.
+            example: ["option1", "option2"]
+          mode:
+            type: string
+            enum: [override, append]
+            description: Whether to override existing options (override) or add to them (append). Default is append.
+            default: append
+            example: "override"
+        required: [external_ids]
+        minProperties: 1
+        additionalProperties: false
+        example:
+          external_ids: ["europe", "asia"]
+          mode: "override"
+
+      value_exp:
+        type: object
+        description: Specifies a value to apply to the metadata field.
+        properties:
+          value:
+            oneOf:
+              - type: string
+                example: "default_value"
+              - type: number
+                example: 42
+              - type: array
+                items:
+                  oneOf:
+                    - type: string
+                    - type: number
+                example: ["value1", "value2"]
+            description: The value(s) to apply to the metadata field. Can be string, number, or array of strings/numbers depending on the field type.
+          mode:
+            type: string
+            enum: [default, append]
+            description: Whether to set as default value (default) or append to existing values (append). Default is default.
+            default: default
+            example: "default"
+        required: [value]
+        minProperties: 1
+        additionalProperties: false
+        example:
+          value: "electronics"
+          mode: "default"
