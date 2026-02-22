@@ -6,68 +6,288 @@
 
 openapi: 3.0.3
 info:
-  version: 1.0.4
+  version: 2.0.0 # x-release-please-version
   title: Cloudinary Account Permissions API
   description: |
-    Accounts with Permissions API access can manage custom permission policies. These policies assign permissions for a principal, allowing the principal to perform a specific action on a designated resource within a particular scope (your account or a product environment). 
-    
-    Refer to the [Permissions API guide](permissions_api_guide) for instructions on what to specify in the `policy_statement` to control Cloudinary activities, and to the Cedar schema, which defines the possible values for principals, actions, and resources.
 
-    The API uses **Basic Authentication** over HTTPS. Your **Provisioning Key** and **Provisioning Secret** are used for the authentication. These credentials (as well as your ACCOUNT_ID) are located in the [Cloudinary Console](https://console.cloudinary.com/pm) under **Settings > Account > Provisioning API Access**.
+    Accounts with Permissions API access can assign roles, made up of system policies, to control what principals (users, groups, and API keys) can do across the Cloudinary account and product environments. For more information about Cloudinary roles and permissions, see the [Role-based permissions](permissions_overview) guide.
 
-    The Permissions API has dedicated SDKs for the following languages:
+    Permissions API access is available [upon request](https://cloudinary.com/contact?plan=enterprise) for accounts on an [Enterprise plan](https://cloudinary.com/pricing#pricing-enterprise).
 
-    * JavaScript
-    * PHP
-    * Java
+    The API uses **Basic Authentication** over HTTPS. Your **Account API Key** and **Account API Secret** (previously referred to as **Provisioning API keys**) are used for the authentication. These credentials (as well as your ACCOUNT_ID) are located in the [Cloudinary Console](https://console.cloudinary.com/app/settings/account-api-keys) under **Settings > Account API Keys**.
+
+    _**Important:**_
+
+    _Cloudinary's **Roles and Permissions Management** is now available as a **Beta**. This is an early stage release, and while it's functional and ready for real-world testing, it's subject to change as we continue refining the experience based on what we learn, including your feedback.
+    During the Beta period, core functionality is considered stable, though some APIs, scopes, or response formats may evolve._
+
+    _**How you can help:**_
+
+    * _Use Roles and Permissions Management in real projects, prototypes, or tests._
+    * _Share feedback, issues, or ideas with our support team._
+
+    _Thank you for exploring this early release and helping us shape these tools to best meet your needs._
+
 
   contact:
-      name: Cloudinary Support
-      email: support@cloudinary.com
-      url: https://support.cloudinary.com
+    name: Cloudinary Support
+    email: support@cloudinary.com
+    url: https://support.cloudinary.com
   termsOfService: https://cloudinary.com/tou
-  x-cld-module-context: account
-  x-cld-module-name: permissions
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://api.cloudinary.com/v2/accounts/{account_id}/permissions
+  - url: https://{region}.cloudinary.com
+    description: Regional API endpoints for optimal performance.
     variables:
-      account_id:
-        default: ACCOUNT_ID
-        description: Your Account ID.
+      region:
+        default: api
+        description: Regional endpoint selection
+        enum:
+          - api
+          - api-eu
+          - api-ap
+  - url: https://{host}
+    description: Custom domains for enterprise deployments.
+    variables:
+      host:
+        default: api.cloudinary.com
+        description: API host domain.
+
+x-speakeasy-globals:
+  parameters:
+    - $ref: '#/components/parameters/AccountIdParam'
 
 security:
   - basicAuth: [ ]
 # -----------------------------------------------------------------------
 
 tags:
-  - name: Custom policies
-    description: Manage the custom policies that control permissions in your account and product environments. Each policy includes a statement defined in Cedar. For more information, see the [Cedar official documentation](https://docs.cedarpolicy.com/).
+  - name: System Policies
+    description: |
+      View all system policies predefined by Cloudinary, which can be associated with roles.
+  - name: Roles
+    description: |
+      All roles include one or more predefined **system policies**, and can be applied to principals to enforce these policies.
 
-#  Deprecated tags
-# ------------------------------------
-#  - name: permission
-#    description: Permission endpoint
-#  - name: subject
-#    description: Subject endpoint
-#  - name: permission_groups
-#    description: Permission Group endpoint
+      You can **manage custom roles**, where you select the system policies. 
+      
+      You can **view system roles**, which contain a fixed set of system policies and are provided by Cloudinary.
+
+  - name: Custom Policies
+    description: |
+      View and manage the custom policies that control permissions in your account and product environments. Each policy includes a statement defined in Cedar.
+
+      For more information on writing Cedar statements for custom policies, see the [Cedar official documentation](https://docs.cedarpolicy.com/).
+  - name: Effective Policies
+    description: |
+      View all the system and custom policies that are granted to a principal.
+
+  - name: Principals
+    description: |
+      View roles associated with a specified principal, and add or remove a role associated with a principal.
+
+  - name: Public
+    description: |
+      View shared Permissions system utilities, including the system roles and policies catalog, Cedar policy validation, and the Cedar schema. These endpoints are publicly accessible and don't require authentication. 
+
 
 # -----------------------------------------------------------------------
 
 paths:
-  /policies/custom:
+  /v2/accounts/permissions/public/catalog:
+    get:
+      # --------
+      #  Get system roles and policies catalog
+      # ------------------------------------
+      x-speakeasy-name-override: getCatalog
+      x-speakeasy-mcp:
+        name: get-catalog
+        scopes:
+          - admin
+        title: Get System Roles and Policies Catalog
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Get system roles and policies catalog
+      description: Retrieves the catalog of predefined system roles and their associated policies.
+      operationId: getSystemRolesAndPoliciesCatalog
+      tags:
+        - Public
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemRolesAndPoliciesCatalogResponse'
+        '400':
+          description: Bad request
 
+  # -----------------------------------------------------------------------
+  /v2/accounts/permissions/public/validate:
+    post:
+      # --------
+      #  Validate a Cedar policy
+      # ------------------------------------
+      x-speakeasy-name-override: validatePolicy
+      x-speakeasy-mcp:
+        name: validate-policy
+        scopes:
+          - admin
+        title: Validate Cedar Policy
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Validate a Cedar policy
+      description: Validate a Cedar policy
+      operationId: validateCedarPolicy
+      tags:
+        - Public
+      requestBody:
+        description: Cedar policy.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateCedarPolicyRequest'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateCedarPolicyResponse'
+              examples:
+                ValidateCedarPolicyResponseExample:
+                  $ref: '#/components/examples/ValidateCedarPolicyResponseExample'
+        '400':
+          description: Bad request
+
+  # -----------------------------------------------------------------------
+  /v2/accounts/permissions/public/schema:
+    get:
+      # --------
+      #  Get Cedar schema
+      # ------------------------------------
+      x-speakeasy-name-override: getSchema
+      x-speakeasy-mcp:
+        name: get-schema
+        scopes:
+          - admin
+        title: Get Cedar Schema
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Get Cedar schema
+      description: Get Cedar schema
+      operationId: getCedarSchema
+      tags:
+        - Public
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CedarSchemaResponse'
+        '400':
+          description: Bad request
+  # -----------------------------------------------------------------------
+  /v2/accounts/{account_id}/permissions/policies/system:
+    parameters:
+      - $ref: '#/components/parameters/AccountIdParam'
+    get:
+      # --------
+      #  Get a list of system policies
+      # ------------------------------------
+      x-speakeasy-group: policies.system
+      x-speakeasy-name-override: list
+      x-speakeasy-mcp:
+        name: list-system-policies
+        scopes:
+          - admin
+        title: List System Policies
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Get system policies
+      description: |
+        Retrieve all system-defined permission policies. Optionally filter the results by `scope_type` (account or product environment) and/or `permission_type` (global or content-specific).
+
+        **Note:** If `scope_type` isn't specified as `prodenv`, the account-level policies will be returned.
+      operationId: getSystemPolicies
+      tags:
+        - System Policies
+      parameters:
+        - $ref: '#/components/parameters/PermissionTypeOptionalParam'
+        - $ref: '#/components/parameters/ScopeTypeParam'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemPoliciesResponse'
+              examples:
+                SystemPoliciesExample:
+                  $ref: '#/components/examples/SystemPoliciesExample'
+
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                AuthorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                ForbiddenErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                InternalServerErrorExample:
+                  $ref: '#/components/examples/InternalServerErrorExample'
+
+  # -----------------------------------------------------------------------
+
+  /v2/accounts/{account_id}/permissions/policies/custom:
+    parameters:
+      - $ref: '#/components/parameters/AccountIdParam'
     get:
       # --------
       #  Get a list of custom policies
       # ------------------------------------
+      x-speakeasy-group: policies.custom
+      x-speakeasy-name-override: list
+      x-speakeasy-mcp:
+        name: list-custom-policies
+        scopes:
+          - admin
+        title: List Custom Policies
+        readOnlyHint: true
+        idempotentHint: true
       summary: Get custom policies
-      description: Retrieve all custom policies defined for a specific scope. The scope can be at the account level or within a specific product environment.
+      description: |
+        Retrieve all custom permission policies defined for a specific scope. The scope can be at the account level or within a specific product environment.
+
+        **Notes:**
+          * If `scope_type` isn't specified as `prodenv`, the account-level policies will be returned.
+
+          * If `scope_type` is specified as `prodenv`, `scope_id` is required.
       operationId: getCustomPolicies
-      x-cld-use-for-readme: true
       tags:
-        - Custom policies
+        - Custom Policies
       parameters:
         - $ref: '#/components/parameters/ScopeTypeParam'
         - $ref: '#/components/parameters/ScopeIdParam'
@@ -81,8 +301,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/CustomPoliciesResponse'
               examples:
-                getCustomPoliciesResponseExample:
-                  $ref: '#/components/examples/GetCustomPoliciesResponseExample'
+                CustomPoliciesExample:
+                  $ref: '#/components/examples/CustomPoliciesExample'
         '401':
           description: Authorization required
           content:
@@ -92,6 +312,15 @@ paths:
               examples:
                 authorizationErrorExample:
                   $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
         '500':
           description: Internal server error
           content:
@@ -106,6 +335,14 @@ paths:
       # --------
       #  Create a new custom permission policy
       # ------------------------------------
+      x-speakeasy-group: policies.custom
+      x-speakeasy-name-override: create
+      x-speakeasy-mcp:
+        name: create-custom-policy
+        scopes:
+          - admin
+        title: Create Custom Policy
+        destructiveHint: false
       summary: Create custom policy
       description: Create a new custom policy with a statement defined in Cedar. This policy specifies permissions for a principal, allowing a specific action on a designated resource, within a particular scope.
       operationId: createCustomPolicy
@@ -113,7 +350,7 @@ paths:
         description: Learn more about creating a new custom policy
         url: https://cloudinary.com/documentation/permissions_api_guide#create_a_policy_statement
       tags:
-        - Custom policies
+        - Custom Policies
       requestBody:
         description: Policy details.
         required: true
@@ -122,7 +359,7 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateCustomPolicy'
             examples:
-              createPolicyExample:
+              createCustomPolicyExample:
                 $ref: '#/components/examples/CreateCustomPolicyExample'
 
       responses:
@@ -133,7 +370,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CustomPolicyResponse'
               examples:
-                createCustomPolicyResponse:
+                createPolicyResponse:
                   $ref: '#/components/examples/CreateCustomPolicyResponseExample'
 
         '400':
@@ -158,6 +395,15 @@ paths:
               examples:
                 authorizationErrorExample:
                   $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
         '409':
           description: Already exists for the scope
           content:
@@ -177,21 +423,30 @@ paths:
                 internalServerErrorExample:
                   $ref: '#/components/examples/InternalServerErrorExample'
 
-# -----------------------------------------------------------------------
+  # -----------------------------------------------------------------------
 
-  /policies/custom/{policy_id}:
+  /v2/accounts/{account_id}/permissions/policies/custom/{policy_id}:
     parameters:
+      - $ref: '#/components/parameters/AccountIdParam'
       - $ref: '#/components/parameters/PolicyIdParam'
-
     get:
       # --------
       #  Get a specific policy
       # ------------------------------------
+      x-speakeasy-group: policies.custom
+      x-speakeasy-name-override: get
+      x-speakeasy-mcp:
+        name: get-custom-policy
+        scopes:
+          - admin
+        title: Get Custom Policy
+        readOnlyHint: true
+        idempotentHint: true
       summary: Get custom policy
       description: Get a specific custom policy.
       operationId: getCustomPolicy
       tags:
-        - Custom policies
+        - Custom Policies
       responses:
         '200':
           description: Successful operation
@@ -199,6 +454,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CustomPolicyResponse'
+              examples:
+                CustomPolicyExample:
+                  $ref: '#/components/examples/CustomPolicyExample'
         '401':
           description: Authorization required
           content:
@@ -208,6 +466,15 @@ paths:
               examples:
                 authorizationErrorExample:
                   $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
         '404':
           description: Not found
           content:
@@ -223,6 +490,15 @@ paths:
       #  Update a specific policy
       # ------------------------------------
       summary: Update custom policy
+      x-speakeasy-group: policies.custom
+      x-speakeasy-name-override: update
+      x-speakeasy-mcp:
+        name: update-custom-policy
+        scopes:
+          - admin
+        title: Update Custom Policy
+        destructiveHint: false
+        idempotentHint: true
       description: |
         Update a specific custom policy by providing the entire policy entity in the request body. Ensure the new `policy_statement` includes modifications. Existing permissions will be replaced with the new data.
 
@@ -230,7 +506,7 @@ paths:
 
       operationId: updateCustomPolicy
       tags:
-        - Custom policies
+        - Custom Policies
       requestBody:
         description: Policy details
         required: true
@@ -259,7 +535,7 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
                 missingFieldsUpdateErrorExample:
-                  $ref: '#/components/examples/MissingFieldsUpdateErrorExample'
+                  $ref: '#/components/examples/MissingFieldsErrorExample'
                 invalidFieldErrorExample:
                   $ref: '#/components/examples/InvalidFieldErrorExample'
                 cedarErrorExample:
@@ -273,6 +549,15 @@ paths:
               examples:
                 authorizationErrorExample:
                   $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
         '404':
           description: Not found
           content:
@@ -305,11 +590,20 @@ paths:
       # --------
       #  Delete a policy
       # ------------------------------------
+      x-speakeasy-group: policies.custom
+      x-speakeasy-name-override: delete
+      x-speakeasy-mcp:
+        name: delete-custom-policy
+        scopes:
+          - admin
+        title: Delete Custom Policy
+        destructiveHint: true
+        idempotentHint: true
       summary: Delete custom policy
       description: Delete a specific custom policy.
       operationId: deleteCustomPolicy
       tags:
-        - Custom policies
+        - Custom Policies
       responses:
         '204':
           description: Successful operation
@@ -322,6 +616,15 @@ paths:
               examples:
                 authorizationErrorExample:
                   $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
         '404':
           description: Not found
           content:
@@ -331,11 +634,974 @@ paths:
               examples:
                 policyNotFoundErrorExample:
                   $ref: '#/components/examples/PolicyNotFoundErrorExample'
+  # -----------------------------------------------------------------------
+
+  /v2/accounts/{account_id}/permissions/policies/effective:
+    parameters:
+      - $ref: '#/components/parameters/AccountIdParam'
+    get:
+      # --------
+      #  Get a list of effective policies
+      # ------------------------------------
+      x-speakeasy-group: policies.effective
+      x-speakeasy-name-override: list
+      x-speakeasy-mcp:
+        name: list-effective-policies
+        scopes:
+          - admin
+        title: List Effective Policies
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Get effective policies
+      description: |
+        Retrieve all roles (along with their system permission policies) associated with principals, and all custom permission policies directly added to principals, all within a specified scope.
+
+        Optionally specify a principal to only include roles and policies associated with that principal.
+      operationId: getEffectivePolicies
+      tags:
+        - Effective Policies
+      parameters:
+        - $ref: '#/components/parameters/ScopeTypeParam'
+        - $ref: '#/components/parameters/ScopeIdParam'
+        - $ref: '#/components/parameters/PrincipalTypeParam'
+        - $ref: '#/components/parameters/PrincipalIdParam'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffectivePoliciesResponse'
+              examples:
+                EffectivePoliciesExample:
+                  $ref: '#/components/examples/EffectivePoliciesExample'
+        '400':
+          description: Invalid field
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalidFieldErrorExample:
+                  $ref: '#/components/examples/InvalidFieldErrorExample'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                policyNotFoundErrorExample:
+                  $ref: '#/components/examples/ScopeNotFoundErrorExample'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                internalServerErrorExample:
+                  $ref: '#/components/examples/InternalServerErrorExample'
+  # -----------------------------------------------------------------------
+  /v2/accounts/{account_id}/permissions/roles:
+    parameters:
+      - $ref: '#/components/parameters/AccountIdParam'
+    get:
+      # --------
+      #  Get a list of roles
+      # ------------------------------------
+      x-speakeasy-name-override: list
+      x-speakeasy-mcp:
+        name: list-roles
+        scopes:
+          - admin
+        title: List Roles
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Get roles
+      description: |
+        Retrieve all system and custom roles of a specific `permission_type` (global or content-specific). Optionally filter by `scope_type`, `management_type`, and `policy_parameters`.
+
+      operationId: getRoles
+      tags:
+        - Roles
+      parameters:
+        - $ref: '#/components/parameters/ScopeTypeParam'
+        - $ref: '#/components/parameters/PermissionTypeParam'
+        - $ref: '#/components/parameters/ManagementTypeParam'
+        - $ref: '#/components/parameters/PolicyParameterTypesParam'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolesResponse'
+              examples:
+                GetRolesExample:
+                  $ref: '#/components/examples/GetRolesExample'
+
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internalServerErrorExample:
+                  $ref: '#/components/examples/InternalServerErrorExample'
+
+    post:
+      # --------
+      #  Create a new role
+      # ------------------------------------
+      x-speakeasy-name-override: create
+      x-speakeasy-mcp:
+        name: create-role
+        scopes:
+          - admin
+        title: Create Role
+        destructiveHint: false
+      summary: Create custom role
+      description: Create a new custom role.
+      operationId: createRole
+      tags:
+        - Roles
+      requestBody:
+        description: Role details.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRole'
+            examples:
+              createGlobalRoleExample:
+                $ref: '#/components/examples/CreateGlobalRoleExample'
+              createContentRoleExample:
+                $ref: '#/components/examples/CreateContentRoleExample'
+              createAcctRoleExample:
+                $ref: '#/components/examples/CreateAcctRoleExample'
+
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+              examples:
+                createGlobalRoleResponseExample:
+                  $ref: '#/components/examples/CreateGlobalRoleResponseExample'
+                createContentRoleResponseExample:
+                  $ref: '#/components/examples/CreateContentRoleResponseExample'
+                createAcctRoleResponseExample:
+                  $ref: '#/components/examples/CreateAcctRoleResponseExample'
+
+        '400':
+          description: Missing fields or invalid field
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missingFieldsErrorExample:
+                  $ref: '#/components/examples/MissingFieldsErrorExample'
+                invalidFieldErrorExample:
+                  $ref: '#/components/examples/InvalidFieldErrorExample'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
+        '409':
+          description: Already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                roleAlreadyExistsErrorExample:
+                  $ref: '#/components/examples/RoleAlreadyExistsErrorExample'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                internalServerErrorExample:
+                  $ref: '#/components/examples/InternalServerErrorExample'
+
+  # -----------------------------------------------------------------------
+
+  /v2/accounts/{account_id}/permissions/roles/{role_id}:
+    parameters:
+      - $ref: '#/components/parameters/AccountIdParam'
+      - $ref: '#/components/parameters/RoleIdParam'
+    get:
+      # --------
+      #  Get a specific role
+      # ------------------------------------
+      x-speakeasy-name-override: get
+      x-speakeasy-mcp:
+        name: get-role
+        scopes:
+          - admin
+        title: Get Role
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Get role
+      description: Get a specific system or custom role.
+      operationId: getRole
+      tags:
+        - Roles
+      parameters:
+        - $ref: '#/components/parameters/FolderId'
+        - $ref: '#/components/parameters/AssetId'
+        - $ref: '#/components/parameters/CollectionId'
+        - $ref: '#/components/parameters/PolicyParameterKeyParam'
+        - $ref: '#/components/parameters/PolicyParameterValueParam'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+              examples:
+                GetRoleExample:
+                  $ref: '#/components/examples/GetRoleExample'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                roleNotFoundErrorExample:
+                  $ref: '#/components/examples/RoleNotFoundErrorExample'
+
+    put:
+      # --------
+      #  Update a specific role
+      # ------------------------------------
+      summary: Update custom role
+      x-speakeasy-name-override: update
+      x-speakeasy-mcp:
+        name: update-role
+        scopes:
+          - admin
+        title: Update Role
+        destructiveHint: false
+        idempotentHint: true
+      description: |
+        Update a specific custom role by providing all relevant details, including those you want to keep as-is.
+
+        *Note:* Updating a role with a name that already exists will trigger a 409 error.
+
+      operationId: updateRole
+      tags:
+        - Roles
+      requestBody:
+        description: Role details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRole'
+            examples:
+              updateRoleExample:
+                $ref: '#/components/examples/UpdateRoleExample'
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleResponse"
+              examples:
+                updatePolicyResponse:
+                  $ref: '#/components/examples/UpdateRoleResponseExample'
+        '400':
+          description: Missing fields, invalid field
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missingFieldsErrorExample:
+                  $ref: '#/components/examples/MissingFieldsErrorExample'
+                invalidPolicyIDFieldErrorExample:
+                  $ref: '#/components/examples/InvalidPolicyIDFieldErrorExample'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                roleNotFoundErrorExample:
+                  $ref: '#/components/examples/RoleNotFoundErrorExample'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                roleAlreadyExistsErrorExample:
+                  $ref: '#/components/examples/RoleAlreadyExistsErrorExample'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                internalServerErrorExample:
+                  $ref: '#/components/examples/InternalServerErrorExample'
+
+    delete:
+      # --------
+      #  Delete a role
+      # ------------------------------------
+      x-speakeasy-name-override: delete
+      x-speakeasy-mcp:
+        name: delete-role
+        scopes:
+          - admin
+        title: Delete Role
+        destructiveHint: true
+        idempotentHint: true
+      summary: Delete custom role
+      description: Delete a specific custom role.
+      operationId: deleteRole
+      tags:
+        - Roles
+      parameters:
+        - $ref: '#/components/parameters/ForceDeleteParam'
+      responses:
+        '204':
+          description: Successful operation
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                roleNotFoundErrorExample:
+                  $ref: '#/components/examples/RoleNotFoundErrorExample'
+
+  # -----------------------------------------------------------------------
+  /v2/accounts/{account_id}/permissions/principal_roles:
+    parameters:
+      - $ref: '#/components/parameters/AccountIdParam'
+    get:
+      # --------
+      #  Get all roles for a principal
+      # ------------------------------------
+      x-speakeasy-name-override: listRoles
+      x-speakeasy-mcp:
+        name: list-principal-roles
+        scopes:
+          - admin
+        title: List Principal's Roles
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Get a principal's roles
+      description: Retrieve all roles associated with a specific principal.
+      operationId: getPrincipalRoles
+      tags:
+        - Principals
+      parameters:
+        - $ref: '#/components/parameters/PrincipalTypeRequiredParam'
+        - $ref: '#/components/parameters/PrincipalIdRequiredParam'
+        - $ref: '#/components/parameters/PermissionTypeParam'
+        - $ref: '#/components/parameters/ManagementTypeParam'
+        - $ref: '#/components/parameters/ScopeTypeParam'
+        - $ref: '#/components/parameters/ScopeIdParam'
+        - $ref: '#/components/parameters/FolderId'
+        - $ref: '#/components/parameters/AssetId'
+        - $ref: '#/components/parameters/CollectionId'
+        - $ref: '#/components/parameters/PolicyParameterKeyParam'
+        - $ref: '#/components/parameters/PolicyParameterValueParam'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalRolesResponse'
+              examples:
+                GetPrincipalRolesExample:
+                  $ref: '#/components/examples/GetPrincipalRolesExample'
+                GetPrincipalRolesWithParamKeyValueExample:
+                  $ref: '#/components/examples/GetPrincipalRolesWithParamKeyValueExample'
+        '400':
+          description: Missing fields, invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missingPrincipalFieldsErrorExample:
+                  $ref: '#/components/examples/MissingPrincipalFieldsErrorExample'
+                invalidFieldErrorExample:
+                  $ref: '#/components/examples/InvalidFieldErrorExample'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                principalNotFoundErrorExample:
+                  $ref: '#/components/examples/PrincipalNotFoundErrorExample'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internalServerErrorExample:
+                  $ref: '#/components/examples/InternalServerErrorExample'
+    put:
+      # --------
+      #  Add/Remove roles to a principal
+      # ------------------------------------
+      x-speakeasy-name-override: updateRoles
+      x-speakeasy-mcp:
+        name: update-principal-roles
+        scopes:
+          - admin
+        title: Update Principal's Roles
+        destructiveHint: false
+      summary: Assign roles to a principal
+      description: Add or remove roles associated with a principal.
+      operationId: updatePrincipalRoles
+      tags:
+        - Principals
+      requestBody:
+        description: Principal and roles details.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePrincipalRolesRequest'
+      responses:
+        '200':
+          description: Successful operation
+
+        '400':
+          description: Missing fields, invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missingPrincipalFieldsErrorExample:
+                  $ref: '#/components/examples/MissingPrincipalFieldsErrorExample'
+                InvalidOperationFieldErrorExample:
+                  $ref: '#/components/examples/InvalidOperationFieldErrorExample'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # -----------------------------------------------------------------------
+  /v2/accounts/{account_id}/permissions/principal_roles/inspect:
+    parameters:
+      - $ref: '#/components/parameters/AccountIdParam'
+    get:
+      # --------
+      #  Inspect
+      # ------------------------------------
+      summary: Inspect
+      x-speakeasy-mcp:
+        name: inspect-principals
+        scopes:
+          - admin
+        title: Inspect Principals
+        readOnlyHint: true
+        idempotentHint: true
+      description: |
+        Retrieves principals and their assigned roles within a specified scope, based on query filters.
+        
+        Use this endpoint to determine which users, groups, API keys, or account API keys have roles applied at:
+        * A specific `scope_type` ("account" or "prodenv")
+        * A specific `scope_id` (for product environments)
+        * Optional content filters (such as `folder_id`, `collection_id`, or `param_key` / `param_value`)
+        * Optional `principal_type` (and `principal_id`)
+
+        The response includes all principals that match the specified filters, along with the roles applied to them within that context.
+
+        This endpoint is useful when you want to:
+        * Audit who has access within a given scope
+        * Identify all principals assigned to roles for a specific folder, collection, asset, or product environment
+        * Retrieve role assignments dynamically based on filtering criteria
+      operationId: inspect
+      tags:
+        - Principals
+      parameters:
+        - $ref: '#/components/parameters/ScopeTypeRequiredParam'
+        - $ref: '#/components/parameters/ScopeIdParam'
+        - $ref: '#/components/parameters/PrincipalTypeParam'
+        - $ref: '#/components/parameters/PrincipalIdParam'
+        - $ref: '#/components/parameters/FolderId'
+        - $ref: '#/components/parameters/AssetId'
+        - $ref: '#/components/parameters/CollectionId'
+        - $ref: '#/components/parameters/PolicyParameterKeyParam'
+        - $ref: '#/components/parameters/PolicyParameterValueParam'
+        - $ref: '#/components/parameters/CursorParam'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalRolesInspectResponse'
+              examples:
+                InspectExampleFolder:
+                  $ref: '#/components/examples/InspectExampleFolder'
+                InspectExampleAllFolders:
+                  $ref: '#/components/examples/InspectExampleAllFolders'
+                InspectExampleProdEnv:
+                  $ref: '#/components/examples/InspectExampleProdEnv'
+        '400':
+          description: Missing fields, invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      # --------
+      #  Inspect multiple
+      # ------------------------------------
+      x-speakeasy-mcp:
+        name: inspect-principals-multiple
+        scopes:
+          - admin
+        title: Inspect Multiple Principals
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Inspect multiple
+      description: |
+        Retrieves role assignments for a specified list of principals within a shared scope and optional policy parameters.
+
+        Use this endpoint when you already know which principals you want to evaluate and want to check their role assignments in a single request.
+
+        In this request:
+        * You explicitly provide the `principals` array in the request body.
+        * All principals are evaluated against the same `scope_type`, optional `scope_id`, and optional `policy_parameters`.
+        * Unlike `Inspect`, this endpoint doesn't search for matching principals. It evaluates only the principals you provide.
+
+        This endpoint is useful for:
+        * Verify role assignments for multiple specified principals at once
+        * Comparing role assignments across specific users, groups, or keys
+        * Reducing multiple per-principal `Inspect` calls into a single request
+      operationId: inspectMultiple
+      tags:
+        - Principals
+      requestBody:
+        description: Role assignments for multiple principals.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectRequest'
+            examples:
+              InspectMultipleRequestExample:
+                $ref: '#/components/examples/InspectMultipleRequestExample'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalRolesInspectResponse'
+              examples:
+                InspectMultipleResponseExample:
+                  $ref: '#/components/examples/InspectMultipleResponseExample'
+        '400':
+          description: Missing fields, invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  # -----------------------------------------------------------------------
+  /v2/accounts/{account_id}/permissions/roles/{role_id}/principals:
+    parameters:
+      - $ref: '#/components/parameters/AccountIdParam'
+      - $ref: '#/components/parameters/RoleIdParam'
+    get:
+      # --------
+      #  Get all principals for a role
+      # ------------------------------------
+      x-speakeasy-name-override: listPrincipals
+      x-speakeasy-mcp:
+        name: list-role-principals
+        scopes:
+          - admin
+        title: List Role's Principals
+        readOnlyHint: true
+        idempotentHint: true
+      summary: Get a role's principals
+      description: Retrieve all principals associated with a specific role.
+      operationId: getRolePrincipals
+      tags:
+        - Roles
+      parameters:
+        - $ref: '#/components/parameters/ScopeTypeParam'
+        - $ref: '#/components/parameters/ScopeIdParam'
+        - $ref: '#/components/parameters/VerboseParam'
+        - $ref: '#/components/parameters/FolderId'
+        - $ref: '#/components/parameters/AssetId'
+        - $ref: '#/components/parameters/CollectionId'
+        - $ref: '#/components/parameters/PolicyParameterKeyParam'
+        - $ref: '#/components/parameters/PolicyParameterValueParam'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalsResponse'
+              examples:
+                GetRolePrincipalsExample:
+                  $ref: '#/components/examples/GetRolePrincipalsExample'
+                GetRolePrincipalsWithParamKeyValueExample:
+                  $ref: '#/components/examples/GetRolePrincipalsWithParamKeyValueExample'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                roleNotFoundErrorExample:
+                  $ref: '#/components/examples/RoleNotFoundErrorExample'
+    put:
+      # --------
+      #  Add/Remove principals associated with a role
+      # ------------------------------------
+      x-speakeasy-name-override: updatePrincipals
+      x-speakeasy-mcp:
+        name: update-role-principals
+        scopes:
+          - admin
+        title: Update Role's Principals
+        destructiveHint: false
+      summary: Assign principals to a role
+      description: Add or remove principals associated with a role.
+      operationId: updateRolePrincipals
+      tags:
+        - Roles
+      requestBody:
+        description: Principals details.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRolePrincipalsRequest'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Missing fields, invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missingFieldsErrorExample:
+                  $ref: '#/components/examples/MissingRoleFieldsErrorExample'
+                invalidOperationFieldErrorExample:
+                  $ref: '#/components/examples/InvalidOperationFieldErrorExample'
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/AuthorizationErrorExample'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                authorizationErrorExample:
+                  $ref: '#/components/examples/ForbiddenErrorExample'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                roleNotFoundErrorExample:
+                  $ref: '#/components/examples/RoleNotFoundErrorExample'
+
 # -----------------------------------------------------------------------
 
 components:
   schemas:
-# ------------------------------------
+    # ------------------------------------
+    # Shared Enum Schemas
+    # ------------------------------------
+    ScopeTypeEnum:
+      type: string
+      description: Specifies where the role/policy is applied, either at the account level or within product environments.
+      enum:
+        - account
+        - prodenv
+      example: prodenv
+    # ------------------------------------
+    PrincipalTypeEnum:
+      type: string
+      description: The type of principal.
+      enum:
+        - user
+        - group
+        - apiKey
+        - provisioningKey
+      example: user
+    # ------------------------------------
+    PermissionTypeEnum:
+      type: string
+      description: Specifies whether permissions apply globally or to specific content.
+      enum:
+        - global
+        - content
+      example: global
+    # ------------------------------------
+    ManagementTypeEnum:
+      type: string
+      description: Specifies whether the role's policies are managed by Cloudinary (`system`) or by the user (`custom`).
+      enum:
+        - system
+        - custom
+      example: system
+    # ------------------------------------
+    OperationEnum:
+      type: string
+      description: Specifies the operation to perform. Use `add` to associate or `remove` to disassociate.
+      enum:
+        - add
+        - remove
+      example: add
+    # ------------------------------------
+    ValidateCedarPolicyRequest:
+      type: object
+      required:
+        - policy
+      properties:
+        policy:
+          type: string
+          description: The Cedar policy statement to validate.
+          example: "permit(principal == Cloudinary::APIKy::\"1234\", action == Cloudinary::Action::\"read\", resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains(\"asdfjkl12347890\")} ;"
+    # ------------------------------------
+    UpdateRolePrincipalsRequest:
+      type: object
+      properties:
+        operation:
+          $ref: '#/components/schemas/OperationEnum'
+        principals:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpdateRolePrincipal'
+    # ------------------------------------
     CustomPolicy:
       type: object
       required:
@@ -345,31 +1611,21 @@ components:
       properties:
         policy_statement:
           description: A Cedar statement that permits or forbids a principal to perform an action on a resource. Refer to the [Permissions API guide](permissions_api_guide) for more information.
+
           type: string
           example: |
-            permit(principal == Cloudinary::APIKey::\"893515392262445\",action==Cloudinary::Action::\"read\",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains(\"asdfjkl12347890\")} ;
+            permit(principal == Cloudinary::APIKey::\"1234\",action==Cloudinary::Action::\"read\",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains(\"asdfjkl12347890\")} ;
         description:
           description: A short description of the policy.
           nullable: true
           type: string
           example: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
         scope_type:
-          description: |
-            Specifies where the policy is applied, either at the account level or within product environments.
-
-            **Important:** Currently, only `prodenv` is available. 
-
-          type: string
-          enum:
-            - account
-            - prodenv
-          example: prodenv
+          $ref: '#/components/schemas/ScopeTypeEnum'
         scope_id:
-          description: |
-            The ID of a specific product environment, or "all" product environments, where the policy is applied. Required and only relevant if scope_type is "prodenv". Find your product environment IDs in the [Product Environments](https://console.cloudinary.com/settings/product-environments) page of the Console Settings.
+          description: >
+            The ID of a specific product environment, or "all" product environments, where the policy is applied. Required and only relevant if scope_type is "prodenv".
 
-            **Important:** The Permissions API is enabled per product environment. Make sure the ID you provide belongs a product environment that has the Permissions API enabled.
-            
             - <product_environment_id>
 
             - all
@@ -381,7 +1637,7 @@ components:
         name:
           description: The name assigned to the policy.
           type: string
-          example: "893515392262445: Read access to Clothing folder"
+          example: "Read access to Clothing folder"
         enabled:
           description: Indicates whether the policy is currently active. Can be "true" (enabled) or "false" (disabled).
           type: boolean
@@ -389,23 +1645,162 @@ components:
           example: true
           default: true
 
-# ------------------------------------
+    # ------------------------------------
+    SystemRolesAndPoliciesCatalogResponse:
+      type: object
+      required:
+        - catalog
+      properties:
+        catalog:
+          type: object
+          example:
+            system_policies:
+              - id: "cld::policy::global::ml::access"
+                name: "Access the Media Library"
+                description: "Access the Media Library within the Console. Without this permission, users can't view any assets."
+                category: "Management"
+                sub_category: "General operations"
+                permission_type: "global"
+                scope_type: "prodenv"
+                policy: "permit(principal, action, resource == Cloudinary::Feature::\"cld::global::ml::access\");"
+              - id: "cld::policy::content::folder::view_download"
+                name: "View assets"
+                description: "View all assets in the folder and its nested subfolders."
+                category: "Folder"
+                sub_category: "View and download"
+                permission_type: "content"
+                scope_type: "prodenv"
+                policy: "permit(principal, action == Cloudinary::Action::\"read\", resource is Cloudinary::Asset) when { resource.ancestor_ids.contains(\"<folder_id>\") };"
+            system_roles:
+              - id: "cld::role::prodenv::master_admin"
+                name: "Master Admin"
+                description: "Fully manage product environment, including settings, product features, dashboards, and reports."
+                permission_type: "global"
+                scope_type: "prodenv"
+                system_policy_ids:
+                  - "cld::policy::global::ml::access"
+                  - "cld::policy::global::folder_and_asset_management::view"
+                  - "cld::policy::global::api_keys::manage"
+              - id: "cld::role::folder::viewer"
+                name: "Viewer"
+                description: "View and download public assets."
+                permission_type: "content"
+                scope_type: "prodenv"
+                system_policy_ids:
+                  - "cld::policy::content::folder::view_download"
+                  - "cld::policy::content::folder::download_public_assets"
+    # ------------------------------------
+    CedarSchemaResponse:
+      type: object
+      required:
+        - schema
+      properties:
+        schema:
+          type: object
+          example:
+            Cloudinary:
+              actions:
+                create:
+                  appliesTo:
+                    principalTypes: ["APIKey", "User", "Group"]
+                    resourceTypes: ["Folder", "Asset", "Collection"]
+                read:
+                  appliesTo:
+                    principalTypes: ["APIKey", "User", "Group"]
+                    resourceTypes: ["Folder", "Asset", "Feature"]
+                move:
+                  appliesTo:
+                    principalTypes: ["APIKey", "User", "Group"]
+                    resourceTypes: ["Asset", "Folder"]
+                    context:
+                      type: "Record"
+                      attributes:
+                        direction:
+                          type: "String"
+                          required: false
+              entityTypes:
+                User:
+                  shape:
+                    type: "Record"
+                    attributes:
+                      root:
+                        type: "Boolean"
+                        required: false
+                Asset:
+                  shape:
+                    type: "Record"
+                    attributes:
+                      ancestor_ids:
+                        type: "Set"
+                        element:
+                          type: "String"
+                        required: true
+                      resource_type:
+                        type: "String"
+                        required: true
+                Folder:
+                  shape:
+                    type: "Record"
+                    attributes:
+                      ancestor_ids:
+                        type: "Set"
+                        element:
+                          type: "String"
+                        required: true
+                      name:
+                        type: "String"
+                        required: true
+            MediaFlows:
+              actions:
+                read:
+                  appliesTo:
+                    principalTypes: ["Cloudinary::User", "Cloudinary::Group"]
+                    resourceTypes: ["EasyFlow", "PowerFlow", "LogEntry"]
+              entityTypes:
+                EasyFlow: {}
+                PowerFlow: {}
+                LogEntry: {}
+    # ------------------------------------
+    ValidateCedarPolicyResponse:
+      type: object
+      required:
+        - valid
+      properties:
+        valid:
+          type: boolean
+          example: false
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/CedarError"
+    # ------------------------------------
+    CedarError:
+      type: object
+      required:
+        - cedar_message
+        - cedar_code
+      properties:
+        cedar_message:
+          type: string
+        cedar_code:
+          type: string
+    # ------------------------------------
     CreateCustomPolicy:
       allOf:
         - $ref: '#/components/schemas/CustomPolicy'
-# ------------------------------------
+    # ------------------------------------
     UpdateCustomPolicy:
       required:
         - enabled
       allOf:
         - $ref: '#/components/schemas/CustomPolicy'
-# ------------------------------------
+    # ------------------------------------
     CustomPolicyResponse:
       type: object
       properties:
         data:
           $ref: "#/components/schemas/CustomPolicyResponseData"
-# ------------------------------------
+    # ------------------------------------
     CustomPolicyResponseData:
       type: object
       required:
@@ -422,49 +1817,40 @@ components:
           type: string
           example: "12jf789l12hwiuencl7aaqey"
         policy_statement:
-          description: A Cedar policy that permits or forbids a certain action on a certain element to a principal (API key).
+          description: A Cedar policy that permits or forbids a certain action on a certain element to a principal (user, group, or API key).
           type: string
-          example: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+          example: permit(principal == Cloudinary::APIKey::"1234",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
         description:
           description: A short description of the policy.
           type: string
           nullable: true
           example: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
         scope_type:
-          description: |
-            Specifies where the policy is applied, either at the account level or within product environments.
-
-            **Important:** Currently, only `prodenv` is available. 
-
-          type: string
-          enum:
-            - account
-            - prodenv
-          example: "prodenv"
+          $ref: '#/components/schemas/ScopeTypeEnum'
         scope_id:
-          description: Returned if the scope type is product environment. Can be "all" to represent all product environments or an ID of a specific product environment.
+          description: Returned only if the scope type is product environment. Can be "all" to represent all product environments or an ID of a specific product environment.
           type: string
           nullable: true
           example: "975l29lz02jt0836fhwi"
         name:
           description: The name of the policy
           type: string
-          example: "893515392262445: Read access to Clothing folder"
+          example: "Read access to Clothing folder"
         enabled:
           description: Whether the policy is enabled or not
           type: boolean
           example: true
         created_at:
-          description: Creation time of the policy in epoch time
+          description: Creation time of the policy in epoch time.
           type: integer
           format: int64
-          example: "1719475216"
+          example: 1719475216
         updated_at:
-          description: Last update time of the policy in epoch time
+          description: Last update time of the policy in epoch time.
           type: integer
           format: int64
-          example: "1719475216"
-# ------------------------------------
+          example: 1719475216
+    # ------------------------------------
     CustomPoliciesResponse:
       type: object
       properties:
@@ -476,12 +1862,505 @@ components:
         next_cursor:
           type: string
           description: When a request has more results to return, the next_cursor value is returned as part of the response. You can then specify this value as the cursor parameter of a following request.
-# ------------------------------------
+    # ------------------------------------
+    SystemPolicyResponseData:
+      type: object
+      required:
+        - id
+        - policy_statement
+        - created_at
+        - updated_at
+        - scope_type
+        - name
+      properties:
+        id:
+          description: The unique identifier of the policy.
+          type: string
+          example: "12jf789l12hwiuencl7aaqey"
+        name:
+          description: The name of the policy
+          type: string
+          example: "Read access to Clothing folder"
+        description:
+          description: A short description of the policy.
+          type: string
+          nullable: true
+          example: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
+        scope_type:
+          $ref: '#/components/schemas/ScopeTypeEnum'
+        permission_type:
+          description: |
+            Specifies whether the permission applies globally across all resources or contexts within the scope (i.e., security settings for the account, or all folders in a product environment), or specifically to designated content instances (i.e., folder with external ID "fg3841spr").
+
+                - global
+
+                - content
+          type: string
+          example: global
+        policy_statement:
+          description: A Cedar policy that permits or forbids a certain action on a certain element to a principal (user, group, or API key).
+          type: string
+          example: permit(principal == Cloudinary::APIKey::"1234",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when { resource.ancestor_ids.contains("\<folder_id\>") };
+        policy_parameters:
+          description: |
+            For roles with `permission_type` set to `content`, this defines the type of content the role's policies apply to:
+            - The content type can be: `folder_id` or `collection_id`.
+            - When assigning the role, provide the instance, e.g. `{"folder_id":"asdfjkl12347890"}`. This specification is passed to the `policy_statement` (Cedar).
+          type: array
+          items:
+            type: string
+          example: ["folder_id"]
+        category:
+          description: The category of the policy.
+          type: string
+          example: "Management"
+        sub_category:
+          description: The sub-category of the policy.
+          type: string
+          example: "General operations"
+        created_at:
+          description: Creation time of the policy in epoch time.
+          type: integer
+          format: int64
+          example: 1719475216
+        updated_at:
+          description: Last update time of the policy in epoch time.
+          type: integer
+          format: int64
+          example: 1719475216
+    # ------------------------------------
+    SystemPoliciesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SystemPolicyResponseData"
+          description: An array of system policies.
+        next_cursor:
+          type: string
+          description: When a request has more results to return, the next_cursor value is returned as part of the response. You can then specify this value as the cursor parameter of a following request.
+    # ------------------------------------
+    EffectivePolicy:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the permission policy.
+          example: "cld::global::api_keys::manage"
+        policy_statement:
+          type: string
+          description: A Cedar statement that permits or forbids a principal to perform an action on a resource. Refer to the [Permissions API guide](permissions_api_guide) for more information.
+          example: permit (principal, action, resource == Cloudinary::Feature::"cld::global::api_keys::view");
+    # ------------------------------------
+    EffectiveRole:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the role.
+          example: "custom::global::admin"
+        system_policies:
+          description: A list of all the predefined permission policies that are associated with this role.
+          type: array
+          items:
+            $ref: "#/components/schemas/EffectivePolicy"
+    # ------------------------------------
+    Principal:
+      type: object
+      required:
+        - type
+        - id
+      properties:
+        type:
+          $ref: '#/components/schemas/PrincipalTypeEnum'
+        id:
+          type: string
+          description: The unique identifier of the principal.
+          example: "1234abc"
+    # ------------------------------------
+    PrincipalRole:
+      type: object
+      properties:
+        principal_type:
+          type: string
+          description: |
+            The type of principal you want to retrieve roles or permission policies for.
+
+            - user
+
+            - group
+
+            - apiKey
+
+            - provisioningKey
+          example: user
+        principal_id:
+          type: string
+          description: The unique identifier of the principal.
+          example: 1234abc
+        roles:
+          description: A list of all the roles that are added to this principal.
+          type: array
+          items:
+            $ref: "#/components/schemas/EffectiveRole"
+    # ------------------------------------
+    EffectivePoliciesResponse:
+      type: object
+      properties:
+        data:
+          allOf:
+            - type: object
+              properties:
+                principals:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PrincipalRole'
+            - type: object
+              properties:
+                custom_policies:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/EffectivePolicy'
+    # ------------------------------------
+    Role:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          description: The name of the role.
+          type: string
+          example: "Upload manager"
+        description:
+          description: A short description of the role.
+          nullable: true
+          type: string
+          example: "Responsible for managing upload presets and uploading new assets."
+        system_policy_ids:
+          description: |
+            A list of system permission policy IDs to be included in the role.
+
+            **Tip:** Get the list of all available predefined policies using the [Get system policies](#tag/policies/get/policies) method.
+          type: array
+          items:
+            type: string
+          example:
+            - "cld::policy::global::upload_presets::manage"
+            - "cld::policy::global::folder_and_asset_management::create_asset"
+    # ------------------------------------
+    CreateRole:
+      allOf:
+        - type: object
+          required:
+            - permission_type
+            - scope_type
+          properties:
+            id:
+              description: |
+                The unique identifier for the role.
+
+                * **When creating a new role**: If not provided, the system will auto-generate the ID.
+                * **When updating a role**: Specify the ID of the role you want to update.
+
+              type: string
+              example: "upload_manager_12334565"
+            permission_type:
+              description: >
+                Specifies whether the permission applies globally across all contexts within the scope (i.e., security settings for the account, or all folders in a product environment), or specifically to designated content instances (i.e., folder with external ID `"fg3841spr"`). **Note:** This attrubute is immutable.
+
+                - global
+
+                - content
+
+              type: string
+              example: global
+            scope_type:
+              $ref: '#/components/schemas/ScopeTypeEnum'
+        - $ref: '#/components/schemas/Role'
+    # ------------------------------------
+    UpdateRole:
+      allOf:
+        - $ref: '#/components/schemas/Role'
+    # ------------------------------------
+    RoleResponseData:
+      type: object
+      required:
+        - id
+        - name
+        - management_type
+        - permission_type
+        - scope_type
+        - created_at
+        - updated_at
+      properties:
+        id:
+          description: The unique identifier of the role.
+          type: string
+          example: "cld::role::prodenv::master_admin"
+        name:
+          description: The name of the role.
+          type: string
+          example: "Master admin"
+        description:
+          description: A short description of the role.
+          type: string
+          nullable: true
+          example: "Full access."
+        management_type:
+          $ref: '#/components/schemas/ManagementTypeEnum'
+        permission_type:
+          description: |
+            Specifies whether the permission applies globally across all contexts within the scope (i.e., security settings for the account, or all folders in a product environment), or specifically to designated content instances (i.e., folder with external ID "fg3841spr").
+
+                - global
+
+                - content
+          type: string
+          example: global
+        policy_parameters:
+          description: |
+            For roles with `permission_type` set to `content`, this defines the type of content the role's policies apply to:
+            - The content type can be: `folder_id` or `collection_id`.
+            - When assigning the role, provide the instance, e.g. `{"folder_id":"asdfjkl12347890"}`. This specification is passed to the `policy_statement` (Cedar).
+          type: array
+          items:
+            type: string
+          example:
+            - "folder_id"
+        scope_type:
+          $ref: '#/components/schemas/ScopeTypeEnum'
+        created_at:
+          description: The permission policy creation timestamp in epoch time.
+          type: integer
+          format: int64
+          example: 1719475216
+        updated_at:
+          description: The permission policy last updated timestamp in epoch time.
+          type: integer
+          format: int64
+          example: 1719475216
+    # ------------------------------------
+    RoleResponse:
+      type: object
+      properties:
+        data:
+          allOf:
+            - type: object
+              properties:
+                policies:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SystemPolicyResponseData'
+            - $ref: '#/components/schemas/RoleResponseData'
+    # ------------------------------------
+    UpdateRolePrincipal:
+      type: object
+      required:
+        - principal_type
+        - principal_id
+      properties:
+        principal_type:
+          $ref: '#/components/schemas/PrincipalTypeEnum'
+        principal_id:
+          type: string
+          description: The unique identifier of the principal.
+          example: "1234abc"
+        scope_id:
+          type: string
+          description: The ID of a specific product environment where the role is applied. This parameter is only relevant if `scope_type` is "prodenv".
+          nullable: true
+          example: "975l29lz02jt0836fhwi"
+        policy_parameters:
+          type: object
+          description: For roles with `permission_type` set to `content`, provide the ID of the specific folder or collection you want the role to apply to, for example, `{"folder_id":"asdfjkl12347890"}`. This specification is passed to the `policy_statement`, written in Cedar language.
+          example: {"folder_id":"asdfjkl12347890"}
+    # ------------------------------------
+    PrincipalResponseData:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          description: The unique identifier of the principal.
+          type: string
+          example: "1234abc"
+        type:
+          $ref: '#/components/schemas/PrincipalTypeEnum'
+        role_id:
+          type: string
+        policy_parameters:
+          type: object
+        scope_type:
+          $ref: '#/components/schemas/ScopeTypeEnum'
+        scope_id:
+          type: string
+          nullable: true
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+    # ------------------------------------
+    PrincipalsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrincipalResponseData'
+          description: An array of principals.
+    # ------------------------------------
+    RolesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleResponseData'
+          description: An array of roles.
+    # ------------------------------------
+    PrincipalRolesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrincipalRolesData'
+    # ------------------------------------
+    PrincipalRolesData:
+      type: object
+      required:
+        - id
+        - name
+        - management_type
+        - permission_type
+        - scope_type
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the role.
+        name:
+          type: string
+          description: The name of the role.
+        description:
+          type: string
+          nullable: true
+          description: A short description of the role.
+        management_type:
+          $ref: '#/components/schemas/ManagementTypeEnum'
+        permission_type:
+          $ref: '#/components/schemas/PermissionTypeEnum'
+        scope_type:
+          $ref: '#/components/schemas/ScopeTypeEnum'
+        scope_id:
+          type: string
+          description: Returned only if the scope type is product environment. Can be "all" to represent all product environments or an ID of a specific product environment.
+          nullable: true
+        policy_parameters:
+          type: object
+          description: |
+            For roles with `permission_type` set to `content`, this defines the type of content the role's policies apply to:
+            - The content type can be: `folder_id` or `collection_id`.
+            - When assigning the role, provide the instance, e.g. `{"folder_id":"asdfjkl12347890"}`. This specification is passed to the `policy_statement` (Cedar).
+          nullable: true
+        created_at:
+          type: integer
+          description: Creation time of the policy in epoch time.
+          format: int64
+        updated_at:
+          type: integer
+          description: Last updated time of the policy in epoch time.
+          format: int64
+    # ------------------------------------
+    PrincipalRolesInspectResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            principals:
+              type: array
+              items:
+                $ref: '#/components/schemas/PrincipalRolesInspectData'
+        next_cursor:
+          type: string
+    # ------------------------------------
+    PrincipalRolesInspectData:
+      type: object
+      required:
+        - type
+        - id
+        - roles
+      properties:
+        type:
+          $ref: '#/components/schemas/PrincipalTypeEnum'
+        id:
+          type: string
+          description: The unique identifier of the principal.
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrincipalRolesData'
+    # ------------------------------------
+    UpdatePrincipalRolesRequest:
+      type: object
+      properties:
+        operation:
+          $ref: '#/components/schemas/OperationEnum'
+        principal:
+          $ref: '#/components/schemas/Principal'
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleToManage'
+    # ------------------------------------
+    InspectRequest:
+      type: object
+      required:
+        - scope_type
+        - principals
+      properties:
+        scope_type:
+          $ref: '#/components/schemas/ScopeTypeEnum'
+        scope_id:
+          type: string
+        principals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Principal'
+        policy_parameters:
+          type: object
+        cursor:
+          type: string
+    # ------------------------------------
+    RoleToManage:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the role you want to assign.
+          example: "marketing_content_contributor_1357fhe"
+        scope_id:
+          type: string
+          description: The ID of a specific product environment where the policy is applied. This parameter is only relevant if `scope_type` is "prodenv".
+          example: "975l29lz02jt0836fhwi"
+        policy_parameters:
+          type: object
+          description: Defines the content instance that the role applies to. Specify the content type (`folder_id` or `collection_id`) and its corresponding ID. For example, `{"folder_id":"asdfjkl12347890"}`. This specification is passed to the `policy_statement` (Cedar).
+          example:
+            folder_id: "asdfjkl12347890"
     ErrorResponse:
       properties:
         error:
           $ref: '#/components/schemas/Error'
-# ------------------------------------
+    # ------------------------------------
     Error:
       type: object
       properties:
@@ -497,9 +2376,19 @@ components:
         details:
           type: object
           description: Additional contextual information about the error, which may include relevant data.
-# -----------------------------------------------------------------------
+
+  # -----------------------------------------------------------------------
 
   parameters:
+    AccountIdParam:
+      name: account_id
+      description: Account ID
+      in: path
+      required: true
+      schema:
+        type: string
+      x-speakeasy-globals-hidden: true
+    # ------------------------------------
     PolicyIdParam:
       name: policy_id
       description: A unique identifier for the custom permission policy.
@@ -507,145 +2396,863 @@ components:
       required: true
       schema:
         type: string
-      example: "12jf789l12hwiuencl7aaqey"
-# ------------------------------------
+    # ------------------------------------
     ScopeTypeParam:
       name: scope_type
-      description: "Specifies the level for retrieving policies, either at the account level or within product environments."
+      description: Specifies the level for retrieving policies or roles, either at the account level or within product environments.
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/ScopeTypeEnum'
+    # ------------------------------------
+    ScopeTypeRequiredParam:
+      name: scope_type
+      description: Specifies the level for retrieving policies or roles, either at the account level or within product environments.
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/ScopeTypeEnum'
+    # ------------------------------------
+    ScopeIdParam:
+      name: scope_id
+      description: >
+        The ID of a specific product environment where the policy is applied. This parameter is only relevant if `scope_type` is "prodenv".
+
+        - <product_environment_id>
+
       in: query
       required: false
       schema:
         type: string
-        enum:
-          - account
-          - prodenv
-# ------------------------------------
-    ScopeIdParam:
-      name: scope_id
+    # ------------------------------------
+    PolicyParameterKeyParam:
+      name: param_key
+      description: The type of content instance the role applies to, either `folder_id` or `collection_id`. Use together with `param_value` to retrieve role assignments as they apply to a specific instance.
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+        example:
+          - "folder_id"
+    # ------------------------------------
+    PolicyParameterValueParam:
+      name: param_value
+      description: The ID of the content instance (for example, a specific folder or collection). Use together with param_key to retrieve roles as they apply to a specific instance.
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+        example:
+          - "asdfjkl12347890"
+    # ------------------------------------
+    FolderId:
+      name: folder_id
       description: >
-        The ID of a specific product environment where the policy is applied. This parameter is only relevant if `scope_type` is "prodenv". Find your product environment IDs in the [Product Environments](https://console.cloudinary.com/settings/product-environments) page of the Console Settings.
-        
-        - <product_environment_id>
+        * In the **Get role** endpoint, the specified `folder_id` is included in the `policy_statement` parameter of the response. If no `folder_id` is specified, the `policy_statement` shows a placeholder for the `folder_id` where relevant.
 
+        * In the **Get a principal's roles**, **Get a role's principals**, and **Inspect** endpoints, the results are filtered by the specified `folder_id`. Only roles or principals with `policy_statement` parameters associated with that `folder_id` are returned.
       in: query
       schema:
         type: string
-# ------------------------------------
+    # ------------------------------------
+    AssetId:
+      name: asset_id
+      description: Not currently supported.      
+      in: query
+      schema:
+        type: string
+    # ------------------------------------
+    CollectionId:
+      name: collection_id
+      description: >
+        * In the **Get role** endpoint, the specified `collection_id` is included in the `policy_statement` parameter of the response. If no `collection_id` is specified, the `policy_statement` shows a placeholder for the `collection_id` where relevant.
+
+        * In the **Get a principal's roles** and **Get a role's principals** endpoints, the results are filtered by the specified `collection_id`. Only roles or principals with `policy_statement` parameters associated with that `collection_id` are returned.
+      in: query
+      schema:
+        type: string
+    # ------------------------------------
+    PolicyParameterTypesParam:
+      name: policy_parameters
+      description: |
+        For roles with `permission_type` set to `content`, this defines the type of content the role's policies apply to:
+        - The content type can be: `folder_id` or `collection_id`.
+        - When assigning the role, provide the instance, e.g. `{"folder_id":"asdfjkl12347890"}`. This specification is passed to the `policy_statement` (Cedar).
+      in: query
+      required: false
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              type: string
     CursorParam:
       name: cursor
       description: 'A pagination cursor for fetching subsequent results.'
       in: query
       schema:
         type: string
-# ------------------------------------
+    # ------------------------------------
     EnabledParam:
       name: enabled
       description: 'Filter policies by enabled status (true/false).'
       in: query
       schema:
         type: boolean
-        default: true
+        nullable: true
+    # -----------------------------------------------------------------------
+    PrincipalTypeParam:
+      name: principal_type
+      description: "The type of principal you want to retrieve roles or permission policies for."
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/PrincipalTypeEnum'
+    # ------------------------------------
+    PrincipalTypeRequiredParam:
+      name: principal_type
+      description: "The type of principal you want to retrieve roles or permission policies for."
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/PrincipalTypeEnum'
+    # ------------------------------------
+    PrincipalIdParam:
+      name: principal_id
+      description: |
+        The unique identifier of the principal you want to retrieve roles or permission policies for.
 
-# -----------------------------------------------------------------------
+        **Notes:**
+
+        * This parameter is mandatory if `principal_type` is provided.
+        * Ensure the specified ID belongs to a principle of the specified type.
+      in: query
+      schema:
+        type: string
+    # ------------------------------------
+    PrincipalIdRequiredParam:
+      name: principal_id
+      description: |
+        The unique identifier of the principal you want to retrieve roles or permission policies for.
+
+        **Notes:**
+
+        * This parameter is mandatory if `principal_type` is provided.
+        * Ensure the specified ID belongs to a principle of the specified type.
+      in: query
+      required: true
+      schema:
+        type: string
+    # ------------------------------------
+    PermissionTypeParam:
+      name: permission_type
+      description: Specifies whether to retrieve roles whose permissions apply globally across all contexts within the scope (i.e., security settings for the account, or all folders in a product environment), or specifically to designated content instances (i.e., folder with external ID "fg3841spr").
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/PermissionTypeEnum'
+    # ------------------------------------
+    PermissionTypeOptionalParam:
+      name: permission_type
+      description: Specifies whether to retrieve roles whose permissions apply globally across all contexts within the scope (i.e., security settings for the account, or all folders in a product environment), or specifically to designated content instances (i.e., folder with external ID "fg3841spr").
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/PermissionTypeEnum'
+    # ------------------------------------
+    ManagementTypeParam:
+      name: management_type
+      description: Specifies whether the role's policies are managed by Cloudinary (`system`) or by the user (`custom`).
+      in: query
+      schema:
+        $ref: '#/components/schemas/ManagementTypeEnum'
+    # ------------------------------------
+    ForceDeleteParam:
+      name: force
+      description: >
+        Determines whether the role should be deleted when it has associated principals.
+
+        - `true`: Deletes the role even if it has associated principals.
+
+        - `false` (default): Prevents deletion if the role has associated principals. You must manually unassociate the principals before deleting the role.
+      in: query
+      schema:
+        type: boolean
+    # ------------------------------------
+    RoleIdParam:
+      name: role_id
+      description: A unique identifier for the role.
+      in: path
+      required: true
+      schema:
+        type: string
+    # -----------------------------------------------------------------------
+    VerboseParam:
+      name: verbose
+      description: Determines whether the response contains all the parameters described below (`true`), or only `id` and `principal_type` (`false`). *Default:* `false`
+      in: query
+      schema:
+        type: boolean
+    # ------------------------------------
 
   securitySchemes:
     basicAuth:
       type: http
       scheme: basic
 
-# -----------------------------------------------------------------------
+  # -----------------------------------------------------------------------
 
   examples:
+    CustomPoliciesExample:
+      summary: Custom policies example
+      value:
+        data:
+          - id: "12jf789l12hwiuencl7aaqey"
+            policy_statement: permit(principal == Cloudinary::APIKey::"1234",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+            description: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
+            scope_type: "prodenv"
+            scope_id: "975l29lz02jt0836fhwi"
+            name: "Read access to Clothing folder"
+            enabled: true
+            created_at: 1719475216
+            updated_at: 1719475216
+          - id: "13890asdhjfqyewiurzbxn273"
+            policy_statement: permit(principal == Cloudinary::APIKey::"1234",action==Cloudinary::Action::"update",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+            description: "Permit updating the Clothing folder with external ID asdfjkl12347890."
+            scope_type: "prodenv"
+            scope_id: "975l29lz02jt0836fhwi"
+            name: "Update access to Clothing folder"
+            enabled: true
+            created_at: 1719475216
+            updated_at: 1719475216
+
+    CustomPolicyExample:
+      summary: Custom policy example
+      value:
+        data:
+          id: "12jf789l12hwiuencl7aaqey"
+          policy_statement: permit(principal == Cloudinary::APIKey::"1234",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+          description: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
+          scope_type: "prodenv"
+          scope_id: "975l29lz02jt0836fhwi"
+          name: "Read access to Clothing folder"
+          enabled: true
+          created_at: 1719475216
+          updated_at: 1719475216
+
+    SystemPoliciesExample:
+      summary: Get system policies example
+      value:
+        data:
+          - id: "cld::policy::global::assets::moderate"
+            name: "Moderate all assets"
+            description: "Approve and reject all assets in moderation. To perform these actions from the Moderation page, pair this permission with 'Access the Moderation page'. To view assets on the page, pair it with the 'View all folders and assets' global permission."
+            scope_type: "prodenv"
+            permission_type: "global"
+            policy_statement: permit(principal, action == Cloudinary::Action::"moderate", resource is Cloudinary::Asset);
+            created_at: 1719475216
+            updated_at: 1719475216
+
+          - id: "cld::policy::content::folder::view_download"
+            name: "View all assets"
+            description: "View all assets in the folder and its nested subfolders."
+            scope_type: "prodenv"
+            permission_type: "content"
+            policy_statement: |
+              permit(principal, action == Cloudinary::Action::"read", resource is Cloudinary::Folder) when { resource.ancestor_ids.contains("<folder_id>") };
+              permit(principal, action == Cloudinary::Action::"read", resource is Cloudinary::Asset) when { resource.ancestor_ids.contains("<folder_id>") };
+            policy_parameters: ["folder_id"]
+            created_at: 1719475216
+            updated_at: 1719475216
+        next_cursor: "3"
+
+    EffectivePoliciesExample:
+      summary: Get effective policies example
+      value:
+        data:
+          principals:
+            - principal_type: "user"
+              principal_id: "1234abc"
+              roles:
+                - id: "upload_manager_12334565"
+                  system_policies:
+                    - id: "cld::policy::global::upload_presets::manage"
+                      policy_statement: "permit (principal == Cloudinary::user::\"1234abc\", action == Cloudinary::Action::\"read\", resource is Cloudinary::UploadPreset);"
+                    - id: "cld::policy::global::folder_and_asset_management::create_asset"
+                      policy_statement: |
+                        permit(principal == Cloudinary::user::\"1234abc\", action, resource is Cloudinary::UploadPreset);
+                        permit(principal == Cloudinary::user::\"1234abc\", action, resource is Cloudinary::UploadMapping);
+                        permit(principal == Cloudinary::user::\"1234abc\", action == Cloudinary::Action::"update_settings", resource is Cloudinary::ProductEnvironment);
+                        permit(principal == Cloudinary::user::\"1234abc\", action, resource == Cloudinary::Feature::"cld::global::upload_settings::manage");
+                        permit(principal == Cloudinary::user::\"1234abc\", action, resource == Cloudinary::Feature::"cld::global::upload_settings::access");
+                - id: "cld::role::prodenv::reports"
+                  system_policies:
+                    - id: "cld::policy::global::reports::delivery::view"
+                      policy_statement: |
+                        permit(principal == Cloudinary::user::\"1234abc\", action, resource == Cloudinary::Feature::"cld::global::reports::delivery::view");
+                        permit(principal == Cloudinary::user::\"1234abc\", action == Cloudinary::Action::"read", resource is Cloudinary::Report) when {resource.type == "delivery"};
+                    - id: "cld::policy::global::reports::errors::view"
+                      policy_statement: "permit (pprincipal == Cloudinary::user::\"1234abc\", action, resource == Cloudinary::Feature::\"cld::global::reports::errors::view\");"
+                    - id: "cld::policy::global::reports::usage::view"
+                      policy_statement: |
+                        permit (principal == Cloudinary::user::\"1234abc\", action, resource == Cloudinary::Feature::"cld::global::reports::usage::view");
+                        permit (principal == Cloudinary::user::\"1234abc\", action == Cloudinary::Action::"read", resource is Cloudinary::Report) when { resource.type == "env_usage" };
+          custom_policies:
+            - id: "12jf789l12hwiuencl7aaqey"
+              policy_statement: "permit(principal == Cloudinary::user::\"1234abc\", action == Cloudinary::Action::\"read\", resource is Cloudinary::Folder) when {resource.ancestor_ids.contains(\"asdfjkl12347890\")};"
+            - id: "12jf789l12hwiuencl7aaqey"
+              policy_statement: "permit(principal == Cloudinary::user::\"1234abc\", action == Cloudinary::Action::\"update\", resource is Cloudinary::Folder) when {resource.ancestor_ids.contains(\"asdfjkl12347890\")};"
+
     CreateCustomPolicyExample:
       summary: Create custom policy example
       value:
-        policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+        policy_statement: permit(principal == Cloudinary::APIKey::"1234",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
         description: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
         scope_type: "prodenv"
         scope_id: "975l29lz02jt0836fhwi"
-        name: "893515392262445: Read access to Clothing folder"
+        name: "Read access to Clothing folder"
         enabled: true
-# ------------------------------------
+
+    # ------------------------------------
     CreateCustomPolicyResponseExample:
       summary: Custom policy created successfully
       value:
         data:
-          - id: "12jf789l12hwiuencl7aaqey"
-            policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
-            description: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
-            scope_type: "prodenv"
-            scope_id: "975l29lz02jt0836fhwi"
-            name: "893515392262445: Read access to Clothing folder"
-            enabled: true
-            created_at: "1719475216"
-            updated_at: "1719475216"
-# ------------------------------------
+          id: "12jf789l12hwiuencl7aaqey"
+          policy_statement: permit(principal == Cloudinary::APIKey::"1234",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+          description: "Permit read access to the Clothing folder with external ID asdfjkl12347890."
+          scope_type: "prodenv"
+          scope_id: "975l29lz02jt0836fhwi"
+          name: "Read access to Clothing folder"
+          enabled: true
+          created_at: 1719475216
+          updated_at: 1719475216
+    # ------------------------------------
     UpdateCustomPolicyExample:
       summary: Update custom policy example
       value:
-        policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+        policy_statement: permit(principal == Cloudinary::APIKey::"1234",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
         description: "Permit read access to the Accessories folder with external ID asdfjkl12347890."
         scope_type: "prodenv"
         scope_id: "975l29lz02jt0836fhwi"
-        name: "893515392262445: Read access to Accessories folder"
+        name: "Read access to Accessories folder"
         enabled: true
-# ------------------------------------
+    # ------------------------------------
     UpdateCustomPolicyResponseExample:
       summary: Custom policy updated successfully
       value:
         data:
-          - id: "12jf789l12hwiuencl7aaqey"
-            policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
-            description: "Permit read access to the Accessories folder with external ID asdfjkl12347890."
-            scope_type: "prodenv"
-            scope_id: "975l29lz02jt0836fhwi"
-            name: "893515392262445: Read access to Accessories folder"
-            enabled: true
-            created_at: "1719475216"
-            updated_at: "1719475216"
-# ------------------------------------
-    GetCustomPoliciesResponseExample:
-      summary: Get custom policies
+          id: "12jf789l12hwiuencl7aaqey"
+          policy_statement: permit(principal == Cloudinary::APIKey::"1234",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
+          description: "Permit read access to the Accessories folder with external ID asdfjkl12347890."
+          scope_type: "prodenv"
+          scope_id: "975l29lz02jt0836fhwi"
+          name: "Read access to Accessories folder"
+          enabled: true
+          created_at: 1719475216
+          updated_at: 1719475216
+    # ------------------------------------
+    GetRolesExample:
+      summary: Get roles example
       value:
         data:
-          - id: "as1237898hasdiuiopwqwer"
-            policy_statement: "permit(principal is Cloudinary::User, action, resource);"
+          - id: "cld::role::account::master_admin"
+            name: "Master Admin"
+            description: "Manage all account-level settings and features."
+            management_type: "system"
+            permission_type: "global"
+            scope_type: "account"
+            created_at: 1719475216
+            updated_at: 1719475216
+
+          - id: "cld::role::account::admin"
+            name: "Admin"
+            description: "Manage roles, users, and groups, and access Cloudinary products."
+            management_type: "system"
+            permission_type: "global"
+            scope_type: "account"
+            created_at: 1719475216
+            updated_at: 1719475216
+
+          - id: "custom::role::account::admin_assist"
+            name: "Admin"
+            description: "View roles, users and groups, and account-level reports."
+            management_type: "custom"
+            permission_type: "global"
+            scope_type: "account"
+            created_at: 1719475216
+            updated_at: 1719475216
+
+          - id: "cld::role::prodenv::ml_user"
+            name: "Media Library User"
+            description: "Access specific folders and collections according to assigned permissions."
+            management_type: "system"
+            permission_type: "global"
+            scope_type: "prodenv"
+            created_at: 1719475216
+            updated_at: 1719475216
+    # ------------------------------------
+    GetRoleExample:
+      summary: Get role example
+      value:
+        data:
+          policies:
+            - id: "cld::policy::global::upload_presets::manage"
+              name: "Manage upload settings"
+              description: "View, create, modify, or delete upload settings, such as upload presets, upload mappings, and upload defaults."
+              scope_type: "prodenv"
+              permission_type: "global"
+              policy_statement: |
+                permit(principal, action, resource is Cloudinary::UploadPreset);
+                permit(principal, action, resource is Cloudinary::UploadMapping);
+                permit(principal, action == Cloudinary::Action::"update_settings", resource is Cloudinary::ProductEnvironment);
+                permit(principal, action, resource == Cloudinary::Feature::"cld::global::upload_settings::manage");
+                permit(principal, action, resource == Cloudinary::Feature::"cld::global::upload_settings::access");
+              category: Settings
+              sub_category: Upload Settings
+              created_at: 1719475215
+              updated_at: 1719475215
+            - id: "cld::policy::global::folder_and_asset_management::create_asset"
+              name: "Upload assets"
+              description: "Upload assets to any folder, including the root, without requiring specific folder permissions. Includes the option to select an upload preset and apply tags and metadata."
+              scope_type: "prodenv"
+              permission_type: "global"
+              policy_statement: permit(principal, action in [Cloudinary::Action::"create"], resource is Cloudinary::Asset);
+              category: Management
+              sub_category: Folder and asset management
+              created_at: 1719475215
+              updated_at: 1719475215
+          id: "upload_manager_12334565"
+          name: "Upload manager"
+          description: "Responsible for managing upload settings and uploading new assets."
+          management_type: "custom"
+          permission_type: "global"
+          scope_type: "prodenv"
+          created_at: 1719475216
+          updated_at: 1719475216
+    # ------------------------------------
+    CreateGlobalRoleResponseExample:
+      summary: Global role created successfully
+      value:
+        data:
+          policies:
+            - id: "cld::policy::global::upload_presets::manage"
+              name: "Manage upload settings"
+              description: "View, create, modify, or delete upload settings, such as upload presets, upload mappings, and upload defaults."
+              scope_type: "prodenv"
+              permission_type: "global"
+              policy_statement: permit (principal, action in [Cloudinary::Action::"create", Cloudinary::Action::"read", Cloudinary::Action::"update", Cloudinary::Action::"delete"], resource is Cloudinary::UploadPreset);
+              category: "Settings"
+              sub_category: "Upload Settings"
+              created_at: 1719475215
+              updated_at: 1719475215
+            - id: "cld::policy::global::folder_and_asset_management::create_asset"
+              name: "Upload assets"
+              description: "Upload assets to any folder, including the root, without requiring specific folder permissions. Includes the option to select an upload preset and apply tags and metadata. "
+              scope_type: "prodenv"
+              permission_type: "global"
+              policy_statement: permit ( principal, action in [Cloudinary::Action::"create", Cloudinary::Action::"read"], resource is Cloudinary::Asset) permit ( principal, action in [Cloudinary::Action::"create", Cloudinary::Action::"read"], resource is Cloudinary::Folder)
+              category: "Management"
+              sub_category: "Folder and asset management"
+              created_at: 1719475215
+              updated_at: 1719475215
+          id: "upload_manager_12334565"
+          name: "Upload manager"
+          description: "Responsible for managing upload presets and uploading new assets."
+          management_type: "custom"
+          permission_type: "global"
+          scope_type: "prodenv"
+          created_at: 1719475216
+          updated_at: 1719475216
+    # ------------------------------------
+    CreateContentRoleResponseExample:
+      summary: Content role created successfully
+      value:
+        data:
+          policies:
+            - id: "cld::policy::content::folder::view_download"
+              name: "View all assets"
+              description: "View all assets in the folder and its nested subfolders."
+              scope_type: "prodenv"
+              permission_type: "content"
+              policy_statement: >
+                permit(principal, action == Cloudinary::Action::"read", resource is Cloudinary::Folder) when { resource.ancestor_ids.contains("<folder_id>") };
+                permit(principal, action == Cloudinary::Action::"read", resource is Cloudinary::Asset) when { resource.ancestor_ids.contains("<folder_id>") };
+              policy_parameters: ["folder_id"]
+              category: "Folder"
+              sub_category: "View and download"
+              created_at: 1719475215
+              updated_at: 1719475215
+            - id: "cld::policy::content::folder::add_assets"
+              name: "Add assets"
+              description: "Add assets to the folder by uploading new files, saving an asset as new, or moving existing assets from other folders. Tags and structured metadata can be applied during upload."
+              scope_type: "prodenv"
+              permission_type: "content"
+              policy_statement: >
+                permit(principal, action == Cloudinary::Action::"create", resource is Cloudinary::Asset) when { resource.ancestor_ids.contains("<folder_id>")};
+              policy_parameters: ["folder_id"]
+              category: "Folder"
+              sub_category: "Contribute"
+              created_at: 1719475215
+              updated_at: 1719475215
+          id: "marketing_content_contributor_1357fhe"
+          name: "Marketing content contributor"
+          description: "View all assets in selected folders and contribute to those folders, without permission to download."
+          management_type: "custom"
+          permission_type: "content"
+          policy_parameters: ["folder_id"]
+          scope_type: "prodenv"
+          created_at: 1719475216
+          updated_at: 1719475216
+    # ------------------------------------
+    CreateAcctRoleResponseExample:
+      summary: Account-level role created successfully
+      value:
+        data:
+          policies:
+            - id: "cld::policy::global::users_and_groups::manage"
+              name: "Manage users and groups"
+              description: "View, add, and remove users and groups in the account, and manage group memberships."
+              scope_type: "account"
+              permission_type: "global"
+              policy_statement: >
+                permit (principal, action , resource is Cloudinary::User);
+                permit (principal, action, resource is Cloudinary::Group);
+                permit (principal, action, resource == Cloudinary::Feature::"cld::global::users::view");
+                permit (principal, action, resource == Cloudinary::Feature::"cld::global::users::create");
+                permit (principal, action, resource == Cloudinary::Feature::"cld::global::users::update");
+                permit (principal, action, resource == Cloudinary::Feature::"cld::global::users::delete");
+                permit (principal, action, resource == Cloudinary::Feature::"cld::global::groups::view");
+                permit (principal, action, resource == Cloudinary::Feature::"cld::global::groups::create");
+                permit (principal, action, resource == Cloudinary::Feature::"cld::global::groups::update");
+                permit (principal, action, resource == Cloudinary::Feature::"cld::global::groups::delete");
+              category: "Settings"
+              sub_category: "User Management"
+              created_at: 1719475215
+              updated_at: 1719475215
+            - id: "cld::policy::global::account_security::manage"
+              name: "Manage account security settings"
+              description: "Define account-wide security settings related to authentication, access control, and user privacy."
+              scope_type: "account"
+              policy_statement: >
+                permit (principal, action, resource == Cloudinary::Feature::"cld::global::account::view");
+                permit (principal, action, resource == Cloudinary::Feature::"cld::global::account::update");
+                permit (principal, action == Cloudinary::Action::"read", resource is Cloudinary::Account);
+                permit (principal, action == Cloudinary::Action::"update", resource is Cloudinary::Account);
+              category: "Settings"
+              sub_category: "Account Security"
+              created_at: 1719475215
+              updated_at: 1719475215
+          id: "sensitive_account_details_manager_88825hl"
+          name: "Sensitive account details manager"
+          description: "Responsible for managing users and account security."
+          management_type: "custom"
+          permission_type: "global"
+          scope_type: "account"
+          created_at: 1719475216
+          updated_at: 1719475216
+    # ------------------------------------
+    UpdateRoleExample:
+      summary: Update role example
+      value:
+        name: "Upload manager"
+        description: "Responsible for managing uploads and uploading new assets."
+        system_policy_ids:
+          - "cld::policy::global::upload_presets::manage"
+          - "cld::policy::global::folder_and_asset_management::create_asset"
+    # ------------------------------------
+    CreateGlobalRoleExample:
+      summary: Create global role example
+      value:
+        id: upload_manager_12334565
+        permission_type: "global"
+        scope_type: "prodenv"
+        name: "Upload manager"
+        description: "Responsible for managing uploads and uploading new assets."
+        system_policy_ids:
+          - "cld::policy::global::upload_presets::manage"
+          - "cld::policy::global::folder_and_asset_management::create_asset"
+    # ------------------------------------
+    CreateAcctRoleExample:
+      summary: Create account role example
+      value:
+        id: sensitive_account_details_manager_88825hl
+        permission_type: "global"
+        scope_type: "account"
+        name: "Sensitive account details manager"
+        description: "Responsible for managing users and account security."
+        system_policy_ids:
+          - "cld::global::users_and_groups::manage"
+          - "cld::policy::global::account_security::manage"
+    # ------------------------------------
+    CreateContentRoleExample:
+      summary: Create content role example
+      value:
+        id: marketing_content_contributor_1357fhe
+        permission_type: "content"
+        scope_type: "prodenv"
+        name: "Marketing content contributor"
+        description: "View all assets in selected folders and contribute to those folders, without permission to download."
+        system_policy_ids:
+          - "cld::policy::content::folder::view_download"
+          - "cld::policy::content::folder::add_assets"
+    # ------------------------------------
+    UpdateRoleResponseExample:
+      summary: Role updated successfully
+      value:
+        data:
+          policies:
+            - id: "cld::policy::global::upload_presets::manage"
+              name: "Manage upload settings"
+              description: "View, create, modify, or delete upload settings, such as upload presets, upload mappings, and upload defaults."
+              scope_type: "prodenv"
+              permission_type: "global"
+              policy_statement: |
+                permit(principal, action, resource is Cloudinary::UploadPreset);
+                permit(principal, action, resource is Cloudinary::UploadMapping);
+                permit(principal, action == Cloudinary::Action::"update_settings", resource is Cloudinary::ProductEnvironment);
+                permit(principal, action, resource == Cloudinary::Feature::"cld::global::upload_settings::manage");
+                permit(principal, action, resource == Cloudinary::Feature::"cld::global::upload_settings::access");
+              category: "Settings"
+              sub_category: "Upload Settings"
+              created_at: 1719475215
+              updated_at: 1719475215
+            - id: "cld::policy::global::folder_and_asset_management::create_asset"
+              name: "Upload assets"
+              description: "Upload assets to any folder, including the root, without requiring specific folder permissions. Includes the option to select an upload preset and apply tags and metadata."
+              scope_type: "prodenv"
+              permission_type: "global"
+              policy_statement: "permit(principal, action in [Cloudinary::Action::\"create\"], resource is Cloudinary::Asset);"
+              category: "Management"
+              sub_category: "Folder and asset management"
+              created_at: 1719475215
+              updated_at: 1719475215
+          id: "upload_manager_12334565"
+          name: "Upload manager"
+          description: "Responsible for managing uploads and uploading new assets."
+          management_type: "custom"
+          permission_type: global
+          scope_type: "prodenv"
+          created_at: 1719475216
+          updated_at: 1719475216
+    # ------------------------------------
+    GetRolePrincipalsExample:
+      summary: Get a role's principals example
+      value:
+        data:
+          - id: "1234abc"
+            type: "user"
+            role_id: "marketing_content_contributor_1357fhe"
+            policy_parameters:
+              folder_id: "asdfjkl12347890"
             scope_type: "prodenv"
             scope_id: "975l29lz02jt0836fhwi"
-            name: "permission prodenv allow DAM"
-            enabled: true
-            created_at: "1721912192"
-            updated_at: "1721912192"
-
-          - id: "12jf789l12hwiuencl7aaqey"
-            policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445",action==Cloudinary::Action::"read",resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;
-            description: "Permit read access to the Accessories folder with external ID asdfjkl12347890."
+            created_at: 1719475216
+            updated_at: 1719475216
+          - id: "akwut728390anvy52sxgti"
+            type: "apiKey"
+            role_id: "marketing_content_contributor_1357fhe"
+            policy_parameters:
+              folder_id: "asdfjkl12347890"
             scope_type: "prodenv"
             scope_id: "975l29lz02jt0836fhwi"
-            name: "893515392262445: Read access to Accessories folder"
-            enabled: true
-            created_at: "1719475216"
-            updated_at: "1719475216"
-
-          - id: "298wiohfjdksnzmxcasf"
-            policy_statement: permit(principal == Cloudinary::APIKey::"893515392262445", action== Cloudinary::Action::"read",resource is Cloudinary::MetadataField);
-            description: "Permit read access to metadata fields."
+            created_at: 1719475216
+            updated_at: 1719475216
+        # ------------------------------------
+    GetRolePrincipalsWithParamKeyValueExample:
+      summary: Get a role's principals with param_key and param_value for a specific content instance only.
+      value:
+        data:
+          - id: "1234abc"
+            type: "user"
+            role_id: "marketing_content_contributor_1357fhe"
+            policy_parameters:
+              folder_id: "asdfjkl12347890"
             scope_type: "prodenv"
             scope_id: "975l29lz02jt0836fhwi"
-            name: "893515392262445: Read access to metadata fields"
-            enabled: true
-            created_at: "1719475216"
-            updated_at: "1719475216"
-
-          - id: "zxmndaskdjfqiweuyr293478"
-            policy_statement: "permit(principal == Cloudinary::APIKey::\"721588181775364\", action, resource is Cloudinary::MetadataField);"
+            created_at: 1719475216
+            updated_at: 1719475216
+        # ------------------------------------
+    GetPrincipalRolesExample:
+      summary: Get a principal's roles example
+      value:
+        data:
+          - id: "cld::role::account::reports"
+            name: "Reports"
+            description: "View account-level reports and usage metrics, including audit logs, dashboard usage summaries, and account-wide activity reports."
+            management_type: "system"
+            permission_type: "global"
+            scope_type: "account"
+            created_at: 1719475216
+            updated_at: 1719475216
+          - id: "upload_manager_12334565"
+            name: "Upload manager"
+            description: "Responsible for managing upload presets and uploading new assets."
+            management_type: "custom"
+            permission_type: "global"
             scope_type: "prodenv"
-            scope_id: "123789sjklwyufj38nlaz8"
-            name: "721588181775364: Manage metadata"
-            enabled: true
-            created_at: "1722844408"
-            updated_at: "1722844408"
-# ------------------------------------
+            scope_id: "975l29lz02jt0836fhwi"
+            created_at: 1719475216
+            updated_at: 1719475216
+          - id: "marketing_content_contributor_1357fhe"
+            name: "Marketing content contributor"
+            description: "View all assets in selected folders and contribute to those folders, without permission to download."
+            management_type: "custom"
+            permission_type: "content"
+            policy_parameters:
+              folder_id: "asdfjkl12347890"
+            scope_type: "prodenv"
+            scope_id: "975l29lz02jt0836fhwi"
+            created_at: 1719475215
+            updated_at: 1719475215
+
+    # ------------------------------------
+    GetPrincipalRolesWithParamKeyValueExample:
+      summary: Get a principal's roles with param_key and param_value for a specific content instance only.
+      value:
+        data:
+          - id: "marketing_content_contributor_1357fhe"
+            name: "Marketing content contributor"
+            description: "View all assets in selected folders and contribute to those folders, without permission to download."
+            management_type: "custom"
+            permission_type: "content"
+            scope_type: "prodenv"
+            policy_parameters:
+              folder_id: "asdfjkl12347890"
+            created_at: 1719475215
+            updated_at: 1719475215
+
+    # ------------------------------------
+    InspectExampleFolder:
+      summary: |
+        Inspect example: Retrieve all principals with roles for a specified folder
+      value:
+        data:
+          principals:
+            - type: "user"
+              id: "1234abc"
+              roles:
+                - id: "marketing_content_contributor_1357fhe"
+                  name: "Marketing content contributor"
+                  description: "View all assets in selected folders and contribute to those folders, without permission to download."
+                  management_type: "custom"
+                  permission_type: "content"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  policy_parameters:
+                    folder_id: "asdfjkl12347890"
+                  created_at: 1719475215
+                  updated_at: 1719475215
+            - type: "user"
+              id: "4567xyz"
+              roles:
+                - id: "campaign_organizer_351766dt"
+                  name: "Campaign organizer"
+                  description: "Share and download permissions on folders."
+                  management_type: "custom"
+                  permission_type: "content"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  policy_parameters:
+                    folder_id: "asdfjkl12347890"
+                  created_at: 1719475215
+                  updated_at: 1719475215
+
+    # ------------------------------------
+    InspectExampleAllFolders:
+      summary: |
+        Inspect example: Retrieve all principals with folder roles
+      value:
+        data:
+          principals:
+            - type: "user"
+              id: "1234abc"
+              roles:
+                - id: "marketing_content_contributor_1357fhe"
+                  name: "Marketing content contributor"
+                  description: "View all assets in selected folders and contribute to those folders, without permission to download."
+                  management_type: "custom"
+                  permission_type: "content"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  policy_parameters:
+                    folder_id: "asdfjkl12347890"
+                  created_at: 1719475215
+                  updated_at: 1719475215
+            - type: "user"
+              id: "4567xyz"
+              roles:
+                - id: "campaign_organizer_351766dt"
+                  name: "Campaign organizer"
+                  description: "View and download access to folders containing marketing campaign images and videos."
+                  management_type: "custom"
+                  permission_type: "content"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  policy_parameters:
+                    folder_id: "asdfjkl12347890"
+                  created_at: 1719475215
+                  updated_at: 1719475215
+                - id: "website_admin_2523512"
+                  name: "Website administrator"
+                  description: "Manage assets delivered on the website."
+                  management_type: "custom"
+                  permission_type: "content"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  policy_parameters:
+                    folder_id: "bgxf992356125643"
+                  created_at: 1719475215
+                  updated_at: 1719475215
+
+    # ------------------------------------
+    InspectExampleProdEnv:
+      summary: |
+        Inspect example: Retrieve all principals with roles for a specific product environment
+      value:
+        data:
+          principals:
+            - type: "user"
+              id: "1234abc"
+              roles:
+                - id: "marketing_content_contributor_1357fhe"
+                  name: "Marketing content contributor"
+                  description: "View all assets in selected folders and contribute to those folders, without permission to download."
+                  management_type: "custom"
+                  permission_type: "content"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  policy_parameters:
+                    folder_id: "asdfjkl12347890"
+                  created_at: 1719475215
+                  updated_at: 1719475215
+                - id: "manage_portals_238haspw"
+                  name: "Brand portal manager"
+                  description: "Manage the curation and sharing of brand portals."
+                  management_type: "custom"
+                  permission_type: "global"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  created_at: 1719475215
+                  updated_at: 1719475215
+            - type: "apiKey"
+              id: "a382ltieo893jhioqpg8urp"
+              roles:
+                - id: "upload_manager_351766dt"
+                  name: "Manage upload settings"
+                  description: "Manage settings related to upload management."
+                  management_type: "custom"
+                  permission_type: "global"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  created_at: 1719475215
+                  updated_at: 1719475215
+
+    # ------------------------------------
     MissingFieldsErrorExample:
       summary: Missing fields
       value:
@@ -655,11 +3262,9 @@ components:
           message: "missing fields"
           details:
             fields:
-              - policy_statement
-              - scope_type
               - name
-# ------------------------------------
-    MissingFieldsUpdateErrorExample:
+    # ------------------------------------
+    MissingPrincipalFieldsErrorExample:
       summary: Missing fields
       value:
         error:
@@ -668,11 +3273,19 @@ components:
           message: "missing fields"
           details:
             fields:
-              - policy_statement
-              - scope_type
-              - name
-              - enabled
-# ------------------------------------
+              - principal_type
+      # ------------------------------------
+    MissingRoleFieldsErrorExample:
+      summary: Missing fields
+      value:
+        error:
+          category: "user_error"
+          code: "ACCOUNTS_00005"
+          message: "missing fields"
+          details:
+            fields:
+              - role_id
+    # ------------------------------------
     InvalidFieldErrorExample:
       summary: Invalid field
       value:
@@ -682,8 +3295,30 @@ components:
           message: "invalid request"
           details:
             fields:
-              - enabled: "enabled"
-# ------------------------------------
+              - scope_type: "account"
+    # ------------------------------------
+    InvalidOperationFieldErrorExample:
+      summary: Invalid field
+      value:
+        error:
+          category: "user_error"
+          code: "ACCOUNTS_00005"
+          message: "invalid request"
+          details:
+            fields:
+              - operation: "subtract"
+    # ------------------------------------
+    InvalidPolicyIDFieldErrorExample:
+      summary: Invalid field
+      value:
+        error:
+          category: "user_error"
+          code: "ACCOUNTS_00005"
+          message: "invalid request"
+          details:
+            fields:
+              - system_policy_ids: "cld::global::upload_presets::sample"
+    # ------------------------------------
     CedarErrorExample:
       summary: Invalid Cedar statement
       value:
@@ -693,10 +3328,10 @@ components:
           message: "invalid request"
           details:
             fields:
-              - policy_statement: 'permit(principal == Cloudinary::APIKy::"893515392262445", action == Cloudinary::Action::"read", resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;'
+              - policy_statement: 'permit(principal == Cloudinary::APIKy::"1234", action == Cloudinary::Action::"read", resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;'
               - cedar_errors:
                   - cedar_message: "invalid_principal"
-# ------------------------------------
+    # ------------------------------------
     AuthorizationErrorExample:
       summary: Authorization required
       value:
@@ -704,10 +3339,15 @@ components:
           category: "user_error"
           code: "ACCOUNTS_00006"
           message: "invalid credentials"
-          details:
-            fields:
-              - policy_statement: 'permit(principal == Cloudinary::APIKey::"893515392262445", action == Cloudinary::Action::"read", resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;'
-# ------------------------------------
+    # ------------------------------------
+    ForbiddenErrorExample:
+      summary: Not allowed
+      value:
+        error:
+          category: "user_error"
+          code: "ACCOUNTS_00006"
+          message: "not allowed"
+    # ------------------------------------
     CustomPolicyAlreadyExistsErrorExample:
       summary: Already exists for the scope
       value:
@@ -717,8 +3357,19 @@ components:
           message: "already exists for the scope"
           details:
             fields:
-              - policy_statement: 'permit(principal == Cloudinary::APIKey::"893515392262445", action == Cloudinary::Action::"read", resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;'
-# ------------------------------------
+              - policy_statement: 'permit(principal == Cloudinary::APIKey::"1234", action == Cloudinary::Action::"read", resource is Cloudinary::Folder ) when {resource.ancestor_ids.contains("asdfjkl12347890")} ;'
+    # ------------------------------------
+    RoleAlreadyExistsErrorExample:
+      summary: Already exists
+      value:
+        error:
+          category: "user_error"
+          code: "ACCOUNTS_00006"
+          message: "already exists"
+          details:
+            fields:
+              - name: 'Admin'
+    # ------------------------------------
     InternalServerErrorExample:
       summary: Internal server error
       value:
@@ -726,7 +3377,7 @@ components:
           category: "server_error"
           code: "ACCOUNTS_00001"
           message: "something went wrong"
-# ------------------------------------
+    # ------------------------------------
     PolicyNotFoundErrorExample:
       summary: Policy not found
       value:
@@ -737,4 +3388,114 @@ components:
           details:
             fields:
               - policy_id: al18owlkth68901
-# ------------------------------------
+    # ------------------------------------
+    RoleNotFoundErrorExample:
+      summary: Role not found
+      value:
+        error:
+          category: "server_error"
+          code: "ACCOUNTS_00003"
+          message: "not found"
+          details:
+            fields:
+              - role_id: manage_transformations_q1829qwnkli
+    # ------------------------------------
+    PrincipalNotFoundErrorExample:
+      summary: Principal not found
+      value:
+        error:
+          category: "server_error"
+          code: "ACCOUNTS_00003"
+          message: "not found"
+          details:
+            fields:
+              - principal_id: xyz098ppb
+    # ------------------------------------
+    ScopeNotFoundErrorExample:
+      summary: Scope not found
+      value:
+        error:
+          category: "server_error"
+          code: "ACCOUNTS_00003"
+          message: "not found"
+          details:
+            fields:
+              - scope_id: "55559999333hhx"
+    # ------------------------------------
+    ValidateCedarPolicyResponseExample:
+      summary: Invalid Cedar policy
+      value:
+        valid: false
+        errors:
+          - cedar_message: "invalid_principal"
+            cedar_code: "ACCOUNTS_00002"
+    # ------------------------------------
+    InspectMultipleRequestExample:
+      summary: Role assignments for multiple principals
+      value:
+        scope_type: "prodenv"
+        scope_id: "975l29lz02jt0836fhwi"
+        principals:
+          - type: "user"
+            id: "1234abc"
+          - type: "user"
+            id: "4567xyz"
+          - type: "apiKey"
+            id: "a382ltieo893jhioqpg8urp"
+        policy_parameters:
+          folder_id: "asdfjkl12347890"
+    # ------------------------------------
+    InspectMultipleResponseExample:
+      summary: Inspect multiple principals response
+      value:
+        data:
+          principals:
+            - type: "user"
+              id: "1234abc"
+              roles:
+                - id: "marketing_content_contributor_1357fhe"
+                  name: "Marketing content contributor"
+                  description: "View all assets in selected folders and contribute to those folders, without permission to download."
+                  management_type: "custom"
+                  permission_type: "content"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  policy_parameters:
+                    "folder_id": "asdfjkl12347890"
+                  created_at: 1719475215
+                  updated_at: 1719475215
+            - type: "user"
+              id: "4567xyz"
+              roles:
+                - id: "campaign_organizer_351766dt"
+                  name: "Campaign organizer"
+                  description: "Share and download permissions on folders."
+                  management_type: "custom"
+                  permission_type: "content"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  policy_parameters:
+                    folder_id: "<folder_id>"
+                  created_at: 1719475215
+                  updated_at: 1719475215
+                - id: "cld::role::prodenv::reports"
+                  name: "Reports"
+                  description: "View product environment reports and usage metrics."
+                  management_type: "system"
+                  permission_type: "global"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  created_at: 1719475216
+                  updated_at: 1719475216
+            - type: "apiKey"
+              id: "a382ltieo893jhioqpg8urp"
+              roles:
+                - id: "upload_manager_351766dt"
+                  name: "Upload manager"
+                  description: "Responsible for managing upload presets and uploading new assets."
+                  management_type: "custom"
+                  permission_type: "global"
+                  scope_type: "prodenv"
+                  scope_id: "975l29lz02jt0836fhwi"
+                  created_at: 1719475215
+                  updated_at: 1719475215
