@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Structured Metadata API
-  version: 0.3.5
+  version: 0.4.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -508,6 +508,12 @@ paths:
                 $ref: '#/components/schemas/api_error'
         '404':
           description: metadata field not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+        '420':
+          description: metadata field is already updating
           content:
             application/json:
               schema:

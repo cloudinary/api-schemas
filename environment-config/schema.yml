@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Environment Config API
-  version: 0.3.6
+  version: 0.4.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -1130,6 +1130,98 @@ paths:
                 example:
                   error:
                     message: record_not_found
+  /v1_1/{cloud_name}/triggers/{id}/test:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          description: The ID of the trigger to test.
+          example: c2c822dd1aa41ba6d81299df8b5ae949
+    post:
+      x-speakeasy-mcp:
+        name: test-trigger
+        scopes:
+          - admin
+        title: Test Trigger Filter
+        readOnlyHint: true
+      operationId: testTrigger
+      summary: Tests an existing trigger's filter against sample data
+      description: |
+        Evaluates an existing trigger's filter against provided sample data.
+        Use this endpoint to verify that a trigger's filter will match expected events.
+      tags:
+        - triggers
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sample_data:
+                  type: object
+                  description: Sample notification data to evaluate the filter against.
+                  example:
+                    resource_type: image
+                    public_id: sample123
+                    tags:
+                      - product
+      responses:
+        '200':
+          description: Test completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trigger_id:
+                    type: string
+                    description: The ID of the trigger that was tested.
+                    example: c2c822dd1aa41ba6d81299df8b5ae949
+                  filter_present:
+                    type: boolean
+                    description: Whether the trigger has a filter configured.
+                    example: true
+                  filter_result:
+                    type: boolean
+                    description: Result of evaluating the filter against sample_data (true if no filter).
+                    example: true
+                required:
+                  - trigger_id
+                  - filter_present
+                  - filter_result
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+              examples:
+                invalid_sample_data:
+                  value:
+                    error:
+                      message: invalid_sample_data_json
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: Invalid credentials
+        '404':
+          description: No trigger found with the specified id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+                example:
+                  error:
+                    message: record_not_found
   /v1_1/{cloud_name}/streaming_profiles:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
@@ -1484,9 +1576,15 @@ components:
             type: object
             properties:
               width:
-                type: integer
+                oneOf:
+                  - type: integer
+                  - type: string
+                description: Width - integer pixels or string variable reference (e.g., "$w")
               height:
-                type: integer
+                oneOf:
+                  - type: integer
+                  - type: string
+                description: Height - integer pixels or string variable reference (e.g., "$h")
               crop:
                 type: string
               gravity:
@@ -1646,16 +1744,6 @@ components:
           description: Structured metadata to attach to the asset based on the metadata fields defined for your account.
         moderation:
           type: string
-          enum:
-            - manual
-            - webpurify
-            - metascan
-            - aws_rek
-            - aws_rek_video
-            - google_video_moderation
-            - perception_point
-            - duplicate
-            - cld
           description: |
             For all asset types, set to:
             - manual to add the uploaded asset to a list of pending assets that can be moderated using the Admin API or the Cloudinary Console.
@@ -1736,11 +1824,11 @@ components:
           example: prod2024
         start:
           type: string
-          description: The start date and time (in ISO 8601 format) when anonymous access becomes available.
+          description: The start date and time when anonymous access becomes available (ISO 8601 format).
           example: '2024-03-15T09:00:00Z'
         end:
           type: string
-          description: The end date and time (in ISO 8601 format) when anonymous access expires.
+          description: The end date and time when anonymous access expires (ISO 8601 format).
           example: '2024-06-30T23:59:59Z'
     access_control:
       type: array
@@ -1791,20 +1879,19 @@ components:
             Allows the asset to behave as if it's of the authenticated 'type' (see above) while still using the default 'upload' type in delivery URLs. The asset can later be made public by changing its access_mode via the Admin API, without having to update any delivery URLs. Valid values: public, and authenticated.
         categorization:
           type: string
-          enum:
-            - rekognition_scene
-            - imagga_tagging
-            - aws_rek_tagging
-            - google_video_tagging
-            - google_tagging
-            - visenze_recognition
-            - azure_video_indexer
-          description: A comma-separated list of the categorization add-ons to run on the asset. Set to google_tagging, google_video_tagging, imagga_tagging and/or aws_rek_tagging to automatically classify the scenes of the uploaded asset.
+          description: |
+            A comma-separated list of the categorization add-ons to run on the asset.
+            Set to google_tagging, google_video_tagging, imagga_tagging and/or aws_rek_tagging
+            to automatically classify the scenes of the uploaded asset.
+            Optionally append a language code suffix (e.g., google_tagging:fr).
+          example: google_tagging
         ocr:
           type: string
-          enum:
-            - adv_ocr
-          description: Set to adv_ocr to extract all text elements in an image as well as the bounding box coordinates of each detected element using the OCR text detection and extraction add-on.
+          description: |
+            Set to adv_ocr to extract all text elements in an image as well as the bounding box
+            coordinates of each detected element using the OCR text detection and extraction add-on.
+            Optionally append options (e.g., adv_ocr:document).
+          example: adv_ocr
         raw_convert:
           type: string
           pattern: ^(aspose|azure_video_indexer(:\D+)*|google_speech(:(vt|sr)t)*(:[a-zA-Z-]+)?|extract_text)$
@@ -1817,17 +1904,14 @@ components:
           example: google_speech:vtt:en-US
         background_removal:
           type: string
-          enum:
-            - cloudinary_ai
-            - remove_the_background
-            - pixelz
           description: |
             Automatically remove the background of an image using an add-on.
             - Set to cloudinary_ai to use the deep-learning based Cloudinary AI Background Removal add-on.
+              Optionally append a template suffix (e.g., cloudinary_ai:fine_edges).
             - Note: this feature has been superseded by background removal on the fly.
             - Set to pixelz to use the human-powered Pixelz Remove-The-Background Editing add-on service.
             Relevant for images only.
-          example: pixelz
+          example: cloudinary_ai
         public_id:
           type: string
           description: The identifier that is used for accessing the uploaded asset. If not specified, a unique ID is generated automatically.
