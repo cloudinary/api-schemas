@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.1.6...provisioning-api-v0.2.0) (2026-02-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* add dedicated endpoints for user groups and sub-accounts
+
+### Features
+
+* Add dedicated endpoints for user groups and sub-accounts ([a8f562b](https://github.com/CloudinaryLtd/public-interfaces/commit/a8f562b0b73d442169d9852cb1ed354b091d64e6))
+
+
+### Bug Fixes
+
+* Align descriptions ([4561f31](https://github.com/CloudinaryLtd/public-interfaces/commit/4561f319ee2acf4ee42f38113604d99708c7d044))
+
 ## [0.1.6](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.1.5...provisioning-api-v0.1.6) (2025-08-10)
 
 

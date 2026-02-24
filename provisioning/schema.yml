@@ -1,13 +1,13 @@
 openapi: 3.0.3
 info:
   title: Cloudinary Account Provisioning API
-  version: 0.1.6 # x-release-please-version
+  version: 0.2.0 # x-release-please-version
   description: |
     Accounts with provisioning API access can create and manage their **product environments**, **users** and **user groups** using the RESTful Provisioning API. 
 
     Provisioning API access is available [upon request](https://cloudinary.com/contact?plan=enterprise) for accounts on an [Enterprise plan](https://cloudinary.com/pricing#pricing-enterprise).
 
-    The API uses **Basic Authentication** over HTTPS. Your **Provisioning Key** and **Provisioning Secret** are used for the authentication. These credentials (as well as your ACCOUNT_ID) are located in the [Cloudinary Console](https://console.cloudinary.com/pm) under **Settings > Account > Provisioning API Access**, or they can be obtained from the provisioning environment variable available on your Cloudinary Console [Dashboard](https://console.cloudinary.com/pm/developer-dashboard).
+    The API uses **Basic Authentication** over HTTPS. Your **Account API Key** and **Account API Secret** (previously referred to as **Provisioning API keys**) are used for the authentication. These credentials (as well as your ACCOUNT_ID) are located in the [Cloudinary Console](https://console.cloudinary.com/pm) under **Settings > Account API Keys**.
 
     The Provisioning API has dedicated SDKs for the following languages:
 
@@ -16,7 +16,7 @@ info:
     * [Java](https://github.com/cloudinary/account-provisioning-java)
 
     Useful links:
-    * [Provisioning API reference (Classic)](https://cloudinary.com/documentation/provisioning_api_1)
+    * [Provisioning API reference (Classic)](https://cloudinary.com/documentation/provisioning_api_1) (includes SDKs for additional languages)
 
   contact:
     name: Cloudinary Support
@@ -152,14 +152,14 @@ paths:
       operationId: createProductEnvironment
       requestBody:
         required: true
-        description: Product environment details
+        description: Product environment details.
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/ProductEnvironmentRequest"
       responses:
         '200':
-          description: Product environment created successfully
+          description: Product environment created successfully.
           content:
             application/json:
               schema:
@@ -195,7 +195,7 @@ paths:
       operationId: getProductEnvironment
       responses:
         '200':
-          description: Successful operation
+          description: Successful operation.
           content:
             application/json:
               schema:
@@ -227,7 +227,7 @@ paths:
       operationId: updateProductEnvironment
       requestBody:
         required: true
-        description: Updated product environment details
+        description: Product environment details to update.
         content:
           application/json:
             schema:
@@ -267,7 +267,7 @@ paths:
       operationId: deleteProductEnvironment
       responses:
         '200':
-          description: Product environment deleted successfully
+          description: Product environment deleted successfully.
           content:
             application/json:
               schema:
@@ -335,7 +335,7 @@ paths:
           example: asc
       responses:
         '200':
-          description: Successful operation
+          description: Successful operation.
           content:
             application/json:
               schema:
@@ -362,14 +362,14 @@ paths:
       operationId: generateAccessKey
       requestBody:
         required: true
-        description: Access key details
+        description: Access key details.
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/AccessKeyRequest"
       responses:
         '200':
-          description: Access key created successfully
+          description: Access key created successfully.
           content:
             application/json:
               schema:
@@ -412,7 +412,7 @@ paths:
             "main_key"
       responses:
         '200':
-          description: Access Key deleted successfully
+          description: Access Key deleted successfully.
           content:
             application/json:
               schema:
@@ -446,14 +446,14 @@ paths:
       operationId: updateAccessKey
       requestBody:
         required: true
-        description: Access key details for update
+        description: Access key details for update.
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/AccessKeyUpdateRequest"
       responses:
         '200':
-          description: Access key updated successfully
+          description: Access key updated successfully.
           content:
             application/json:
               schema:
@@ -486,7 +486,7 @@ paths:
       operationId: deleteAccessKey
       responses:
         '200':
-          description: Access Key deleted successfully
+          description: Access key deleted successfully.
           content:
             application/json:
               schema:
@@ -610,7 +610,7 @@ paths:
             type: "integer"
       responses:
         '200':
-          description: Successful operation
+          description: Successful operation.
           content:
             application/json:
               schema:
@@ -638,7 +638,7 @@ paths:
         - Users
       requestBody:
         required: true
-        description: User details
+        description: User details.
         content:
           application/json:
             schema:
@@ -647,16 +647,19 @@ paths:
               required:
                 - name
                 - email
+            examples:
+              CreateUserExample:
+                $ref: "#/components/examples/CreateUserExample"
       responses:
         '200':
-          description: User created successfully
+          description: User created successfully.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
               examples:
-                UserJohn:
-                  $ref: "#/components/examples/UserJohn"
+                UserResponseExample:
+                  $ref: "#/components/examples/UserResponseExample"
         '400':
           $ref: '#/components/responses/400BadRequest'
         '401':
@@ -687,14 +690,14 @@ paths:
         - Users
       responses:
         '200':
-          description: Successful operation
+          description: Successful operation.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
               examples:
-                UserFooBar:
-                  $ref: "#/components/examples/UserFooBar"
+                UserResponseExample:
+                  $ref: "#/components/examples/UserResponseExample"
         '401':
           $ref: '#/components/responses/401Unauthorized'
         '404':
@@ -715,14 +718,14 @@ paths:
         - Users
       requestBody:
         required: true
-        description: Updated user details
+        description: User details to update.
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/UserRequest"
       responses:
         '200':
-          description: User updated successfully
+          description: User updated successfully.
           content:
             application/json:
               schema:
@@ -757,7 +760,7 @@ paths:
         - Users
       responses:
         '200':
-          description: User deleted successfully
+          description: User deleted successfully.
           content:
             application/json:
               schema:
@@ -768,6 +771,70 @@ paths:
           $ref: '#/components/responses/401Unauthorized'
         '403':
           $ref: '#/components/responses/403NotAllowed'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '420':
+          $ref: '#/components/responses/420MaxUsageRateExceeded'
+        '429':
+          $ref: '#/components/responses/429TooManyRequests'
+
+  /users/{user_id}/groups:
+    parameters:
+      - $ref: '#/components/parameters/userId'
+
+    get:
+      summary: Get user groups
+      description: Retrieve the groups that a specific user belongs to.
+      externalDocs:
+        description: Learn more about retrieving user groups.
+        url: https://cloudinary.com/documentation/provisioning_api#get_users_groups
+      operationId: getGroupsForUser
+      tags:
+        - Users
+      responses:
+        '200':
+          description: Successful operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserGroupsListResponse"
+              examples:
+                UserGroupsList:
+                  $ref: "#/components/examples/UserGroupsList"
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '420':
+          $ref: '#/components/responses/420MaxUsageRateExceeded'
+        '429':
+          $ref: '#/components/responses/429TooManyRequests'
+
+  /users/{user_id}/sub_accounts:
+    parameters:
+      - $ref: '#/components/parameters/userId'
+
+    get:
+      summary: Get user sub-accounts
+      description: Retrieve the product environments (sub-accounts) that a specific user has access to.
+      externalDocs:
+        description: Learn more about retrieving user sub-accounts.
+        url: https://cloudinary.com/documentation/provisioning_api#get_user_sub_accounts
+      operationId: getSubAccountsForUser
+      tags:
+        - Users
+      responses:
+        '200':
+          description: Successful operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSubAccountsResponse"
+              examples:
+                UserSubAccounts:
+                  $ref: "#/components/examples/UserSubAccounts"
+        '401':
+          $ref: '#/components/responses/401Unauthorized'
         '404':
           $ref: '#/components/responses/404NotFound'
         '420':
@@ -789,7 +856,7 @@ paths:
         - User Groups
       responses:
         '200':
-          description: Successful operation
+          description: Successful operation.
           content:
             application/json:
               schema:
@@ -819,14 +886,14 @@ paths:
         - User Groups
       requestBody:
         required: true
-        description: User group details
+        description: User group details.
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UserGroupRequest'
       responses:
         '200':
-          description: User group created successfully
+          description: User group created successfully.
           content:
             application/json:
               schema:
@@ -866,7 +933,7 @@ paths:
         - User Groups
       responses:
         '200':
-          description: Successful operation
+          description: Successful operation.
           content:
             application/json:
               schema:
@@ -896,7 +963,7 @@ paths:
         - User Groups
       requestBody:
         required: true
-        description: Updated user group details
+        description: User group details to update.
         content:
           application/json:
             schema:
@@ -906,7 +973,7 @@ paths:
                 $ref: "#/components/examples/UserGroupDesignersRequest"
       responses:
         '200':
-          description: User group updated successfully
+          description: User group updated successfully.
           content:
             application/json:
               schema:
@@ -940,7 +1007,7 @@ paths:
         - User Groups
       responses:
         '200':
-          description: User group deleted successfully
+          description: User group deleted successfully.
           content:
             application/json:
               schema:
@@ -973,7 +1040,7 @@ paths:
         - User Groups
       responses:
         '200':
-          description: Successful operation
+          description: Successful operation.
           content:
             application/json:
               schema:
@@ -1041,7 +1108,7 @@ paths:
         - User Groups
       responses:
         '200':
-          description: User removed from group successfully
+          description: User removed from group successfully.
           content:
             application/json:
               schema:
@@ -1069,7 +1136,7 @@ paths:
       summary: Get billing usage information
       description: |
         Retrieve billing usage metrics for your account and product environments, 
-        including storage, bandwidth, requests, and transformations.
+        including storage, bandwidth, impressions, and transformations.
 
         If `year` is provided:
           - **Annual subscription**: Returns the single annual usage cycle that began in the specified year (if any).
@@ -1099,7 +1166,7 @@ paths:
             Whether to include usage details by product environment. **Default**: false.
       responses:
         '200':
-          description: Successful operation
+          description: Successful operation.
           content:
             application/json:
               schema:
@@ -1296,7 +1363,6 @@ components:
       properties:
         name:
           type: string
-          format: email
           description: The user's name.
           example: John
         email:
@@ -1346,6 +1412,12 @@ components:
         name:
           type: string
           description: The user's name.
+        first_name:
+          type: string
+          description: The user's first name.
+        last_name:
+          type: string
+          description: The user's last name.
         role:
           type: string
           description: The user's role.
@@ -1373,14 +1445,35 @@ components:
           description: The date when the user was last logged in.
         all_sub_accounts:
           type: boolean
-        groups:
+        providers:
           type: array
           items:
-            $ref: '#/components/schemas/UserGroupSummary'
-          description: The list of user groups.
-        sub_account_ids:
+            type: string
+          description: The list of authentication providers for the user.
+        email_preferences:
+          type: object
+          description: The user's email preferences.
+        account_id:
           type: string
-          description: The list of the product environments IDs.
+          description: The account ID.
+        two_factor:
+          type: boolean
+          description: Whether two-factor authentication is enabled.
+        status:
+          type: string
+          description: The user's status.
+        root:
+          type: boolean
+          description: Whether the user is a root user.
+        technical_role:
+          type: string
+          description: The user's technical role.
+        group_count:
+          type: integer
+          description: The number of groups the user belongs to.
+        sub_account_count:
+          type: integer
+          description: The number of sub-accounts the user has access to.
 
     UserGroupRequest:
       type: object
@@ -1405,6 +1498,24 @@ components:
           items:
             $ref: '#/components/schemas/UserGroup'
 
+    UserGroupsListResponse:
+      type: object
+      properties:
+        groups:
+          description: A list of user groups that the user belongs to.
+          type: array
+          items:
+            $ref: '#/components/schemas/UserGroupSummary'
+
+    UserSubAccountsResponse:
+      type: object
+      properties:
+        sub_accounts:
+          description: A list of product environments (sub-accounts) that the user has access to.
+          type: array
+          items:
+            $ref: '#/components/schemas/SubAccountSummary'
+
     UserGroupUsersResponse:
       type: object
       properties:
@@ -1424,6 +1535,26 @@ components:
         name:
           type: string
           description: The user group's name.
+
+    SubAccountSummary:
+      description: Product environment (sub-account) summary.
+      type: object
+      properties:
+        id:
+          type: string
+          description: The product environment's ID.
+        name:
+          type: string
+          description: The product environment's name.
+        description:
+          type: string
+          description: The product environment's description.
+        cloud_name:
+          type: string
+          description: The Cloudinary cloud name of the product environment.
+        enabled:
+          type: boolean
+          description: Whether the product environment is enabled.
 
     UserGroup:
       description: User group.
@@ -1508,6 +1639,7 @@ components:
                   description: The limit for this metric in the plan.
                 cycles:
                   type: array
+                  description: Full usage details per billing cycle (monthly or annual, depending on plan).
                   items:
                     type: object
                     properties:
@@ -1567,6 +1699,7 @@ components:
                           $ref: '#/components/schemas/CloudAssetTypeBreakdown'
                 monthly_cycles:
                   type: array
+                  description: Monthly-level breakdown within a single annual cycle.
                   items:
                     type: object
                     properties:
@@ -1762,7 +1895,7 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
             
     429TooManyRequests:
-      description: Too Many Requests.
+      description: Too many requests.
       content:
         application/json:
           schema:
@@ -1876,27 +2009,27 @@ components:
         created_at: '2020-09-03T13:33:25Z'
         updated_at: '2020-09-03T13:33:25Z'
         all_sub_accounts: true
-        groups:
-          - id: "7f08f1f1fc910bf1f25274aef11d27"
-            name: "user_group_1"
-          - id: "1cc3808888154263ac1e5eb2e5c52d61"
-            name: "user_group_2"
-
-    UserFooBar:
+    
+    CreateUserExample:
+      summary: Create user
+      value:
+        name: jenny_bar
+        role: master_admin
+        email: jenny_bar@example.com
+      
+    UserResponseExample:
       summary: User details example
       value:
         id: "7f08f1f1fc910bf1f25274aef11d27"
-        name: foobar
+        name: jenny_bar
         role: master_admin
-        email: email@domain.com
+        email: jenny_bar@example.com
         pending: true
         enabled: true
         created_at: '2019-09-12T11:53:57Z'
         updated_at: '2019-09-12T11:53:57Z'
         last_login: '2022-01-11T15:11:04Z'
-        all_sub_accounts: false
-        groups: [ ]
-        sub_account_ids: "555asdf0000zxcvb3456qwerty"
+        all_sub_accounts: true
 
     Users:
       summary: Get users sample response
@@ -1961,6 +2094,28 @@ components:
             name: "user_group_1"
           - id: "1cc3808888154263ac1e5eb2e5c52d61"
             name: "user_group_2"
+    UserGroupsList:
+      summary: Get user groups for a user example
+      value:
+        groups:
+          - id: "7f08f1f1fc910bf1f25274aef11d27"
+            name: "user_group_1"
+          - id: "1cc3808888154263ac1e5eb2e5c52d61"
+            name: "user_group_2"
+    UserSubAccounts:
+      summary: Get sub-accounts for a user example
+      value:
+        sub_accounts:
+          - id: "abcde1fghij2klmno3pqrst4uvwxy5z"
+            name: "Product1 Application"
+            description: "Main product environment"
+            cloud_name: "product1"
+            enabled: true
+          - id: "0aaaaa1bbbbb2ccccc3ddddd4eeeee5f"
+            name: "Product2 Application"
+            description: "Secondary product environment"
+            cloud_name: "product2"
+            enabled: true
     UserGroupsExtendedDetails:
       summary: Get user groups extended details example
       value:
