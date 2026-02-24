@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.2.0...provisioning-api-v0.2.1) (2026-02-24)
+
+
+### Features
+
+* Add permissions management to provisioning API ([8deb8bf](https://github.com/CloudinaryLtd/public-interfaces/commit/8deb8bf45871206e8722141d006e624a841f32ea))
+
 ## [0.2.0](https://github.com/CloudinaryLtd/public-interfaces/compare/provisioning-api-v0.1.6...provisioning-api-v0.2.0) (2026-02-24)
 
 
