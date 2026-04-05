@@ -1,0 +1,11 @@
+overlay: 1.0.0
+info:
+  title: Permissions API Additional Properties Fixes
+  version: 0.0.1
+actions:
+  - target: $["components"]["schemas"]["SystemRolesAndPoliciesCatalogResponse"]["properties"]["catalog"]
+    update:
+      additionalProperties: true
+  - target: $["components"]["schemas"]["CedarSchemaResponse"]["properties"]["schema"]
+    update:
+      additionalProperties: true
