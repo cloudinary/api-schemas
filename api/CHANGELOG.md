@@ -5,6 +5,27 @@ All notable changes to the Cloudinary OpenAPI specification are documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-04-20
+
+### Added
+- **Request Bodies**: Missing `description` fields on all `requestBody` definitions across APIs.
+- **Shared Components**: Extract `direction_enum`, `state_enum`, `tags_response`, `context_response`, `context_full_response`, `coordinates_response`, and `faces_response` for reuse.
+- **Upload**: Consolidate upload parameters into `upload_base_parameters` and `upload_serializable_input` for consistent reuse across `upload` and `explicit` endpoints.
+- **Upload Mappings**: Operation-level response examples for create/update/delete/replace endpoints.
+- **MCP**: Add `idempotentHint: true` to all `readOnlyHint` operations (including `download-asset-backup`, `test-trigger`).
+- **Guidelines**: Expand `open_api_guidelines` with MCP hints, metadata types, build workflow, drift detection, and backward compatibility overlay documentation.
+
+### Changed
+- **Audit Reports**: Align response schema property names with backend presenter (`report_id` → `id`, `filter_params` → `params`).
+- **Metadata Fields**: Move `required: [type, label]` from the shared `metadata_field` component into the create request body via `allOf`, so the component can be reused for responses and updates.
+- **Upload Presets**: `upload_preset_summary.settings` now accepts `oneOf [string, boolean]` to match actual API response types.
+- **Folders Search**: `expression` restricted to string-only and `sort_by` to object array, matching backend behavior.
+- **Overlay**: Update overlay JSONPath for the new `upload_parameters` wrapper.
+
+### Fixed
+- **Speakeasy**: Deduplicate inline enums, remove `contentMediaType`, fix `globals.parameters` null value.
+- **Compat Overlay**: Remove stale `signature_parameters` section.
+
 ## [0.4.0] - 2026-02-23
 
 ### Added

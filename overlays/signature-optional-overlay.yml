@@ -1,50 +1,26 @@
 overlay: 1.0.0
 info:
-  title: Make signature parameters optional
+  title: Remove signature parameters
   version: 0.0.0
 actions:
-  # Make signature_parameters schema optional by removing required fields
-  - target: $.components.schemas.signature_parameters.required
+  # Remove signature_parameters $ref from all request body allOf arrays
+  - target: '$.components.schemas.*.allOf[?(@["$ref"] == "#/components/schemas/signature_parameters")]'
     remove: true
 
-  # Remove examples from signature_parameters schema
-  - target: $.components.schemas.signature_parameters.example
+  # Remove signature query parameter $refs from all operations
+  - target: '$.paths.*.*.parameters[?(@["$ref"] == "#/components/parameters/api_key_query")]'
+    remove: true
+  - target: '$.paths.*.*.parameters[?(@["$ref"] == "#/components/parameters/signature_query")]'
+    remove: true
+  - target: '$.paths.*.*.parameters[?(@["$ref"] == "#/components/parameters/timestamp_query")]'
     remove: true
 
-  - target: $.components.schemas.signature_parameters.properties.api_key.example
+  # Remove component definitions
+  - target: $.components.schemas.signature_parameters
     remove: true
-
-  - target: $.components.schemas.signature_parameters.properties.signature.example
+  - target: $.components.parameters.api_key_query
     remove: true
-
-  - target: $.components.schemas.signature_parameters.properties.timestamp.example
+  - target: $.components.parameters.signature_query
     remove: true
-
-  # Make individual parameter components optional
-  - target: $.components.parameters.api_key_query.required
-    update: false
-
-  - target: $.components.parameters.signature_query.required
-    update: false
-
-  - target: $.components.parameters.timestamp_query.required
-    update: false
-
-  # Remove examples from individual parameter components
-  - target: $.components.parameters.api_key_query.example
+  - target: $.components.parameters.timestamp_query
     remove: true
-
-  - target: $.components.parameters.signature_query.example
-    remove: true
-
-  - target: $.components.parameters.timestamp_query.example
-    remove: true
-
-  # Remove the anyOf structure
-  - target: $.components.schemas.upload_request.allOf[0].anyOf
-    remove: true
-
-  # Replace the anyOf structure with direct signature_parameters reference
-  - target: $.components.schemas.upload_request.allOf[0]
-    update:
-      $ref: "#/components/schemas/signature_parameters"

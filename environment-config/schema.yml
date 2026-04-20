@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Environment Config API
-  version: 0.4.0
+  version: 0.5.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -55,7 +55,7 @@ paths:
         title: List Transformations
         readOnlyHint: true
         idempotentHint: true
-      summary: Lists all transformation definitions in your account (including named transformations
+      summary: Lists all transformation definitions in your account, including named transformations
       description: |
         Retrieves a list of all transformations, which can be filtered to show either only named or unnamed transformations.
       tags:
@@ -151,7 +151,7 @@ paths:
         scopes:
           - admin
         title: Create Transformation
-      summary: Creates a new named transformation (assigning a custom name to a set of transformation
+      summary: Creates a new named transformation by assigning a custom name to a set of transformation parameters
       description: |
         Creates a new named transformation with the given name and transformation string.
       tags:
@@ -161,6 +161,7 @@ paths:
         - $ref: '#/components/parameters/cloud_name'
         - $ref: '#/components/parameters/transformation_name'
       requestBody:
+        description: The named transformation definition.
         required: true
         content:
           application/json:
@@ -172,10 +173,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
+                $ref: '#/components/schemas/message_response'
         '400':
           description: Bad request
           content:
@@ -207,9 +205,9 @@ paths:
           - admin
         title: Update Transformation
         idempotentHint: true
-      summary: Updates the definition of an existing named transformation
+      summary: Updates the definition of an existing transformation
       description: |
-        Update an existing named or unnamed transformation.
+        Updates a named or unnamed transformation.
       tags:
         - transformations
       operationId: updateTransformation
@@ -217,6 +215,7 @@ paths:
         - $ref: '#/components/parameters/cloud_name'
         - $ref: '#/components/parameters/transformation'
       requestBody:
+        description: The updated transformation definition.
         required: true
         content:
           application/json:
@@ -228,10 +227,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
+                $ref: '#/components/schemas/message_response'
         '400':
           description: Bad request
           content:
@@ -280,10 +276,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
+                $ref: '#/components/schemas/message_response'
         '400':
           description: Bad request
           content:
@@ -328,18 +321,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  name:
-                    type: string
-                  message:
-                    type: string
-                  external_id:
-                    type: string
-                required:
-                  - message
-                  - name
-                  - external_id
+                $ref: '#/components/schemas/upload_preset_create_response'
         '400':
           description: request error
           content:
@@ -359,14 +341,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/api_error'
       requestBody:
+        description: The upload preset configuration.
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/upload_preset'
+              $ref: '#/components/schemas/upload_preset_input'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/upload_preset'
+              $ref: '#/components/schemas/upload_preset_input'
     get:
       x-speakeasy-mcp:
         name: list-upload-presets
@@ -383,20 +366,15 @@ paths:
         - name: order_by
           in: query
           required: false
+          description: The field to sort presets by.
           schema:
             type: string
             enum:
               - name
               - id
-              - updated_at
-        - name: direction
-          in: query
-          required: false
-          schema:
-            type: string
-            enum:
-              - asc
-              - desc
+              - created_at
+        - $ref: '#/components/parameters/direction'
+        - $ref: '#/components/parameters/max_results_query'
         - $ref: '#/components/parameters/next_cursor_query'
       responses:
         '200':
@@ -404,14 +382,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  presets:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/upload_preset'
-                required:
-                  - presets
+                $ref: '#/components/schemas/upload_preset_list_response'
         '400':
           description: request error
           content:
@@ -430,6 +401,7 @@ paths:
       - name: name
         in: path
         required: true
+        description: The name of the upload preset.
         schema:
           type: string
     get:
@@ -450,7 +422,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/upload_preset'
+                $ref: '#/components/schemas/upload_preset_detail'
         '400':
           description: request error
           content:
@@ -487,15 +459,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  external_id:
-                    type: string
-                required:
-                  - message
-                  - external_id
+                $ref: '#/components/schemas/upload_preset_mutation_response'
         '400':
           description: request error
           content:
@@ -515,14 +479,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/api_error'
       requestBody:
+        description: The updated upload preset configuration.
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/upload_preset'
+              $ref: '#/components/schemas/upload_preset_input'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/upload_preset'
+              $ref: '#/components/schemas/upload_preset_input'
     delete:
       x-speakeasy-mcp:
         name: delete-upload-preset
@@ -541,15 +506,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  external_id:
-                    type: string
-                required:
-                  - message
-                  - external_id
+                $ref: '#/components/schemas/upload_preset_mutation_response'
         '400':
           description: request error
           content:
@@ -602,25 +559,8 @@ paths:
             application/json:
               schema:
                 oneOf:
-                  - type: object
-                    description: List response
-                    properties:
-                      mappings:
-                        type: array
-                        description: Array of upload mapping objects
-                        items:
-                          $ref: '#/components/schemas/upload_mapping'
-                      total_entries:
-                        type: integer
-                        description: Total number of mappings
-                      next_cursor:
-                        type: string
-                        description: Cursor for getting the next page of results
-                    required:
-                      - mappings
-                      - total_entries
+                  - $ref: '#/components/schemas/upload_mapping_list_response'
                   - $ref: '#/components/schemas/upload_mapping'
-                    description: Single mapping response when using folder parameter
         '400':
           description: Validation error (e.g. invalid next_cursor)
           content:
@@ -651,44 +591,23 @@ paths:
       tags:
         - upload_mappings
       requestBody:
+        description: The upload mapping folder and URL template.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                folder:
-                  type: string
-                  description: The folder name for the mapping
-                  example: my_folder
-                template:
-                  type: string
-                  description: The template URL
-                  example: http://example.com/files
-              required:
-                - folder
-                - template
+              $ref: '#/components/schemas/upload_mapping_input'
       responses:
         '200':
           description: Upload mapping created successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: created
-                  folder:
-                    type: string
-                    description: The folder name that was created
-                  external_id:
-                    type: string
-                    description: Unique identifier for the mapping
-                required:
-                  - message
-                  - folder
-                  - external_id
+                $ref: '#/components/schemas/upload_mapping_create_response'
+              example:
+                message: created
+                folder: my_folder
+                external_id: 1bce826e-ec50-45c6-9f86-c858948c7158
         '400':
           description: Validation error (e.g. invalid template format)
           content:
@@ -715,43 +634,27 @@ paths:
         title: Update Upload Mapping
         idempotentHint: true
       operationId: updateUploadMapping
-      summary: Updates an existing upload mapping by changing its remote URL template for a given
+      summary: Updates an existing upload mapping by changing its remote URL template for a given folder
       description: Updates the URL template for an existing folder mapping
       tags:
         - upload_mappings
       requestBody:
+        description: The updated upload mapping folder and URL template.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                folder:
-                  type: string
-                  description: The folder name of the mapping to update
-                template:
-                  type: string
-                  description: The new URL template
-              required:
-                - folder
-                - template
+              $ref: '#/components/schemas/upload_mapping_input'
       responses:
         '200':
           description: Upload mapping updated successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: updated
-                  external_id:
-                    type: string
-                    description: Unique identifier of the updated mapping
-                required:
-                  - message
-                  - external_id
+                $ref: '#/components/schemas/upload_mapping_mutation_response'
+              example:
+                message: updated
+                external_id: 1bce826e-ec50-45c6-9f86-c858948c7158
         '400':
           description: Validation error (e.g. invalid template format)
           content:
@@ -796,17 +699,10 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: deleted
-                  external_id:
-                    type: string
-                    description: Unique identifier of the deleted mapping
-                required:
-                  - message
-                  - external_id
+                $ref: '#/components/schemas/upload_mapping_mutation_response'
+              example:
+                message: deleted
+                external_id: 1bce826e-ec50-45c6-9f86-c858948c7158
         '401':
           description: Authentication error - Invalid API key or secret
           content:
@@ -833,12 +729,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                required:
-                  - message
+                $ref: '#/components/schemas/message_response'
+              example:
+                message: replaced
         '400':
           description: validation error
           content:
@@ -852,26 +745,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/api_error'
       requestBody:
+        description: The complete set of upload mappings to replace existing ones.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                mappings:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      folder:
-                        type: string
-                      template:
-                        type: string
-                    required:
-                      - folder
-                      - template
-              required:
-                - mappings
+              $ref: '#/components/schemas/replace_upload_mappings_request'
   /v1_1/{cloud_name}/triggers:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
@@ -884,7 +763,7 @@ paths:
         readOnlyHint: true
         idempotentHint: true
       operationId: listTrigger
-      summary: Lists all webhook notification triggers configured for your product environmentcloudinary
+      summary: Lists all webhook notification triggers configured for your product environment
       description: |
         Retrieves a list of all event triggers and notifications within your product environment.
       tags:
@@ -895,46 +774,32 @@ paths:
           required: false
           description: The type of event that will trigger the notification response.
           schema:
-            type: string
+            $ref: '#/components/schemas/event_type'
       responses:
         '200':
           description: Triggers retrieved successfully
           content:
             application/json:
               schema:
-                type: object
-                description: List response
-                properties:
-                  triggers:
-                    type: array
-                    description: List of trigger objects.
-                    items:
-                      $ref: '#/components/schemas/trigger_info'
-                  total:
-                    type: integer
-                    description: Total number of triggers.
-                    example: 1
-                required:
-                  - triggers
-                  - total
+                $ref: '#/components/schemas/trigger_list_response'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: Invalid value a for parameter event_type
+              example:
+                error:
+                  message: Invalid value a for parameter event_type
         '401':
           description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: Invalid credentials
+              example:
+                error:
+                  message: Invalid credentials
     post:
       x-speakeasy-mcp:
         name: create-trigger
@@ -949,24 +814,12 @@ paths:
       tags:
         - triggers
       requestBody:
+        description: The webhook notification trigger to create.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                uri:
-                  type: string
-                  description: The URL that will receive the notification response.
-                  format: uri
-                  example: https://trigger.site/124
-                event_type:
-                  type: string
-                  description: The type of event that will trigger the notification response.
-                  example: upload
-              required:
-                - uri
-                - event_type
+              $ref: '#/components/schemas/create_trigger_request'
       responses:
         '201':
           description: Trigger created successfully
@@ -980,27 +833,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: limit_reached
+              example:
+                error:
+                  message: limit_reached
         '401':
           description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: Invalid credentials
+              example:
+                error:
+                  message: Invalid credentials
         '409':
           description: Validation error - Record already exists
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: record_already_exists
+              example:
+                error:
+                  message: record_already_exists
   /v1_1/{cloud_name}/triggers/{id}:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
@@ -1009,8 +862,8 @@ paths:
         required: true
         schema:
           type: string
-          description: The ID of the trigger to update.
-          example: c2c822dd1aa41ba6d81299df8b5ae949
+        description: The ID of the trigger.
+        example: c2c822dd1aa41ba6d81299df8b5ae949
     put:
       x-speakeasy-mcp:
         name: update-trigger
@@ -1024,32 +877,19 @@ paths:
       tags:
         - triggers
       requestBody:
+        description: The updated trigger configuration.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                new_uri:
-                  type: string
-                  format: uri
-                  example: http://example.com
-                  description: The updated URL that will receive the notification response.
-              required:
-                - new_uri
+              $ref: '#/components/schemas/update_trigger_request'
       responses:
         '200':
           description: Trigger updated successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: ok
-                required:
-                  - message
+                $ref: '#/components/schemas/message_response'
         '400':
           description: Validation error
           content:
@@ -1065,18 +905,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: Invalid credentials
+              example:
+                error:
+                  message: Invalid credentials
         '404':
           description: No trigger found with the specified id
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: record_not_found
+              example:
+                error:
+                  message: record_not_found
     delete:
       x-speakeasy-mcp:
         name: delete-trigger
@@ -1096,40 +936,34 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: ok
-                required:
-                  - message
+                $ref: '#/components/schemas/message_response'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: invalid_or_malformed_attribute
+              example:
+                error:
+                  message: invalid_or_malformed_attribute
         '401':
           description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: Invalid credentials
+              example:
+                error:
+                  message: Invalid credentials
         '404':
           description: No trigger found with the specified id
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: record_not_found
+              example:
+                error:
+                  message: record_not_found
   /v1_1/{cloud_name}/triggers/{id}/test:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
@@ -1138,8 +972,8 @@ paths:
         required: true
         schema:
           type: string
-          description: The ID of the trigger to test.
-          example: c2c822dd1aa41ba6d81299df8b5ae949
+        description: The ID of the trigger to test.
+        example: c2c822dd1aa41ba6d81299df8b5ae949
     post:
       x-speakeasy-mcp:
         name: test-trigger
@@ -1147,6 +981,7 @@ paths:
           - admin
         title: Test Trigger Filter
         readOnlyHint: true
+        idempotentHint: true
       operationId: testTrigger
       summary: Tests an existing trigger's filter against sample data
       description: |
@@ -1155,44 +990,19 @@ paths:
       tags:
         - triggers
       requestBody:
+        description: The test data for the trigger.
         required: false
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                sample_data:
-                  type: object
-                  description: Sample notification data to evaluate the filter against.
-                  example:
-                    resource_type: image
-                    public_id: sample123
-                    tags:
-                      - product
+              $ref: '#/components/schemas/test_trigger_request'
       responses:
         '200':
           description: Test completed successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  trigger_id:
-                    type: string
-                    description: The ID of the trigger that was tested.
-                    example: c2c822dd1aa41ba6d81299df8b5ae949
-                  filter_present:
-                    type: boolean
-                    description: Whether the trigger has a filter configured.
-                    example: true
-                  filter_result:
-                    type: boolean
-                    description: Result of evaluating the filter against sample_data (true if no filter).
-                    example: true
-                required:
-                  - trigger_id
-                  - filter_present
-                  - filter_result
+                $ref: '#/components/schemas/test_trigger_response'
         '400':
           description: Validation error
           content:
@@ -1210,18 +1020,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: Invalid credentials
+              example:
+                error:
+                  message: Invalid credentials
         '404':
           description: No trigger found with the specified id
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/api_error'
-                example:
-                  error:
-                    message: record_not_found
+              example:
+                error:
+                  message: record_not_found
   /v1_1/{cloud_name}/streaming_profiles:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
@@ -1242,12 +1052,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/streaming_profile'
-                required:
-                  - data
+                $ref: '#/components/schemas/streaming_profile_data_response'
         '400':
           description: Invalid request error
           content:
@@ -1267,6 +1072,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/api_error'
       requestBody:
+        description: The streaming profile configuration.
         required: true
         content:
           application/json:
@@ -1294,14 +1100,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/streaming_profile'
-                required:
-                  - data
+                $ref: '#/components/schemas/streaming_profile_list_response'
         '401':
           description: Authentication error
           content:
@@ -1316,7 +1115,7 @@ paths:
         required: true
         schema:
           type: string
-          description: The name of the streaming profile
+        description: The name of the streaming profile.
     get:
       x-speakeasy-mcp:
         name: get-streaming-profile
@@ -1335,12 +1134,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/streaming_profile'
-                required:
-                  - data
+                $ref: '#/components/schemas/streaming_profile_data_response'
         '401':
           description: Authentication error
           content:
@@ -1371,15 +1165,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  data:
-                    $ref: '#/components/schemas/streaming_profile'
-                required:
-                  - message
-                  - data
+                $ref: '#/components/schemas/streaming_profile_update_response'
         '400':
           description: Invalid request error
           content:
@@ -1399,6 +1185,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/api_error'
       requestBody:
+        description: The updated streaming profile configuration.
         required: true
         content:
           application/json:
@@ -1425,12 +1212,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                required:
-                  - message
+                $ref: '#/components/schemas/message_response'
         '400':
           description: Cannot delete predefined profile
           content:
@@ -1471,7 +1253,8 @@ components:
       required: true
       schema:
         type: string
-        description: The cloud name of your product environment.
+      description: The cloud name of your product environment.
+      example: my_cloud
     max_results_query:
       name: max_results
       in: query
@@ -1510,9 +1293,15 @@ components:
       required: true
       schema:
         type: string
-        example: small_profile_thumbnail
-      description: |
-        The valid transformation name to create.
+      description: The valid transformation name to create.
+      example: small_profile_thumbnail
+    direction:
+      name: direction
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/direction_enum'
+      description: The sort direction for the results. Default is "desc".
   schemas:
     transformation_summary:
       type: object
@@ -1644,6 +1433,15 @@ components:
           example: w_200,h_200,c_fill,g_face
         allowed_for_strict:
           $ref: '#/components/schemas/allowed_for_strict'
+    message_response:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A human-readable status message.
+          example: updated
+      required:
+        - message
     create_request:
       type: object
       required:
@@ -1655,12 +1453,181 @@ components:
           example: w_100,h_150,c_fill,g_auto
         allowed_for_strict:
           $ref: '#/components/schemas/allowed_for_strict'
-    upload_explicit_parameters:
+    direction_enum:
+      type: string
+      enum:
+        - asc
+        - desc
+      description: Sort direction.
+    upload_preset_summary:
       type: object
+      description: An upload preset as returned in list responses. Most settings values are raw strings, but some boolean fields may be returned as native booleans.
+      properties:
+        name:
+          type: string
+          description: The name of the upload preset.
+          example: my_preset
+        unsigned:
+          type: boolean
+          description: Whether the upload preset allows unsigned uploads.
+        settings:
+          type: object
+          description: Preset configuration settings. Most values are strings (e.g., tags are comma-separated, context is pipe-separated key=value pairs), but some boolean fields may be returned as native booleans.
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: boolean
+        external_id:
+          type: string
+          description: The unique identifier for the upload preset.
+          example: 84fbfd12-d00a-4c5b-8e92-05dbac244d43
+      required:
+        - name
+        - external_id
+    upload_preset_list_response:
+      type: object
+      properties:
+        presets:
+          type: array
+          items:
+            $ref: '#/components/schemas/upload_preset_summary'
+        next_cursor:
+          type:
+            - string
+            - 'null'
+          description: Cursor for the next page of results.
+      required:
+        - presets
+    access_control_item:
+      type: object
+      description: Access control rule that defines when and how the asset can be accessed.
+      required:
+        - access_type
+      properties:
+        access_type:
+          type: string
+          enum:
+            - token
+            - anonymous
+          description: The type of access control to apply to the asset.
+        key:
+          type: string
+          pattern: ^[a-zA-Z0-9]+$
+          description: The authentication key identifier for token-based access. Default key is used if not specified or if set to 'default'.
+          example: prod2024
+        start:
+          oneOf:
+            - type: string
+            - type: integer
+          description: The start date and time when anonymous access becomes available. Accepts ISO 8601 string or Unix timestamp.
+          example: '2024-03-15T09:00:00Z'
+        end:
+          oneOf:
+            - type: string
+            - type: integer
+          description: The end date and time when anonymous access expires. Accepts ISO 8601 string or Unix timestamp.
+          example: '2024-06-30T23:59:59Z'
+    access_control:
+      type: array
+      description: |
+        Restricts access to the asset by specifying one or more access types.
+        The asset is restricted unless at least one listed access type is valid.
+      items:
+        $ref: '#/components/schemas/access_control_item'
+      example:
+        - access_type: token
+          key: prod2024
+        - access_type: anonymous
+          start: '2024-03-15T09:00:00Z'
+          end: '2024-06-30T23:59:59Z'
+    structured_metadata_value:
+      type: object
+      description: A map of custom metadata fields (by external_id) and the values to assign to each of them.
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: integer
+          - type: array
+            items:
+              type: string
+      example:
+        in_stock_id: 50
+        color_id:
+          - green
+          - red
+        caption_id: Summer collection
+        shot_date_id: '2024-06-15'
+    structured_metadata_param:
+      description: |
+        A pipe-separated list or a map of custom metadata fields (by external_id) and the values to assign to each of them. The = " and | characters can be supported as values when escaped with a prepended backslash (\). For a multi-select field, you can set a maximum of 3000 different metadata values on an asset.
+      oneOf:
+        - type: string
+          description: A pipe-separated list of custom metadata fields (by external_id) and the values to assign to each of them.
+          example: in_stock_id=50|color_id=["green","red"]
+        - $ref: '#/components/schemas/structured_metadata_value'
+    coordinate_pair:
+      type: array
+      description: A single [x, y] coordinate pair.
+      minItems: 2
+      maxItems: 2
+      items:
+        type: integer
+    region_coordinates:
+      type: array
+      description: Coordinate pairs defining the region boundary.
+      minItems: 2
+      items:
+        $ref: '#/components/schemas/coordinate_pair'
+    region_mapping:
+      type: object
+      description: |
+        A map of named region coordinate groups for cropping with region gravity.
+        Each key is a region name (letters, numbers, or hyphens only).
+        Each value is an array of at least two [x, y] integer coordinate pairs
+        defining the region boundary.
+      additionalProperties:
+        $ref: '#/components/schemas/region_coordinates'
+      example:
+        face:
+          - - 100
+            - 200
+          - - 300
+            - 400
+        body:
+          - - 50
+            - 60
+          - - 70
+            - 80
+          - - 90
+            - 100
+    responsive_breakpoint:
+      type: object
+      properties:
+        create_derived:
+          type: boolean
+          description: Whether to generate and store the derived images. Default is true.
+        max_width:
+          type: integer
+          description: The maximum width for responsive breakpoint images.
+        min_width:
+          type: integer
+          description: The minimum width for responsive breakpoint images.
+        bytes_step:
+          type: integer
+          description: The minimum byte size difference between consecutive breakpoint images.
+        max_images:
+          type: integer
+          description: The maximum number of breakpoint images to generate.
+        transformation:
+          type: string
+          description: A transformation string to apply before generating breakpoints.
+    upload_base_parameters:
+      type: object
+      description: Upload configuration parameters such as access control, backup, moderation, and notification settings.
       properties:
         accessibility_analysis:
           type: boolean
-          description: Whether to return return accessibility analysis values for the image.
+          description: Whether to return accessibility analysis values for the image.
         asset_folder:
           type: string
           description: The asset folder to assign to the asset.
@@ -1671,6 +1638,21 @@ components:
         auto_chaptering:
           type: boolean
           description: Whether to trigger automatic generation of video chapters. Chapters will be generated and saved as a .vtt file with -chapters appended to the public ID of the video. You can enable chapters as part of the Cloudinary Video Player. Relevant for videos only.
+        auto_tagging:
+          type: number
+          description: |
+            Automatically assigns tags to an asset according to detected objects or categories with a confidence score higher than the specified value.
+            Use together with the detection parameter for:
+            - Cloudinary AI Content Analysis
+            - Amazon Rekognition Celebrity Detection
+            Use together with the categorization parameter for:
+            - Google Automatic Video Tagging
+            - Google Auto Tagging
+            - Imagga Auto Tagging
+            - Amazon Rekognition Auto Tagging
+          example: 0.5
+          minimum: 0
+          maximum: 1
         auto_transcription:
           oneOf:
             - type: boolean
@@ -1691,6 +1673,47 @@ components:
                 translate:
                   - pl-PL
                   - he-IL
+        access_control:
+          $ref: '#/components/schemas/access_control'
+        access_mode:
+          type: string
+          deprecated: true
+          x-speakeasy-deprecation-message: The access_mode parameter is no longer supported. To restrict access to assets, you can use the access_control parameter.
+          x-speakeasy-deprecation-replacement: access_control
+          enum:
+            - public
+            - authenticated
+          description: |
+            Deprecated. Use access_control instead. Allows the asset to behave as if it's of the authenticated delivery type while still using the default 'upload' type in delivery URLs. The asset can later be made public by changing its access_mode via the Admin API, without having to update any delivery URLs.
+        backup:
+          type: boolean
+          description: Whether to backup the uploaded asset. When set to true, backs up uploaded assets to a secondary storage bucket.
+        background_removal:
+          type: string
+          description: |
+            Automatically remove the background of an image using an add-on.
+            - Set to cloudinary_ai to use the deep-learning based Cloudinary AI Background Removal add-on.
+              Optionally append a template suffix (e.g., cloudinary_ai:fine_edges).
+            - Note: this feature has been superseded by background removal on the fly.
+            - Set to pixelz to use the human-powered Pixelz Remove-The-Background Editing add-on service.
+            Relevant for images only.
+          example: cloudinary_ai
+        callback:
+          deprecated: true
+          x-speakeasy-deprecation-message: The callback parameter is deprecated. Not relevant for modern browsers. Starting July 2025 new customers will not be able to use this parameter.
+          type: string
+          description: |
+            A URL to redirect to after the upload/explicit is completed instead of returning the upload response.
+            Signed upload result parameters are added to the callback URL. This parameter is ignored for XHR (Ajax XMLHttpRequest) or JavaScript Fetch API upload requests.
+            Note: This parameter is relevant for direct uploads from a form in the browser. It is automatically set if you perform direct upload from the browser using Cloudinary's SDKs and the jQuery plugin.
+        categorization:
+          type: string
+          description: |
+            A comma-separated list of the categorization add-ons to run on the asset.
+            Set to google_tagging, google_video_tagging, imagga_tagging and/or aws_rek_tagging
+            to automatically classify the scenes of the uploaded asset.
+            Optionally append a language code suffix (e.g., google_tagging:fr).
+          example: google_tagging
         cinemagraph_analysis:
           type: boolean
           description: Whether to return a cinemagraph analysis value for the media asset between 0 and 1, where 0 means the asset is not a cinemagraph and 1 means the asset is a cinemagraph. Relevant for animated images and video only. A static image will return 0.
@@ -1698,35 +1721,50 @@ components:
           type: boolean
           description: 'Whether to retrieve predominant colors & color histogram of the uploaded image. Note: If all returned colors are opaque, then 6-digit RGB hex values are returned. If one or more colors contain an alpha channel, then 8-digit RGBA hex quadruplet values are returned.'
           default: false
-        context:
+        detection:
           type: string
-          description: Key-value pairs of general textual context metadata to attach to the asset.
-        custom_coordinates:
-          type: string
-          description: An array of coordinates for custom cropping.
+          description: |
+            Invokes the relevant add-on to return a list of detected content.
+            Set to:
+            - <content-aware model>_[<version>] (e.g. coco_v2) to return a list of detected content using the Cloudinary AI Content Analysis add-on. Can be used together with the auto_tagging parameter to apply tags automatically.
+            - captioning to analyze an image and suggest a caption based on the image's contents.
+            - iqa to analyze the quality of an image.
+            - watermark-detection to detect watermarks in an image.
+            - adv_face to return a list of facial attributes using the Advanced Facial Attribute Detection add-on.
+            - aws_rek_face to return a list of detected celebrities and facial attributes using the Amazon Rekognition Celebrity Detection add-on. Can be used together with the auto_tagging parameter to apply tags automatically.
+          example: coco_v2
+        discard_original_filename:
+          type: boolean
+          description: Whether to discard the name of the original uploaded file. Relevant when delivering assets as attachments (setting the flag disposition:attachment in delivery URLs).
         display_name:
           type: string
           description: A display name for the asset.
-        eager:
-          type: string
-          description: A list of transformations to eagerly generate for the asset. Accepts either a single transformation or a pipe-separated list of transformations.
         eager_async:
           type: boolean
           description: Whether to generate the eager transformations asynchronously in the background after the upload request is completed rather than before the upload is completed.
         eager_notification_url:
           type: string
+          format: uri
           description: A URL to notify when eager transformations are completed.
-        face_coordinates:
+        eval:
           type: string
-          description: An array of coordinates representing detected faces in the asset, used for custom cropping or overlays.
+          description: Allows you to modify upload parameters by specifying custom logic with JavaScript. This can be useful for conditionally adding tags, contextual metadata, structured metadata or eager transformations depending on specific criteria of the uploaded file.
         faces:
           type: boolean
           description: Whether to detect faces in the asset.
-        headers:
+        filename_override:
           type: string
-          description: |
-            An HTTP header or a list of headers lines for adding as response HTTP headers when delivering the asset to your users. Supported headers: Link, Authorization, X-Robots-Tag.
-          example: 'X-Robots-Tag: noindex'
+          description: Overrides the originally uploaded asset's file name in downloads that use flags like fl_attachment or fl_force_original.
+        folder:
+          type: string
+          deprecated: true
+          x-speakeasy-deprecation-message: |
+            If Dynamic folders mode is enabled on your product environment, this parameter is deprecated, and it's recommended to use the asset_folder parameter to control where the asset will be placed. If you also want your public_id to match the initial asset folder path, include the use_asset_folder_as_public_id_prefixparameter.
+          description: Folder name where the uploaded asset will be stored. This parameter applies when using the Admin API, or when specifying the upload preset for unsigned uploading with the Upload API.
+        format:
+          type: string
+          description: An optional format to convert the uploaded asset to before saving in the cloud.
+          example: jpg
         invalidate:
           type: boolean
           description: |
@@ -1740,8 +1778,11 @@ components:
             - Returned metadata for audio and video includes: audio_codec, audio_bit_rate, audio_frequency, channels, channel_layout.
             - Additional metadata for video includes: pix_format, codec, level, profile, video_bit_rate, dar.
         metadata:
-          type: string
-          description: Structured metadata to attach to the asset based on the metadata fields defined for your account.
+          $ref: '#/components/schemas/structured_metadata_param'
+        clear_invalid:
+          type: boolean
+          description: 'Whether to clear metadata field values that have become invalid due to a change in metadata rules. If false, the API returns an error if any existing metadata value is no longer valid. Default: false.'
+          default: false
         moderation:
           type: string
           description: |
@@ -1765,126 +1806,8 @@ components:
           example: aws_rek|duplicate:0|perception_point|manual
         notification_url:
           type: string
+          format: uri
           description: A URL to notify when the asset is ready.
-        phash:
-          type: boolean
-          description: |
-            Whether to return the perceptual hash (pHash) on the uploaded image for image similarity detection.
-        quality_analysis:
-          type: boolean
-          description: Whether to return a quality analysis value for the image between 0 and 1, where 0 means the image is blurry and out of focus and 1 means the image is sharp and in focus. Relevant for images only.
-        regions:
-          type: string
-          description: Regions to detect in the asset.
-        responsive_breakpoints:
-          type: array
-          description: Settings to automatically generate breakpoints for responsive images.
-          items:
-            type: object
-            properties:
-              create_derived:
-                type: boolean
-              max_width:
-                type: integer
-              min_width:
-                type: integer
-              bytes_step:
-                type: integer
-              max_images:
-                type: integer
-              transformation:
-                type: string
-        tags:
-          type: string
-          description: A comma-separated list of tag names to assign to the asset.
-        callback:
-          deprecated: true
-          x-speakeasy-deprecation-message: The callback parameter is deprecated. Not relevant for modern browsers. Starting July 2025 new customers will not be able to use this parameter.
-          type: string
-          description: |
-            A URL to redirect to after the upload/explicit is completed instead of returning the upload response.
-            Signed upload result parameters are added to the callback URL. This parameter is ignored for XHR (Ajax XMLHttpRequest) or JavaScript Fetch API upload requests.
-            Note: This parameter is relevant for direct uploads from a form in the browser. It is automatically set if you perform direct upload from the browser using Cloudinary's SDKs and the jQuery plugin.
-    access_control_item:
-      type: object
-      description: Access control rule that defines when and how the asset can be accessed.
-      required:
-        - access_type
-      properties:
-        access_type:
-          type: string
-          enum:
-            - token
-            - anonymous
-          description: The type of access control to apply to the asset.
-        key:
-          type: string
-          pattern: ^[a-zA-Z0-9]+$
-          description: The authentication key identifier for token-based access. Default key is used if not specified or if set to 'default'.
-          example: prod2024
-        start:
-          type: string
-          description: The start date and time when anonymous access becomes available (ISO 8601 format).
-          example: '2024-03-15T09:00:00Z'
-        end:
-          type: string
-          description: The end date and time when anonymous access expires (ISO 8601 format).
-          example: '2024-06-30T23:59:59Z'
-    access_control:
-      type: array
-      description: |
-        Restricts access to the asset by specifying one or more access types.
-        The asset is restricted unless at least one listed access type is valid.
-      items:
-        $ref: '#/components/schemas/access_control_item'
-      example:
-        - access_type: token
-          key: prod2024
-        - access_type: anonymous
-          start: '2024-03-15T09:00:00Z'
-          end: '2024-06-30T23:59:59Z'
-    upload_other_parameters:
-      type: object
-      properties:
-        backup:
-          type: boolean
-          description: Whether to backup the uploaded asset. When set to true, backs up uploaded assets to a secondary storage bucket.
-        discard_original_filename:
-          type: boolean
-          description: Whether to discard the name of the original uploaded file. Relevant when delivering assets as attachments (setting the flag disposition:attachment in delivery URLs).
-        overwrite:
-          type: boolean
-          description: |
-            Whether to overwrite existing assets with the same public ID. When set to false, return immediately if an asset with the same public ID already exists. Default: true (when using unsigned upload, the default is false and cannot be changed to true).
-        return_delete_token:
-          type: boolean
-          description: Whether to return a deletion token in the upload response. The token can be used to delete the uploaded asset within approximately 10 minutes using an unauthenticated API call.
-        type:
-          type: string
-          enum:
-            - upload
-            - authenticated
-            - private
-            - asset
-          description: The delivery type that defines if and how the uploaded asset is available for public delivery. By default, all uploaded assets are public (upload). Possible values are upload, authenticated, private or asset.
-        access_mode:
-          type: string
-          deprecated: true
-          x-speakeasy-deprecation-message: The access_mode parameter is no longer supported. To restrict access to assets, you can use the access_control parameter.
-          x-speakeasy-deprecation-replacement: access_control
-          enum:
-            - public
-            - authenticated
-          description: |
-            Allows the asset to behave as if it's of the authenticated 'type' (see above) while still using the default 'upload' type in delivery URLs. The asset can later be made public by changing its access_mode via the Admin API, without having to update any delivery URLs. Valid values: public, and authenticated.
-        categorization:
-          type: string
-          description: |
-            A comma-separated list of the categorization add-ons to run on the asset.
-            Set to google_tagging, google_video_tagging, imagga_tagging and/or aws_rek_tagging
-            to automatically classify the scenes of the uploaded asset.
-            Optionally append a language code suffix (e.g., google_tagging:fr).
-          example: google_tagging
         ocr:
           type: string
           description: |
@@ -1892,6 +1815,29 @@ components:
             coordinates of each detected element using the OCR text detection and extraction add-on.
             Optionally append options (e.g., adv_ocr:document).
           example: adv_ocr
+        on_success:
+          type: string
+          description: Allows you to update an asset by specifying custom logic with JavaScript that is executed after the upload to Cloudinary is completed successfully. This can be useful for conditionally adding tags, contextual metadata, and structured metadata, depending on the results of using the detection parameter on upload.
+        overwrite:
+          type: boolean
+          description: |
+            Whether to overwrite existing assets with the same public ID. When set to false, return immediately if an asset with the same public ID already exists. Default: true (when using unsigned upload, the default is false and cannot be changed to true).
+        phash:
+          type: boolean
+          description: |
+            Whether to return the perceptual hash (pHash) on the uploaded image for image similarity detection.
+        proxy:
+          type: string
+          description: A proxy to use for fetching remote URLs. The format should be http://hostname:port.
+        public_id:
+          type: string
+          description: The identifier that is used for accessing the uploaded asset. If not specified, a unique ID is generated automatically.
+        public_id_prefix:
+          type: string
+          description: A string or path that's automatically prepended to the public_id with a forward slash. The value can contain the same characters as the public_id including additional forward slashes. This prefix can be useful to provide context and improve the SEO of an asset's filename in the delivery URL, but the value does not impact the location where the asset is stored.
+        quality_analysis:
+          type: boolean
+          description: Whether to return a quality analysis value for the image between 0 and 1, where 0 means the image is blurry and out of focus and 1 means the image is sharp and in focus. Relevant for images only.
         raw_convert:
           type: string
           pattern: ^(aspose|azure_video_indexer(:\D+)*|google_speech(:(vt|sr)t)*(:[a-zA-Z-]+)?|extract_text)$
@@ -1902,114 +1848,140 @@ components:
             - Set to extract_text to extract all the text from a PDF file and store it in a raw JSON file with a public ID in the format: [pdf_public_id].extract_text.json. The full URL of the generated JSON file is included in the API response. Unlike the above raw_convert options, this option doesn't require registering for an add-on.(Synchronous)
             - Set to azure_video_indexer to generate AI-powered video insights from Microsoft Azure. (Asynchronous)
           example: google_speech:vtt:en-US
-        background_removal:
-          type: string
+        regions:
+          anyOf:
+            - type: string
+            - $ref: '#/components/schemas/region_mapping'
           description: |
-            Automatically remove the background of an image using an add-on.
-            - Set to cloudinary_ai to use the deep-learning based Cloudinary AI Background Removal add-on.
-              Optionally append a template suffix (e.g., cloudinary_ai:fine_edges).
-            - Note: this feature has been superseded by background removal on the fly.
-            - Set to pixelz to use the human-powered Pixelz Remove-The-Background Editing add-on service.
-            Relevant for images only.
-          example: cloudinary_ai
-        public_id:
+            Named region coordinate groups for cropping with region gravity.
+            Can be a JSON-encoded string or an object. Each region name may contain
+            only letters, numbers, or hyphens, and must have at least two coordinate pairs.
+          example: '{"face": [[100, 200], [300, 400]], "body": [[50, 60], [70, 80], [90, 100]]}'
+        responsive_breakpoints:
+          description: Settings to automatically generate breakpoints for responsive images.
+          anyOf:
+            - type: array
+              items:
+                $ref: '#/components/schemas/responsive_breakpoint'
+            - $ref: '#/components/schemas/responsive_breakpoint'
+        return_delete_token:
+          type: boolean
+          description: Whether to return a deletion token in the upload response. The token can be used to delete the uploaded asset within approximately 10 minutes using an unauthenticated API call.
+        upload_preset:
           type: string
-          description: The identifier that is used for accessing the uploaded asset. If not specified, a unique ID is generated automatically.
-        transformation:
-          type: string
-          description: An incoming transformation to run on the uploaded asset before its storage. In contrast to eager, this parameter is applied before the file is stored.
-        format:
-          type: string
-          description: An optional format to convert the uploaded asset to before saving in the cloud.
-          example: jpg
-        proxy:
-          type: string
-          description: A proxy to use for fetching remote URLs. The format should be http://hostname:port.
-        folder:
-          type: string
-          deprecated: true
-          x-speakeasy-deprecation-message: |
-            If Dynamic folders mode is enabled on your product environment, this parameter is deprecated, and it's recommended to use the asset_folder parameter to control where the asset will be placed. If you also want your public_id to match the initial asset folder path, include the use_asset_folder_as_public_id_prefixparameter.
-          description: Folder name where the uploaded asset will be stored. This parameter applies when using the Admin API, or when specifying the upload preset for unsigned uploading with the Upload API.
-        allowed_formats:
-          type: string
-          description: |
-            A comma-separated list of file formats that are allowed for uploading. Files of other types will be rejected. The formats can be any combination of image types, video formats or raw file extensions.
-            Note: You can also add the `format` parameter to convert other file types instead of rejecting them. In this case, only files that would normally be rejected are converted, any file format allowed for upload wont be converted.
-          example: mp4,ogv,jpg,png,pdf
-        auto_tagging:
-          type: number
-          description: |
-            Automatically assigns tags to an asset according to detected objects or categories with a confidence score higher than the specified value.
-            Use together with the detection parameter for:
-            - Cloudinary AI Content Analysis
-            - Amazon Rekognition Celebrity Detection
-            Use together with the categorization parameter for:
-            - Google Automatic Video Tagging
-            - Google Auto Tagging
-            - Imagga Auto Tagging
-            - Amazon Rekognition Auto Tagging
-          example: 0.5
-          minimum: 0
-          maximum: 1
-        access_control:
-          $ref: '#/components/schemas/access_control'
-        eval:
-          type: string
-          description: Allows you to modify upload parameters by specifying custom logic with JavaScript. This can be useful for conditionally adding tags, contextual metadata, structured metadata or eager transformations depending on specific criteria of the uploaded file.
-        detection:
-          type: string
-          description: |
-            Invokes the relevant add-on to return a list of detected content.
-            Set to:
-            - <content-aware model>_[<version>] (e.g. coco_v2) to return a list of detected content using the Cloudinary AI Content Analysis add-on. Can be used together with the auto_tagging parameter to apply tags automatically.
-            - captioning to analyze an image and suggest a caption based on the image's contents.
-            - iqa to analyze the quality of an image.
-            - watermark-detection to detect watermarks in an image.
-            - adv_face to return a list of facial attributes using the Advanced Facial Attribute Detection add-on.
-            - aws_rek_face to return a list of detected celebrities and facial attributes using the Amazon Rekognition Celebrity Detection add-on. Can be used together with the auto_tagging parameter to apply tags automatically.
-          example: coco_v2
-        filename_override:
-          type: string
-          description: Overrides the originally uploaded asset's file name in downloads that use flags like fl_attachment or fl_force_original.
-        public_id_prefix:
-          type: string
-          description: A string or path that's automatically prepended to the public_id with a forward slash. The value can contain the same characters as the public_id including additional forward slashes. This prefix can be useful to provide context and improve the SEO of an asset's filename in the delivery URL, but the value does not impact the location where the asset is stored.
+          description: Name of an upload preset that you defined for your Cloudinary product environment. An upload preset consists of upload parameters centrally managed using the Admin API or from the Upload Presets page of the Console Settings.
         use_asset_folder_as_public_id_prefix:
           type: boolean
           description: Whether to add the asset_folder value as a prefix to the public_id value (prepended with a forward slash). This ensures that the public ID path will always match the initial asset folder, and can help to retain the behavior that previously existed in fixed folder mode. However, keep in mind that even when this option is used during upload, an asset with a certain public ID path can later be moved to a completely different asset folder hierarchy without impacting the public ID. This option only ensures path matching for the initial upload. Relevant only when public_id_prefix (or folder) has not been separately specified.
-        unique_display_name:
-          type: boolean
-          description: Whether the display name should be unique.
-        visual_search:
-          type: boolean
-          description: Whether to index the image for use with visual searches. Relevant for images only.
-        use_filename_as_display_name:
-          type: boolean
-          description: Whether to automatically assign the original filename of the uploaded asset as the asset's display name. Relevant only if the display_name parameter isn't set.
         use_filename:
           type: boolean
           description: |
             Whether to use the original file name of the uploaded asset if available for the public ID. The file name is normalized and random characters are appended to ensure uniqueness if the file name already exists. Default: false.
+        use_filename_as_display_name:
+          type: boolean
+          description: Whether to automatically assign the original filename of the uploaded asset as the asset's display name. Relevant only if the display_name parameter isn't set.
+        unique_display_name:
+          type: boolean
+          description: Whether the display name should be unique.
         unique_filename:
           type: boolean
           description: |
             When set to false and used together with use_filename, if an asset with the same file name already exists, no random characters are appended to the file name. Instead, the asset is overwritten. Default: true (random characters are added to the file name if needed).
-        upload_preset:
+        visual_search:
+          type: boolean
+          description: Whether to index the image for use with visual searches. Relevant for images only.
+    tags_param:
+      anyOf:
+        - type: string
+          description: A comma-separated list of tag names.
+        - type: array
+          items:
+            type: string
+          description: An array of tag names.
+      description: A comma-separated list of tag names, or an array of tag names.
+      example: animal,dog
+    context_param:
+      type: string
+      description: A pipe-separated list of key-value pairs of general textual context metadata to attach to the asset (e.g., "alt=My image|caption=Nice photo"). The =, ", and | characters can be escaped with a prepending backslash (\).
+      example: alt=My image|caption=Nice photo
+    upload_serializable_input:
+      type: object
+      description: Upload parameters that accept encoded string values, such as comma-separated tags, pipe-separated context metadata, and transformation strings.
+      properties:
+        tags:
+          $ref: '#/components/schemas/tags_param'
+        context:
+          $ref: '#/components/schemas/context_param'
+        eager:
           type: string
-          description: Name of an upload preset that you defined for your Cloudinary product environment. An upload preset consists of upload parameters centrally managed using the Admin API or from the Upload Presets page of the Console Settings.
-        on_success:
+          description: A list of transformations to eagerly generate for the asset. Accepts either a single transformation or a pipe-separated list of transformations.
+        transformation:
           type: string
-          description: Allows you to update an asset by specifying custom logic with JavaScript that is executed after the upload to Cloudinary is completed successfully. This can be useful for conditionally adding tags, contextual metadata, and structured metadata, depending on the results of using the detection parameter on upload.
-    upload_preset:
+          description: An incoming transformation to run on the uploaded asset before its storage. In contrast to eager, this parameter is applied before the file is stored.
+        allowed_formats:
+          type: string
+          description: |
+            A comma-separated list of file formats that are allowed for uploading. Files of other types will be rejected. The formats can be any combination of image types, video formats or raw file extensions.
+            Note: You can also add the `format` parameter to convert other file types instead of rejecting them. In this case, only files that would normally be rejected are converted, any file format allowed for upload won't be converted.
+          example: mp4,ogv,jpg,png,pdf
+        headers:
+          type: string
+          description: |
+            An HTTP header or a list of headers lines for adding as response HTTP headers when delivering the asset to your users. Supported headers: Link, Authorization, X-Robots-Tag.
+          example: 'X-Robots-Tag: noindex'
+        face_coordinates:
+          type: string
+          description: Face coordinates as comma-separated values, with multiple faces separated by pipes.
+          pattern: ^(\d+,\d+,\d+,\d+)(\|\d+,\d+,\d+,\d+)*$
+          example: 10,20,150,130|213,345,82,61
+        custom_coordinates:
+          type: string
+          description: Custom coordinates as comma-separated values, with multiple coordinates separated by pipes.
+          pattern: ^(\d+,\d+,\d+,\d+)(\|\d+,\d+,\d+,\d+)*$
+          example: 10,20,150,130
+    upload_common_parameters:
+      description: Common parameters for configuring an asset, including transformation, tagging, metadata, and moderation options.
       allOf:
-        - $ref: '#/components/schemas/upload_explicit_parameters'
-        - $ref: '#/components/schemas/upload_other_parameters'
+        - $ref: '#/components/schemas/upload_base_parameters'
+        - $ref: '#/components/schemas/upload_serializable_input'
+    managed_delivery_type:
+      type: string
+      enum:
+        - upload
+        - private
+        - authenticated
+      description: Managed delivery types for assets uploaded and stored by Cloudinary.
+    asset_delivery_type:
+      type: string
+      enum:
+        - asset
+      description: Static asset delivery type.
+    upload_delivery_type:
+      anyOf:
+        - $ref: '#/components/schemas/managed_delivery_type'
+        - $ref: '#/components/schemas/asset_delivery_type'
+      description: Delivery types accepted by upload and rename operations.
+    upload_type_parameter:
+      type: object
+      properties:
+        type:
+          allOf:
+            - $ref: '#/components/schemas/upload_delivery_type'
+          description: The delivery type that defines if and how the uploaded asset is available for public delivery. By default, all uploaded assets are public (upload).
+    upload_parameters:
+      description: Parameters for configuring asset uploads, including transformation, tagging, metadata, and delivery options.
+      allOf:
+        - $ref: '#/components/schemas/upload_common_parameters'
+        - $ref: '#/components/schemas/upload_type_parameter'
+    upload_preset_input:
+      description: Upload preset configuration for create/update. Settings are sent as top-level string-encoded properties.
+      allOf:
+        - $ref: '#/components/schemas/upload_parameters'
         - type: object
           properties:
             name:
               type: string
-              description: The name of the upload preset when creating or modifying an upload preset.
+              description: The name of the upload preset. If not provided on create, a random name is generated.
             disallow_public_id:
               type: boolean
               description: |
@@ -2026,7 +1998,144 @@ components:
                   enum:
                     - none
               description: |
-                The parameters that are allowed be used in an upload request utilizing this preset. If not specified or empty array, all parameters are allowed. If "none", no parameters are allowed.
+                The parameters that are allowed to be used in an upload request utilizing this preset. If not specified or empty array, all parameters are allowed. If "none", no parameters are allowed.
+    upload_preset_create_response:
+      type: object
+      properties:
+        message:
+          type: string
+          description: The result message.
+          example: created
+        name:
+          type: string
+          description: The name of the created upload preset.
+          example: my_preset
+        external_id:
+          type: string
+          description: The unique identifier for the upload preset.
+          example: 1bce826e-ec50-45c6-9f86-c858948c7158
+      required:
+        - message
+        - name
+        - external_id
+    tags_response:
+      type:
+        - array
+        - 'null'
+      items:
+        type: string
+      description: Tag names assigned to the asset.
+    context_response:
+      type:
+        - object
+        - 'null'
+      additionalProperties:
+        type: string
+      description: Contextual metadata as flat key-value pairs.
+    upload_serializable_parsed:
+      type: object
+      description: Structured versions of upload fields as returned in API responses. Tags and allowed formats are arrays, context is a key-value object, eager and transformation are structured transformation objects, and coordinates are nested number arrays.
+      properties:
+        tags:
+          allOf:
+            - $ref: '#/components/schemas/tags_response'
+          description: Parsed tag names.
+          example:
+            - tag1
+            - tag2
+        context:
+          allOf:
+            - $ref: '#/components/schemas/context_response'
+          description: Parsed contextual metadata as key-value pairs.
+          example:
+            alt: My image
+            caption: Nice photo
+        eager:
+          type: array
+          description: Parsed eager transformations. Each item is an array of transformation step objects.
+          items:
+            type: array
+            items:
+              type: object
+              additionalProperties: true
+          example:
+            - - width: 100
+                height: 100
+                crop: thumb
+        transformation:
+          type: array
+          description: Parsed incoming transformation steps.
+          items:
+            type: object
+            additionalProperties: true
+        allowed_formats:
+          type: array
+          items:
+            type: string
+          description: Parsed list of allowed file formats.
+          example:
+            - jpg
+            - png
+            - gif
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: Parsed custom HTTP headers as key-value pairs.
+        face_coordinates:
+          type: array
+          description: Parsed face coordinate rectangles.
+          items:
+            type: array
+            items:
+              type: number
+        custom_coordinates:
+          type: array
+          description: Parsed custom coordinate rectangles.
+          items:
+            type: array
+            items:
+              type: number
+    upload_preset_parsed_settings:
+      description: Parsed preset configuration settings. Composed from base parameters (stable types) plus parsed serializable fields (arrays/objects instead of strings).
+      allOf:
+        - $ref: '#/components/schemas/upload_base_parameters'
+        - $ref: '#/components/schemas/upload_serializable_parsed'
+        - $ref: '#/components/schemas/upload_type_parameter'
+    upload_preset_detail:
+      type: object
+      description: An upload preset as returned by the GET endpoint. Settings values are parsed into their proper types (e.g., tags become arrays, context becomes an object, booleans become true booleans).
+      properties:
+        name:
+          type: string
+          description: The name of the upload preset.
+          example: my_preset
+        unsigned:
+          type: boolean
+          description: Whether the upload preset allows unsigned uploads.
+        settings:
+          $ref: '#/components/schemas/upload_preset_parsed_settings'
+        external_id:
+          type: string
+          description: The unique identifier for the upload preset.
+          example: 4d92a1bc-25c8-4f5a-a763-1b7dc169fd5a
+      required:
+        - name
+        - external_id
+    upload_preset_mutation_response:
+      type: object
+      properties:
+        message:
+          type: string
+          description: The result message (e.g., "updated" or "deleted").
+          example: updated
+        external_id:
+          type: string
+          description: The unique identifier for the upload preset.
+          example: 1bce826e-ec50-45c6-9f86-c858948c7158
+      required:
+        - message
+        - external_id
     upload_mapping:
       type: object
       description: Represents an upload mapping
@@ -2051,6 +2160,107 @@ components:
         - folder
         - template
         - external_id
+    upload_mapping_list_response:
+      type: object
+      description: List response for upload mappings.
+      properties:
+        mappings:
+          type: array
+          description: Array of upload mapping objects.
+          items:
+            $ref: '#/components/schemas/upload_mapping'
+        total_entries:
+          type: integer
+          description: Total number of mappings.
+        next_cursor:
+          type: string
+          description: Cursor for getting the next page of results.
+      required:
+        - mappings
+        - total_entries
+    upload_mapping_input:
+      type: object
+      properties:
+        folder:
+          type: string
+          description: The folder name for the mapping.
+          example: my_folder
+        template:
+          type: string
+          description: The template URL.
+          example: http://example.com/files
+      required:
+        - folder
+        - template
+    upload_mapping_mutation_response:
+      type: object
+      properties:
+        message:
+          type: string
+        external_id:
+          type: string
+          description: Unique identifier of the mapping.
+          example: 1bce826e-ec50-45c6-9f86-c858948c7158
+      required:
+        - message
+        - external_id
+    upload_mapping_create_response:
+      type: object
+      properties:
+        message:
+          type: string
+        folder:
+          type: string
+          description: The folder name that was created.
+        external_id:
+          type: string
+          description: Unique identifier for the mapping.
+          example: 1bce826e-ec50-45c6-9f86-c858948c7158
+      required:
+        - message
+        - folder
+        - external_id
+    replace_upload_mappings_request:
+      type: object
+      properties:
+        mappings:
+          type: array
+          items:
+            $ref: '#/components/schemas/upload_mapping_input'
+      required:
+        - mappings
+    event_type:
+      type: string
+      description: The type of notification event.
+      enum:
+        - all
+        - access_control_changed
+        - bulk_refresh_auto_fetch
+        - create_folder
+        - delete
+        - delete_by_token
+        - delete_folder
+        - eager
+        - error
+        - explode
+        - generate_archive
+        - info
+        - invalidate_custom_cdn
+        - moderation
+        - moderation_summary
+        - move
+        - move_or_rename_asset_folder
+        - multi
+        - publish
+        - rename
+        - report
+        - resource_context_changed
+        - resource_display_name_changed
+        - resource_metadata_changed
+        - resource_tags_changed
+        - restore_asset_version
+        - sprite
+        - upload
     uri_type:
       type: string
       enum:
@@ -2073,7 +2283,7 @@ components:
           format: uri
           example: http://example.com
         event_type:
-          type: string
+          $ref: '#/components/schemas/event_type'
           example: all
         created_at:
           type: string
@@ -2086,6 +2296,77 @@ components:
       required:
         - uri
         - uri_type
+    trigger_list_response:
+      type: object
+      description: List response for triggers.
+      properties:
+        triggers:
+          type: array
+          description: List of trigger objects.
+          items:
+            $ref: '#/components/schemas/trigger_info'
+        total:
+          type: integer
+          description: Total number of triggers.
+          example: 1
+      required:
+        - triggers
+        - total
+    create_trigger_request:
+      type: object
+      properties:
+        uri:
+          type: string
+          description: The URL that will receive the notification response.
+          format: uri
+          example: https://trigger.site/124
+        event_type:
+          $ref: '#/components/schemas/event_type'
+          description: The type of event that will trigger the notification response.
+          example: upload
+      required:
+        - uri
+        - event_type
+    update_trigger_request:
+      type: object
+      properties:
+        new_uri:
+          type: string
+          format: uri
+          example: http://example.com
+          description: The updated URL that will receive the notification response.
+      required:
+        - new_uri
+    test_trigger_request:
+      type: object
+      properties:
+        sample_data:
+          type: object
+          description: Sample notification data to evaluate the filter against.
+          example:
+            resource_type: image
+            public_id: sample123
+            tags:
+              - product
+    test_trigger_response:
+      type: object
+      properties:
+        trigger_id:
+          type: string
+          description: The ID of the trigger that was tested.
+          example: c2c822dd1aa41ba6d81299df8b5ae949
+        filter_present:
+          type: boolean
+          description: Whether the trigger has a filter configured.
+          example: true
+        filter_result:
+          type: boolean
+          description: Result of evaluating the filter against sample_data (true if no filter).
+          example: true
+      required:
+        - trigger_id
+        - filter_present
+        - filter_result
     streaming_profile:
       type: object
       properties:
@@ -2166,6 +2447,15 @@ components:
                 audio_codec: aac
                 audio_bitrate: 128k
                 fps: 30
+    streaming_profile_list_response:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/streaming_profile'
+      required:
+        - data
     streaming_profile_create:
       type: object
       properties:
@@ -2190,6 +2480,13 @@ components:
         name: hd_1080p
         display_name: HD 1080p
         representations: '[{"transformation":"w_1920,h_1080,c_scale/vc_h264,br_2500k/ac_aac,abr_128k/fps_30"},{"transformation":"w_1280,h_720,c_scale/vc_h264,br_1500k/ac_aac,abr_128k/fps_30"}]'
+    streaming_profile_data_response:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/streaming_profile'
+      required:
+        - data
     streaming_profile_update:
       type: object
       properties:
@@ -2208,5 +2505,15 @@ components:
       example:
         display_name: HD 1080p Updated
         representations: '[{"transformation":"w_1920,h_1080,c_scale/vc_h264,br_3000k/ac_aac,abr_192k/fps_30"},{"transformation":"w_1280,h_720,c_scale/vc_h264,br_2000k/ac_aac,abr_192k/fps_30"}]'
+    streaming_profile_update_response:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/streaming_profile'
+      required:
+        - message
+        - data
 x-speakeasy-globals:
-  parameters: null
+  parameters: []

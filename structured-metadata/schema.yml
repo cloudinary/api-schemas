@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Structured Metadata API
-  version: 0.4.0
+  version: 0.5.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -78,11 +78,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/api_error'
       requestBody:
+        description: The metadata field definition.
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/metadata_field'
+              allOf:
+                - $ref: '#/components/schemas/metadata_field'
+                - required:
+                    - type
+                    - label
     get:
       x-speakeasy-mcp:
         name: list-metadata-fields
@@ -111,12 +116,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  metadata_fields:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/metadata_field'
+                $ref: '#/components/schemas/metadata_fields_list_response'
         '401':
           description: authentication error
           content:
@@ -137,7 +137,7 @@ paths:
         required: true
         schema:
           type: string
-        description: The external ID of the metadata field to retrieve.
+        description: The external ID of the metadata field.
     get:
       x-speakeasy-mcp:
         name: get-metadata-field
@@ -189,6 +189,7 @@ paths:
       tags:
         - metadata_fields
       requestBody:
+        description: The updated metadata field definition.
         required: true
         content:
           application/json:
@@ -244,12 +245,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                required:
-                  - message
+                $ref: '#/components/schemas/message_response'
         '400':
           description: validation error
           content:
@@ -284,19 +280,12 @@ paths:
       tags:
         - metadata_fields
       requestBody:
+        description: The datasource search query.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                term:
-                  type: string
-                  description: The term to search for. Can be any substring of the value.
-                max_results:
-                  type: integer
-                  default: 100
-                  description: The maximum number of results to return.
+              $ref: '#/components/schemas/datasource_search_request'
       responses:
         '200':
           description: search results
@@ -305,17 +294,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    field_id:
-                      type: string
-                      description: The external ID of the metadata field.
-                    id:
-                      type: string
-                      description: The external ID of the option.
-                    value:
-                      type: string
-                      description: The value of the option.
+                  $ref: '#/components/schemas/datasource_search_result'
         '401':
           description: authentication error
           content:
@@ -332,39 +311,19 @@ paths:
       tags:
         - metadata_fields
       requestBody:
+        description: The new ordering for metadata fields.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                order_by:
-                  type: string
-                  enum:
-                    - label
-                    - created_at
-                    - external_id
-                  description: The field to order by.
-                direction:
-                  type: string
-                  enum:
-                    - asc
-                    - desc
-                  description: The direction to order by.
-              required:
-                - order_by
+              $ref: '#/components/schemas/reorder_metadata_fields_request'
       responses:
         '200':
           description: metadata fields reordered
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  metadata_fields:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/metadata_field'
+                $ref: '#/components/schemas/metadata_fields_list_response'
         '400':
           description: invalid parameters
           content:
@@ -393,29 +352,19 @@ paths:
       tags:
         - metadata_fields
       requestBody:
+        description: The new position for the metadata field.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                position:
-                  type: integer
-                  description: The position of the metadata field.
-              required:
-                - position
+              $ref: '#/components/schemas/reorder_metadata_field_request'
       responses:
         '200':
           description: metadata fields reordered
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  metadata_fields:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/metadata_field'
+                $ref: '#/components/schemas/metadata_fields_list_response'
         '400':
           description: invalid position
           content:
@@ -456,44 +405,19 @@ paths:
       tags:
         - metadata_fields
       requestBody:
+        description: The updated datasource values.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                values:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      external_id:
-                        type: string
-                        description: The external ID of the datasource value.
-                      value:
-                        type: string
-                        description: The value of the option.
-                      position:
-                        type: integer
-                        description: The position of the option.
-                      state:
-                        type: string
-                        enum:
-                          - active
-                          - inactive
-                        description: The state of the option.
+              $ref: '#/components/schemas/update_datasource_request'
       responses:
         '200':
           description: datasource updated
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  values:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/metadata_field_datasource_value'
+                $ref: '#/components/schemas/metadata_field_datasource_values_array'
         '400':
           description: invalid request
           content:
@@ -532,19 +456,12 @@ paths:
       tags:
         - metadata_fields
       requestBody:
+        description: The datasource entry external IDs to delete.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                external_ids:
-                  type: array
-                  items:
-                    type: string
-                  description: The external IDs of the datasource values to delete.
-              required:
-                - external_ids
+              $ref: '#/components/schemas/datasource_external_ids_request'
       responses:
         '200':
           description: datasource values deleted
@@ -607,15 +524,12 @@ paths:
             default: false
           description: Whether to search for an exact match.
       requestBody:
+        description: The datasource search query for this field.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                payload:
-                  type: object
-                  description: Metadata payload for rule-based inference
+              $ref: '#/components/schemas/datasource_search_in_field_request'
       responses:
         '200':
           description: search results
@@ -651,17 +565,12 @@ paths:
       tags:
         - metadata_fields
       requestBody:
+        description: The datasource entry external IDs to restore.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                external_ids:
-                  type: array
-                  items:
-                    type: string
-                  description: The external IDs of the datasource values to restore.
+              $ref: '#/components/schemas/datasource_external_ids_request'
       responses:
         '200':
           description: datasource values restored
@@ -733,6 +642,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/api_error'
       requestBody:
+        description: The metadata rule to create.
         required: true
         content:
           application/json:
@@ -747,7 +657,7 @@ paths:
         readOnlyHint: true
         idempotentHint: true
       operationId: listMetadataRules
-      summary: Retrieves a list of all conditional metadata rules defined in your accountcloudinary
+      summary: Retrieves a list of all conditional metadata rules defined in your account
       description: Retrieves a list of all metadata rules in the cloud.
       tags:
         - metadata_rules
@@ -757,12 +667,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  metadata_rules:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/metadata_rule_response'
+                $ref: '#/components/schemas/metadata_rules_list_response'
         '401':
           description: authentication error.
           content:
@@ -797,6 +702,7 @@ paths:
       tags:
         - metadata_rules
       requestBody:
+        description: The updated metadata rule definition.
         required: true
         content:
           application/json:
@@ -852,12 +758,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                required:
-                  - success
+                $ref: '#/components/schemas/success_response'
         '400':
           description: validation error.
           content:
@@ -904,8 +805,15 @@ components:
       required: true
       schema:
         type: string
-        description: The cloud name of your product environment.
+      description: The cloud name of your product environment.
+      example: my_cloud
   schemas:
+    state_enum:
+      type: string
+      enum:
+        - active
+        - inactive
+      description: The active or inactive state.
     metadata_field:
       type: object
       properties:
@@ -977,19 +885,20 @@ components:
                     type: integer
                     description: The position of the option.
                   state:
-                    type: string
-                    enum:
-                      - active
-                      - inactive
+                    $ref: '#/components/schemas/state_enum'
                     description: The state of the option.
         allow_dynamic_list_values:
           type:
             - boolean
             - 'null'
           description: Whether the metadata field allows adding new options to the datasource dynamically.
-      required:
-        - type
-        - label
+    metadata_fields_list_response:
+      type: object
+      properties:
+        metadata_fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/metadata_field'
     api_error:
       type: object
       properties:
@@ -1002,6 +911,88 @@ components:
             - message
       required:
         - error
+    message_response:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A human-readable status message.
+          example: updated
+      required:
+        - message
+    datasource_search_request:
+      type: object
+      properties:
+        term:
+          type: string
+          description: The term to search for. Can be any substring of the value.
+        max_results:
+          type: integer
+          default: 100
+          description: The maximum number of results to return.
+    datasource_search_result:
+      type: object
+      properties:
+        field_id:
+          type: string
+          description: The external ID of the metadata field.
+        id:
+          type: string
+          description: The external ID of the option.
+        value:
+          type: string
+          description: The value of the option.
+    direction_enum:
+      type: string
+      enum:
+        - asc
+        - desc
+      description: Sort direction.
+    reorder_metadata_fields_request:
+      type: object
+      properties:
+        order_by:
+          type: string
+          enum:
+            - label
+            - created_at
+            - external_id
+          description: The field to order by.
+        direction:
+          $ref: '#/components/schemas/direction_enum'
+          description: The direction to order by.
+      required:
+        - order_by
+    reorder_metadata_field_request:
+      type: object
+      properties:
+        position:
+          type: integer
+          description: The position of the metadata field.
+      required:
+        - position
+    datasource_value_input:
+      type: object
+      properties:
+        external_id:
+          type: string
+          description: The external ID of the datasource value.
+        value:
+          type: string
+          description: The value of the option.
+        position:
+          type: integer
+          description: The position of the option.
+        state:
+          $ref: '#/components/schemas/state_enum'
+          description: The state of the option.
+    update_datasource_request:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/datasource_value_input'
     metadata_field_datasource_value:
       type: object
       properties:
@@ -1018,6 +1009,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/metadata_field_datasource_value'
+    datasource_external_ids_request:
+      type: object
+      properties:
+        external_ids:
+          type: array
+          items:
+            type: string
+          description: The external IDs of the datasource values.
+      required:
+        - external_ids
+    datasource_search_in_field_request:
+      type: object
+      properties:
+        payload:
+          type: object
+          description: Metadata payload for rule-based inference.
     metadata_rule_base:
       type: object
       properties:
@@ -1034,10 +1041,7 @@ components:
           type: object
           description: The result to apply when the condition is met, should adhere to the metadata rule result schema.
         state:
-          type: string
-          enum:
-            - active
-            - inactive
+          $ref: '#/components/schemas/state_enum'
           description: The state of the rule.
         position:
           type: integer
@@ -1079,6 +1083,13 @@ components:
             mode: default
         state: active
         position: 1
+    metadata_rules_list_response:
+      type: object
+      properties:
+        metadata_rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/metadata_rule_response'
     metadata_rule_create:
       allOf:
         - $ref: '#/components/schemas/metadata_rule_base'
@@ -1114,5 +1125,14 @@ components:
             mode: default
         state: active
         position: 1
+    success_response:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the operation was successful.
+          example: true
+      required:
+        - success
 x-speakeasy-globals:
-  parameters: null
+  parameters: []
