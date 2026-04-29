@@ -5,6 +5,19 @@ All notable changes to the Cloudinary OpenAPI specification are documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-04-21
+
+### Added
+- **Search**: `examples` array on `expression` covering common query shapes.
+- **Search**: `x-enum-descriptions` for every `with_field` value.
+
+### Changed
+- **Search**: Spell out the Lucene grammar summary on `expression`; note the Tier 2 plan requirement on `aggregate` and on `with_field`'s `image_metadata` / `image_analysis` / `metadata` values; document the `max_results: 0` aggregation-only mode.
+
+### Fixed
+- **Search**: Require `key` (1–20 chars, `^[a-zA-Z0-9_-]+$`) on `aggregate` range items so bucket labels for grouping are returned.
+- **Search**: Relax `max_results.minimum` from `1` to `0` for aggregation-only queries.
+
 ## [0.5.0] - 2026-04-20
 
 ### Added
