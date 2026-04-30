@@ -1,0 +1,12 @@
+overlay: 1.0.0
+info:
+  title: Allow additional properties on empty object schemas
+  version: 1.0.0
+  description: |
+    Fixes empty object schemas that get stripped by Speakeasy code generation.
+    Without additionalProperties: true, z.object({}) strips all unknown keys,
+    silently dropping data sent to the API.
+actions:
+  - target: "$.components.schemas..properties.*[?((@.type == 'object' || @.type[0] == 'object') && !@.properties && !@.additionalProperties && !@['$ref'] && !@.allOf && !@.oneOf && !@.anyOf)]"
+    update:
+      additionalProperties: true
