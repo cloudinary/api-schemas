@@ -5494,6 +5494,10 @@ components:
           type: string
           description: The name of the created folder.
           example: food
+        external_id:
+          type: string
+          description: The unique identifier for the folder.
+          example: cefebc228a8918a06aaaaaaaaa11111122
     delete_folder_response:
       type: object
       properties:
