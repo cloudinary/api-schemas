@@ -32,11 +32,12 @@ actions:
       - **Booleans**: `AND`, `OR`, `NOT` (uppercase), or `+` (must), `-` (must not). `NOT` must appear between clauses — a bare leading `NOT` is a parse error; use `-field:value` to negate the first clause. Group with parentheses: `(shirt OR pants) AND clothes`.
       - **Wildcards**: trailing `*` only, for prefix match (`public_id:shoes_*`, `format:jp*`, `tags:shirt*`). Not supported on `folder`, `asset_folder`, `resource_type`, or `type`. Leading `*`, middle `*`, `?`, and bare `*` (`folder:*`, `context.alt:*`) are all parse errors — wildcards cannot be used as a "field is present" probe.
       - **Tokenized vs exact fields**: `tags`, `filename`, `display_name`, `context.<key>`, and `metadata.<id>` match on tokens split by whitespace and punctuation — `tags:analysis` matches the tag `full-analysis`. `public_id`, `folder`, `asset_folder`, and `format` match the whole value — `public_id:dog` will not match `dog_pldcwy`; use `public_id="dog_pldcwy"` (exact) or `public_id:dog*` (prefix). These exact-match fields still accept a trailing `*` for prefix match (except `folder` / `asset_folder`, where wildcards are ignored).
-      - **Dates**: ISO-8601 in quotes (`uploaded_at>"2024-01-15"`) or relative shorthand `Nh`, `Nd`, `Nw`, `Nm`, `Ny` (`uploaded_at>1d`, `created_at:[4w TO 1w]`). Send raw `<`/`>`, never HTML-escaped.
-      - **Quoting**: wrap any value containing a space, colon, or other reserved character (`! ( ) { } [ ] ^ ~ ?  \ = & < > |`) in double quotes, or escape each character with `\`. Examples: `tags:"service:mantels"`, `aspect_ratio:"16:9"`, `folder:"My Folder"`.
+      - **Dates**: ISO-8601 in quotes (`uploaded_at>"2024-01-15"`, `created_at>"2026-01-01T00:00:00Z"`) or relative shorthand `Nh`, `Nd`, `Nw` (`uploaded_at>1d`, `created_at:[4w TO 1w]`). Send raw `<`/`>`, never HTML-escaped.
+      - **Quoting**: wrap any value containing a space, colon, or other reserved character (`! ( ) { } [ ] ^ ~ ?  \ = & < > |`) in double quotes, or escape each character with `\`. Examples: `tags:"service:mantels"`, `tags:"brand:openhaul"`, `aspect_ratio:"16:9"`, `folder:"My Folder"`.
 
       ## Common mistakes
 
+      - No months or years shorthand. `1m` and `1y` are not supported; use ISO dates: `created_at>"2024-01-01"` or `created_at:["2024-01-01" TO "2024-04-01"]`.
       - Use `folder:` or `asset_folder:` (singular); `folders:`, `asset_folder_id:`, and other invented variants are not valid fields. Pass the exact folder name — wildcards do not apply here.
       - There is no "has any value" / presence probe. `folder:*`, `metadata.alt:*`, `context.key:*`, `tags:*`, and `-tags:*` are all parse errors. See *"Which assets have any value for `metadata.<id>`?"* under **Common tasks** for workarounds.
       - `NOT foo AND bar` is a parse error. Write it as `bar AND NOT foo` or `-foo AND bar`, and keep every `NOT` between two clauses (`a AND NOT b AND NOT c` is fine; `NOT b AND NOT c …` is not).
@@ -77,11 +78,11 @@ actions:
     update: |
       The Lucene-like search expression. Supports token match (`:`), exact match (`=`), trailing `*` for prefix match, ranges (`[a TO b]`, `{a TO b}`), and comparisons (`>`, `<`, `>=`, `<=`). Combine terms with uppercase `AND`, `OR`, `NOT`, or `+`/`-`. `NOT` must appear between clauses — a leading `NOT` is a parse error; use `-field:value` to negate the first clause. Group with parentheses.
 
-      Wrap values containing spaces, colons, or other reserved characters (`! ( ) { } [ ] ^ ~ ?  \ = & < > |`) in double quotes, e.g. `tags:"service:mantels"`, `aspect_ratio:"16:9"`. Send raw `<`/`>`, never HTML-escaped.
+      Wrap values containing spaces, colons, or other reserved characters (`! ( ) { } [ ] ^ ~ ?  \ = & < > |`) in double quotes, e.g. `tags:"service:mantels"`, `tags:"brand:openhaul"`, `aspect_ratio:"16:9"`. Send raw `<`/`>`, never HTML-escaped.
 
       Wildcards are prefix-only (trailing `*`). A bare `*` (e.g. `folder:*`, `context.alt:*`, `metadata.key:*`, `tags:*`, `-tags:*`) is a parse error — there is no "has any value" / presence probe. Either drop the clause, use a concrete prefix, or filter on a known token.
 
-      Dates: ISO-8601 in quotes, or relative shorthand `1h`, `1d`, `1w`, `1m`, `1y` (`uploaded_at>1d`, `created_at:[4w TO 1w]`).
+      Dates: ISO-8601 in quotes (`uploaded_at>"2024-01-15"`, `created_at>"2026-01-01T00:00:00Z"`), or relative shorthand `Nh`, `Nd`, `Nw` (`uploaded_at>1d`, `created_at:[4w TO 1w]`).
 
       Supported fields: `public_id`, `asset_id`, `filename`, `display_name`, `folder` / `asset_folder` (singular, not `folders`), `tags`, `context.<key>`, `metadata.<external_id>`, `resource_type`, `type`, `format`, `bytes`, `width`, `height`, `duration`, `pages`, `aspect_ratio`, `transparent`, `grayscale`, `status`, `moderation_status`, `moderation_kind`, `uploaded_at`, `created_at`, `taken_at`, `updated_at`, `last_updated.<kind>`, `face_count`, `illustration_score`, `quality_score`. Fields under `image_metadata.*`, `image_analysis.*`, `quality_analysis.*`, and `accessibility_analysis.*` also require the matching `with_field` to be returned in the response.
 
