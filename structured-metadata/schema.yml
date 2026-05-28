@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Structured Metadata API
-  version: 0.5.0
+  version: 0.5.5
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -849,7 +849,7 @@ components:
           type:
             - boolean
             - 'null'
-          description: Whether the default value is disabled.
+          description: Whether the field is disabled in the UI by default.
         validation:
           type:
             - object
@@ -859,11 +859,18 @@ components:
           type:
             - object
             - 'null'
-          description: The restrictions defined for the metadata field.
+          description: |
+            Controls UI visibility and editability of the field. All three keys are always returned; any omitted key on input defaults to false.
           properties:
             readonly_ui:
               type: boolean
-              description: Whether the metadata field is read-only in the UI. when true, the metadata field can only be updated via the API.
+              description: Whether the field is read-only in the UI. When true, the field can only be updated via the API.
+            hidden_ui:
+              type: boolean
+              description: Whether the field is hidden in the UI by default.
+            excluded_from_search:
+              type: boolean
+              description: Whether the field is excluded from UI search by default.
         datasource:
           type:
             - object
@@ -892,6 +899,10 @@ components:
             - boolean
             - 'null'
           description: Whether the metadata field allows adding new options to the datasource dynamically.
+        alphabetically_sorted:
+          type: boolean
+          description: Whether datasource values are maintained in case-insensitive alphabetical order. When true, values are automatically sorted on insert and update. Default false.
+          example: true
     metadata_fields_list_response:
       type: object
       properties:
@@ -1025,6 +1036,73 @@ components:
         payload:
           type: object
           description: Metadata payload for rule-based inference.
+    metadata_rule_apply_value:
+      type: object
+      description: Applies a specific value to the metadata field when the rule condition is met.
+      required:
+        - value
+      properties:
+        value:
+          type:
+            - string
+            - 'null'
+          description: The value to apply to the metadata field.
+          example: my value
+        mode:
+          type: string
+          enum:
+            - default
+            - override
+            - append
+          description: |
+            How to apply the value. `default` sets it only when no value is already inferred; `override` always replaces any inferred value; `append` adds to an existing array value.
+          example: default
+    metadata_rule_activate_values:
+      description: |
+        Restricts which datasource option ids are active. Either the string "all" (activate every option) or an object listing the external ids to activate.
+      oneOf:
+        - type: string
+          enum:
+            - all
+        - type: object
+          required:
+            - external_ids
+          properties:
+            external_ids:
+              type:
+                - array
+                - 'null'
+              items:
+                type: string
+              description: The datasource external ids to activate.
+            mode:
+              type: string
+              enum:
+                - override
+                - append
+              description: Whether to override the current active set or append to it. Defaults to append.
+    metadata_rule_result:
+      type: object
+      description: The result to apply when the rule's condition is met. At least one property must be set.
+      minProperties: 1
+      properties:
+        apply_value:
+          $ref: '#/components/schemas/metadata_rule_apply_value'
+        disable:
+          type: boolean
+          description: When true, disables the field in the UI (sets default_disabled). Preferred over the legacy enable action.
+        enable:
+          type: boolean
+          deprecated: true
+          description: When true, enables the field in the UI (clears default_disabled). Deprecated — prefer using disable with value false instead.
+        hide:
+          type: boolean
+          description: When true, hides the field in the UI (sets hidden_ui).
+        activate_values:
+          $ref: '#/components/schemas/metadata_rule_activate_values'
+        set_mandatory:
+          type: boolean
+          description: When true, makes the field mandatory; when false, makes it optional.
     metadata_rule_base:
       type: object
       properties:
@@ -1038,8 +1116,7 @@ components:
           type: object
           description: The condition that triggers this rule. Ensure it adheres to the metadata rule condition schema.
         result:
-          type: object
-          description: The result to apply when the condition is met, should adhere to the metadata rule result schema.
+          $ref: '#/components/schemas/metadata_rule_result'
         state:
           $ref: '#/components/schemas/state_enum'
           description: The state of the rule.
@@ -1072,15 +1149,13 @@ components:
       example:
         external_id: '1234567890'
         metadata_field_id: smd-field-1
-        name: My Rule
+        name: Disable field when other field is populated
         condition:
           metadata_field_id: smd-field-2
           populated: true
         condition_signature: dGhlIGZveCBqdW1wZWQgb3ZlciB0aGUgbGF6eSBkb2c
         result:
-          apply_value:
-            value: my value
-            mode: default
+          disable: true
         state: active
         position: 1
     metadata_rules_list_response:
@@ -1100,14 +1175,12 @@ components:
         - result
       example:
         metadata_field_id: smd-field-1
-        name: My Rule
+        name: Disable field when other field is populated
         condition:
           metadata_field_id: smd-field-2
           populated: true
         result:
-          apply_value:
-            value: my value
-            mode: default
+          disable: true
         state: active
         position: 1
     metadata_rule_update:
@@ -1115,14 +1188,12 @@ components:
         - $ref: '#/components/schemas/metadata_rule_base'
       example:
         metadata_field_id: smd-field-1
-        name: My Rule
+        name: Disable field when other field is populated
         condition:
           metadata_field_id: smd-field-2
           populated: true
         result:
-          apply_value:
-            value: my value
-            mode: default
+          disable: true
         state: active
         position: 1
     success_response:

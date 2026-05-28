@@ -5,18 +5,47 @@ All notable changes to the Cloudinary OpenAPI specification are documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.1] - 2026-04-21
+## [0.5.5] - 2026-05-28
 
 ### Added
-- **Search**: `examples` array on `expression` covering common query shapes.
-- **Search**: `x-enum-descriptions` for every `with_field` value.
+- **Metadata Rules**: `activate_values` field on a rule's `result` to restrict which datasource option ids are active (accepts `"all"` or `{external_ids, mode}`).
+- **Metadata Rules**: `set_mandatory` boolean on a rule's `result` to toggle field mandatoriness.
 
-### Changed
-- **Search**: Spell out the Lucene grammar summary on `expression`; note the Tier 2 plan requirement on `aggregate` and on `with_field`'s `image_metadata` / `image_analysis` / `metadata` values; document the `max_results: 0` aggregation-only mode.
+### Deprecated
+- **Metadata Rules**: `enable` action on a rule's `result` — use `disable: false` instead.
 
 ### Fixed
-- **Search**: Require `key` (1–20 chars, `^[a-zA-Z0-9_-]+$`) on `aggregate` range items so bucket labels for grouping are returned.
-- **Search**: Relax `max_results.minimum` from `1` to `0` for aggregation-only queries.
+- **Metadata Rules**: `apply_value.mode` enum corrected from `[default, force]` to `[default, override, append]` to match the API.
+- **Folders**: `create_folder_response` now returns the full `folder` shape (previously only `path` and `name`).
+
+## [0.5.4] - 2026-05-28
+
+### Added
+- **Metadata Rules**: `disable` and `hide` boolean fields on a rule's `result`.
+- **Metadata Fields**: `hidden_ui` and `excluded_from_search` boolean properties on `restrictions`.
+
+## [0.5.3] - 2026-05-25
+
+### Added
+- **Metadata Fields**: `alphabetically_sorted` boolean on metadata fields, enabling case-insensitive alphabetical ordering of datasource options.
+- **Search**: `key` label is now required on each `aggregate` range item so buckets carry stable names in the response.
+
+### Changed
+- **Search**: `max_results` accepts `0` for aggregation-only queries (previously minimum was `1`).
+
+## [0.5.2] - 2026-05-18
+
+_No schema changes._
+
+## [0.5.1] - 2026-05-07
+
+### Added
+- **Initial Backup**: New `POST /initial_backup` and `GET /initial_backup` endpoints to initiate and list initial backup operations.
+- **Upload**: New `POST /v1_1/{cloud}/video/concat` endpoint that remuxes an ordered list of video-segment URLs (up to 256) into a single MP4.
+- **Upload**: `X-Upload-Part-Number` and `X-Upload-Total-Parts` headers on `/upload_chunked` for uploading parts of uneven size with client-supplied order.
+
+### Changed
+- **Upload**: `Content-Range` on `/upload_chunked` is now optional (required only in the default uniform-size flow).
 
 ## [0.5.0] - 2026-04-20
 
@@ -37,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Speakeasy**: Deduplicate inline enums, remove `contentMediaType`, fix `globals.parameters` null value.
+- **Speakeasy**: Flatten `delivery_type_all` path parameter to a single string enum (`delivery_type_all_enum`) so `getResourceByPublicId`, `updateResourceByPublicId`, and `deleteResourcesByPublicId` are no longer skipped by the SDK generator. The `anyOf` variant is retained for request bodies and query parameters.
 - **Compat Overlay**: Remove stale `signature_parameters` section.
 
 ## [0.4.0] - 2026-02-23

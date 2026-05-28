@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Environment Config API
-  version: 0.5.0
+  version: 0.5.5
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -77,7 +77,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/list_response'
+                $ref: '#/components/schemas/transformation_list_response'
         '400':
           description: Bad request
           content:
@@ -1318,7 +1318,7 @@ components:
         named:
           type: boolean
           example: true
-    list_response:
+    transformation_list_response:
       type: object
       properties:
         transformations:
