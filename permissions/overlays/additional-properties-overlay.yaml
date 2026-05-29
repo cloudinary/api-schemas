@@ -1,11 +1,29 @@
 overlay: 1.0.0
 info:
   title: Permissions API Additional Properties Fixes
-  version: 0.0.1
+  version: 0.0.2
 actions:
   - target: $["components"]["schemas"]["SystemRolesAndPoliciesCatalogResponse"]["properties"]["catalog"]
     update:
       additionalProperties: true
   - target: $["components"]["schemas"]["CedarSchemaResponse"]["properties"]["schema"]
+    update:
+      additionalProperties: true
+  - target: $["components"]["schemas"]["RoleToManage"]["properties"]["policy_parameters"]
+    update:
+      additionalProperties: true
+  - target: $["components"]["schemas"]["UpdateRolePrincipal"]["properties"]["policy_parameters"]
+    update:
+      additionalProperties: true
+  - target: $["components"]["schemas"]["InspectRequest"]["properties"]["policy_parameters"]
+    update:
+      additionalProperties: true
+  - target: $["components"]["schemas"]["PrincipalResponseData"]["properties"]["policy_parameters"]
+    update:
+      additionalProperties: true
+  - target: $["components"]["schemas"]["PrincipalRolesData"]["properties"]["policy_parameters"]
+    update:
+      additionalProperties: true
+  - target: $["components"]["schemas"]["PermissionsError"]["properties"]["details"]
     update:
       additionalProperties: true
