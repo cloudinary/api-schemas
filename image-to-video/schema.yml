@@ -1,0 +1,562 @@
+openapi: 3.0.3
+info:
+  title: Image to Video API
+  description: |
+    Use the Image to Video API to generate videos from images using AI, and to manage reusable prompts. You provide a source image and a text prompt describing the motion or scene, and Cloudinary generates a video and saves it to your product environment. See the [Image to Video Add-on](https://cloudinary.com/documentation/image_to_video_addon) guide for the Console-based workflow.
+
+      The API supports Basic Authentication using your Cloudinary API Key and API Secret (which can be found in the API Keys page of your [Cloudinary Console](https://console.cloudinary.com/app/settings/api-keys)).
+
+    > **Note:** The Image to Video API is in **Beta** and isn't yet in its final form. Endpoints, parameters, and response payloads may change before the general access release.
+  version: 0.1.1 # x-release-please-version
+  contact:
+    name: Cloudinary Support
+    email: support@cloudinary.com
+    url: https://support.cloudinary.com
+  termsOfService: https://cloudinary.com/tou
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  x-cld-module-context: cloud
+  x-cld-module-name: image-to-video
+servers:
+  - url: https://api.cloudinary.com/v2/video/{cloudName}
+    variables:
+      cloudName:
+        default: CLOUD_NAME
+        description: The cloud name for your product environment.
+security:
+  - basicAuth: []
+tags:
+  - name: Video Generate
+    description: Generate a video from an image and poll the generation job.
+  - name: Image To Video Prompts
+    description: Manage reusable image-to-video prompts.
+paths:
+  /image_to_video/generate:
+    post:
+      tags:
+        - Video Generate
+      summary: 'Create a video generation job'
+      description: Submits an image and prompt for video generation and returns a job you can poll for the result.
+      operationId: createVideoGenerateJob
+      x-cld-use-for-readme: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageToVideoGeneratePayload'
+            example:
+              prompt: A serene beach at sunset with gentle waves rolling in
+              image_asset_id: 0a1b2c3d4e5f60718293a4b5c6d7e8f9
+              aspect_ratio: '16:9'
+              resolution: 1080p
+              duration: 8
+              generate_audio: true
+      responses:
+        '201':
+          description: Video generation job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoGenerateWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  job_id: 550e8400e29b41d4a716446655440000
+                  status: pending
+        '400':
+          description: Bad request - validation or safety error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+  /image_to_video/generate/{jobId}:
+    parameters:
+      - in: path
+        name: jobId
+        schema:
+          type: string
+        required: true
+        description: The video generation job ID returned from the create endpoint.
+    get:
+      tags:
+        - Video Generate
+      summary: 'Poll video generation job status and result'
+      description: Returns the current status of a generation job. When the status is `completed`, the response includes the generated video's asset details and delivery URL.
+      operationId: getVideoGenerateJobStatus
+      responses:
+        '200':
+          description: Job status (pending, completed, or failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoGenerateWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  job_id: 550e8400e29b41d4a716446655440000
+                  status: completed
+                  asset_id: 9f8e7d6c5b4a30291807a6b5c4d3e2f1
+                  public_id: image-to-video/beach_sunset
+                  resource_type: video
+                  delivery_type: upload
+                  url: https://res.cloudinary.com/demo/video/upload/v1/image-to-video/beach_sunset.mp4
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+  /image_to_video/prompts:
+    get:
+      tags:
+        - Image To Video Prompts
+      summary: 'Get a list of image to video prompts'
+      operationId: getImageToVideoPrompts
+      responses:
+        '200':
+          description: A list of image to video prompts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoPromptsWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  - id: a1b2c3d4e5f6
+                    display_name: Beach sunset
+                    prompt: A serene beach at sunset with gentle waves rolling in
+                    created_at: 1781000000
+                    updated_at: 1781000000
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    post:
+      tags:
+        - Image To Video Prompts
+      summary: 'Create an image to video prompt'
+      operationId: createImageToVideoPrompt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageToVideoPromptCreatePayload'
+            example:
+              display_name: Beach sunset
+              prompt: A serene beach at sunset with gentle waves rolling in
+      responses:
+        '201':
+          description: Created image to video prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoPromptWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  id: a1b2c3d4e5f6
+                  display_name: Beach sunset
+                  prompt: A serene beach at sunset with gentle waves rolling in
+                  created_at: 1781000000
+                  updated_at: 1781000000
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+  /image_to_video/prompts/{promptId}:
+    get:
+      tags:
+        - Image To Video Prompts
+      summary: 'Get an image to video prompt'
+      operationId: getImageToVideoPrompt
+      parameters:
+        - name: promptId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: An image to video prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoPromptWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  id: a1b2c3d4e5f6
+                  display_name: Beach sunset
+                  prompt: A serene beach at sunset with gentle waves rolling in
+                  created_at: 1781000000
+                  updated_at: 1781000000
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    patch:
+      tags:
+        - Image To Video Prompts
+      summary: 'Update an image to video prompt'
+      operationId: updateImageToVideoPrompt
+      parameters:
+        - name: promptId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageToVideoPromptUpdatePayload'
+            example:
+              display_name: Beach sunset (golden hour)
+              prompt: A serene beach during golden hour with gentle waves
+      responses:
+        '200':
+          description: Updated image to video prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoPromptWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  id: a1b2c3d4e5f6
+                  display_name: Beach sunset (golden hour)
+                  prompt: A serene beach during golden hour with gentle waves
+                  created_at: 1781000000
+                  updated_at: 1781009999
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    delete:
+      tags:
+        - Image To Video Prompts
+      summary: 'Delete an image to video prompt'
+      operationId: deleteImageToVideoPrompt
+      parameters:
+        - name: promptId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  message: Prompt deleted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  schemas:
+    ImageToVideoGeneratePayload:
+      type: object
+      required:
+        - prompt
+        - image_asset_id
+      properties:
+        prompt:
+          type: string
+          description: Video description prompt.
+        image_asset_id:
+          type: string
+          description: Cloudinary asset ID of the input image for image-to-video generation.
+        aspect_ratio:
+          type: string
+          enum: [auto, '16:9', '9:16']
+          default: auto
+          description: 'Video aspect ratio. `auto` resolves based on image dimensions (defaults to landscape). `16:9` = landscape, `9:16` = portrait.'
+        resolution:
+          type: string
+          enum: [720p, 1080p]
+          default: 720p
+          description: 'Video resolution. `1080p` is only supported with a duration of 8 seconds.'
+        duration:
+          type: integer
+          enum: [4, 6, 8]
+          default: 8
+          description: Video duration in seconds.
+        generate_audio:
+          type: boolean
+          default: false
+          description: Whether to generate audio. Enabling audio consumes twice as many credits.
+        enhance_prompt:
+          type: boolean
+          nullable: true
+          default: true
+          description: Whether to let Cloudinary automatically enhance the prompt.
+        last_frame_image_asset_id:
+          type: string
+          description: Cloudinary asset ID of the last frame image.
+        reference_image_asset_ids:
+          type: array
+          items:
+            type: string
+          maxItems: 2
+          description: Cloudinary asset IDs of reference images.
+
+    ImageToVideoGenerateResponse:
+      type: object
+      required:
+        - job_id
+        - status
+      properties:
+        job_id:
+          type: string
+          example: '550e8400e29b41d4a716446655440000'
+        status:
+          type: string
+          enum: [pending, completed, failed]
+          example: pending
+        asset_id:
+          type: string
+          description: Cloudinary asset ID of the generated video (present when completed).
+        public_id:
+          type: string
+          description: Cloudinary public ID of the generated video (present when completed).
+        resource_type:
+          type: string
+          description: Cloudinary resource type of the generated video (present when completed).
+        delivery_type:
+          type: string
+          description: Cloudinary delivery type of the generated video (present when completed).
+        url:
+          type: string
+          description: HTTPS URL of the generated video (present when completed).
+        message:
+          type: string
+          description: Error message when generation has failed.
+
+    ImageToVideoGenerateWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        data:
+          $ref: '#/components/schemas/ImageToVideoGenerateResponse'
+
+    ImageToVideoPromptResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        display_name:
+          type: string
+        prompt:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+
+    ImageToVideoPromptWrappedResponse:
+      type: object
+      properties:
+        request_id:
+          type: string
+        data:
+          $ref: '#/components/schemas/ImageToVideoPromptResponse'
+
+    ImageToVideoPromptsWrappedResponse:
+      type: object
+      properties:
+        request_id:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageToVideoPromptResponse'
+
+    ImageToVideoPromptCreatePayload:
+      type: object
+      required:
+        - display_name
+        - prompt
+      properties:
+        display_name:
+          type: string
+          maxLength: 255
+        prompt:
+          type: string
+          maxLength: 1000
+
+    ImageToVideoPromptUpdatePayload:
+      type: object
+      properties:
+        display_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        prompt:
+          type: string
+          nullable: true
+          maxLength: 1000
+
+    MessageWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+
+    ErrorWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - error
+      properties:
+        request_id:
+          type: string
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        error:
+          type: object
+          properties:
+            message:
+              type: string
