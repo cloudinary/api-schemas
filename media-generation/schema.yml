@@ -1,0 +1,894 @@
+openapi: 3.0.3
+info:
+  title: Image Generation API
+  description: |
+    Use the Image Generation API to generate images from text prompts using various AI models.
+
+    The API supports Basic Authentication using your Cloudinary API Key and API Secret, which can be found on the [API Keys page](https://console.cloudinary.com/app/settings/api-keys) of your Cloudinary Console.
+    
+    **Key Features:**
+    * **Unified API**: A single interface for generating images across multiple best-in-class AI models.
+    * **Cloudinary Integration**: Generated images are automatically available for delivery, transformation, and optimization through Cloudinary's platform.
+    * **Future-proof**: Adopt new state-of-the-art models as they become available, without rebuilding your integration.
+    
+    **Supported Model Families:**
+    * **flux**: Photorealistic images (FLUX.2 Klein 9B / FLUX.2 Pro).
+    * **recraft**: Vector and illustration (Recraft V3 / Recraft V4).
+    * **gpt-image**: Campaign and marketing images (GPT Image 1 Mini / GPT Image 2).
+    * **nano-banana**: General purpose generation (Nano Banana 1 / Nano Banana 2).
+    * **ideogram**: Realism, text rendering, and artistic generation (Ideogram V4).
+
+    The Image Generation API requires the [Cloudinary Image Generation add-on](https://console.cloudinary.com/app/marketplace/details/image_generation).
+    
+    [Learn more](https://cloudinary.com/documentation/image_generation_addon)
+
+    **Note**: 
+    
+    This is an early version of our Image Generation API. As the capability grows, certain features and endpoints may be adjusted. We invite you to try it out and share your [feedback with our support team](https://support.cloudinary.com/hc/en-us/requests/new).
+
+  version: 1.0.0 # x-release-please-version
+  license:
+    name: UNLICENSED
+    url: https://cloudinary.com/tos
+  contact:
+    name: Cloudinary Support
+    url: https://support.cloudinary.com/hc/en-us/requests/new
+servers:
+  - url: https://api.cloudinary.com/v2
+tags:
+  - name: Generation
+    description: Generate images from text prompts using AI models.
+  - name: Tasks
+    description: Query the status of async generation tasks.
+security:
+  - basicAuth: []
+paths:
+  /generate/{cloud_name}/text_to_image:
+    parameters:
+      - $ref: "#/components/parameters/cloudName"
+    post:
+      tags:
+        - Generation
+      summary: Generate an image
+      description: |
+        Generate an image from a text prompt using AI models.
+        
+        The model is selected via the optional `model` object:
+        1. If `model.id` is provided, use that exact model.
+        2. Else if `model.family` (+ optional `model.tier`) is provided, resolve via the model registry; a missing tier defaults to `standard`.
+        3. If `model` is omitted, use the global default (nano-banana / standard).
+      operationId: generate_image
+      requestBody:
+        required: true
+        description: A JSON object containing the generation request parameters.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateImageRequest"
+            examples:
+              BasicExample:
+                $ref: "#/components/examples/GenerateImageBasicExample"
+              DeclarativeSizeExample:
+                $ref: "#/components/examples/GenerateImageDeclarativeSizeExample"
+              DimensionsSizeExample:
+                $ref: "#/components/examples/GenerateImageDimensionsSizeExample"
+              AsyncExample:
+                $ref: "#/components/examples/GenerateImageAsyncExample"
+      responses:
+        '200':
+          description: Image generated successfully (synchronous).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateImageResult"
+              examples:
+                Success:
+                  $ref: "#/components/examples/GenerateImageSuccessExample"
+                SuccessManagedAsset:
+                  $ref: "#/components/examples/GenerateImageManagedAssetSuccessExample"
+        '202':
+          $ref: "#/components/responses/GenerationAcceptedResponse"
+        '400':
+          $ref: "#/components/responses/BadRequestResponse"
+        '401':
+          $ref: "#/components/responses/UnauthorizedResponse"
+        '429':
+          $ref: "#/components/responses/RateLimitedResponse"
+        '500':
+          $ref: "#/components/responses/InternalServerErrorResponse"
+        '502':
+          $ref: "#/components/responses/ModelUnavailableResponse"
+  /generate/{cloud_name}/tasks/{task_id}:
+    parameters:
+      - $ref: "#/components/parameters/cloudName"
+      - in: path
+        name: task_id
+        description: The ID of the generation task.
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{1,256}$'
+        example: 053f4bde4b933c8ecef23724ecde63b667c1ea21816d56c161c7ec1df6297da4b43109625650e9edf0f42152cc4cc32c8ad57824ac75ba8e05020f827c415559ac1248076a2d72c0a73af0479cca77eb
+    get:
+      tags:
+        - Tasks
+      summary: Get a generation task
+      description: Get the status of a generation task.
+      operationId: get_generation_task_status
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Generation task status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+              examples:
+                Completed:
+                  $ref: "#/components/examples/GenerateTaskCompletedExample"
+        '400':
+          $ref: "#/components/responses/BadRequestResponse"
+        '401':
+          $ref: "#/components/responses/UnauthorizedResponse"
+        '404':
+          $ref: "#/components/responses/NotFoundResponse"
+        '429':
+          $ref: "#/components/responses/RateLimitedResponse"
+        '500':
+          $ref: "#/components/responses/InternalServerErrorResponse"
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic authentication using Cloudinary API Key and API Secret.
+  parameters:
+    cloudName:
+      in: path
+      name: cloud_name
+      description: The cloud name of your Cloudinary product environment.
+      example: your-cloud-name
+      schema:
+        type: string
+      required: true
+  responses:
+    GenerationAcceptedResponse:
+      description: Generation accepted.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/TaskResponse"
+    BadRequestResponse:
+      description: Bad request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnauthorizedResponse:
+      description: Unauthorized.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFoundResponse:
+      description: Not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RateLimitedResponse:
+      description: Rate limited.
+      content:
+        application/json:
+          schema:
+            type: object
+            title: "RateLimitedResponse"
+            required:
+              - error
+              - request_id
+            properties:
+              error:
+                $ref: '#/components/schemas/Error'
+              limits:
+                $ref: '#/components/schemas/Limits'
+              request_id:
+                type: string
+                example: 17c3b70c5096df0e77e838323abb7029
+          examples:
+            RateLimited:
+              $ref: "#/components/examples/RateLimitedExample"
+    InternalServerErrorResponse:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ModelUnavailableResponse:
+      description: Model unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    GenerateImageRequest:
+      type: object
+      description: |
+        Parameters for an image-generation request. Only `prompt` is required;
+        all other fields fall back to documented defaults.
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: The text description of the image to generate.
+          example: A photorealistic sunset over a mountain lake, 8K detail
+        model:
+          $ref: "#/components/schemas/ModelSelection"
+        image_size:
+          $ref: "#/components/schemas/ImageSize"
+        format:
+          type: string
+          enum:
+            - jpeg
+            - png
+            - webp
+          description: |
+            Desired output image format. Optional; defaults to `png` when
+            omitted. Mapped to the closest format the chosen model supports —
+            `webp` falls back to `png` on models that don't support it (e.g.
+            FLUX.2 Pro, Ideogram V4), and the request is ignored entirely by
+            models that don't expose a format option (e.g. Recraft).
+          example: png
+        target:
+          $ref: "#/components/schemas/Target"
+        seed:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: |
+            Seed for reproducible generation. Supported by most models.
+            Silently ignored by models that don't support it.
+          example: 42
+        async:
+          type: boolean
+          default: false
+          description: |
+            Whether to perform the generation asynchronously.
+            When true, the API returns immediately with a 202 and completes in the background.
+            Once complete, a webhook notification is sent to the specified URL and/or to the URLs defined in the product environment's settings.
+        notification_url:
+          type: string
+          format: uri
+          description: The webhook URL to notify when the generation is complete. Only relevant when `async` is set to true.
+          example: https://path.to/webhook
+    ModelSelection:
+      description: |
+        Selects the model, in one of two mutually exclusive forms (omit to use
+        the global default):
+          * `ModelByFamily`: `family` (+ optional `tier`); the stable-over-time
+            selector.
+          * `ModelById`: an explicit `id`, pinning one exact model.
+      oneOf:
+        - $ref: "#/components/schemas/ModelByFamily"
+        - $ref: "#/components/schemas/ModelById"
+    ModelByFamily:
+      type: object
+      title: ModelByFamily
+      description: |
+        Select a model by family and quality tier; a missing `tier` defaults to
+        `standard`.
+      additionalProperties: false
+      required:
+        - family
+      properties:
+        family:
+          type: string
+          enum:
+            - flux
+            - recraft
+            - gpt-image
+            - nano-banana
+            - ideogram
+          description: |
+            Model family:
+            * `flux`: Photorealistic images (FLUX.2 Klein 9B / FLUX.2 Pro).
+            * `recraft`: Vector and illustration (Recraft V3 / Recraft V4).
+            * `gpt-image`: Campaign and marketing images (GPT Image 1 Mini / GPT Image 2).
+            * `nano-banana`: General purpose generation (Nano Banana 1 / Nano Banana 2).
+            * `ideogram`: Realism, text rendering, and artistic generation (Ideogram V4).
+          example: flux
+        tier:
+          type: string
+          enum:
+            - standard
+            - premium
+          description: Quality tier within the family. Defaults to `standard` when omitted.
+          example: premium
+    ModelById:
+      type: object
+      title: ModelById
+      description: Pin an exact model by ID, bypassing family/tier.
+      additionalProperties: false
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - nano-banana-1
+            - nano-banana-2
+            - flux-2-klein-9b
+            - flux-2-pro
+            - recraft-v3
+            - recraft-v4
+            - gpt-image-1-mini
+            - gpt-image-2
+            - ideogram-v4-base
+            - ideogram-v4-turbo
+          description: Exact model identifier; overrides family/tier when provided.
+          example: flux-2-pro
+    ImageSize:
+      description: |
+        Desired output size, given in **one** of two mutually exclusive forms:
+
+          * `DimensionsImageSize`: `width` and `height` in pixels, for precise
+            control.
+          * `DeclarativeImageSize`: `aspect_ratio` (and an optional `resolution`
+            tier), resolved server-side to the closest size the chosen model
+            supports. This is the portable form: most providers natively accept
+            an aspect ratio plus a resolution tier rather than raw pixels.
+
+        Omit `image_size` entirely to use the model's default size.
+      oneOf:
+        - $ref: "#/components/schemas/DimensionsImageSize"
+        - $ref: "#/components/schemas/DeclarativeImageSize"
+    DimensionsImageSize:
+      type: object
+      title: DimensionsImageSize
+      description: Exact output dimensions in pixels. Both `width` and `height` are required together.
+      additionalProperties: false
+      required:
+        - width
+        - height
+      properties:
+        width:
+          type: integer
+          minimum: 64
+          maximum: 4096
+          description: Output width in pixels.
+          example: 1280
+        height:
+          type: integer
+          minimum: 64
+          maximum: 4096
+          description: Output height in pixels.
+          example: 720
+    DeclarativeImageSize:
+      type: object
+      title: DeclarativeImageSize
+      description: |
+        Declarative output size — an aspect ratio plus an optional resolution
+        tier, resolved server-side to the nearest size the model supports.
+      additionalProperties: false
+      required:
+        - aspect_ratio
+      properties:
+        aspect_ratio:
+          type: string
+          description: |
+            Output aspect ratio, width-to-height. Limited to the core ratios
+            every model supports natively.
+          enum:
+            - "1:1"
+            - "16:9"
+            - "9:16"
+            - "4:3"
+            - "3:4"
+          example: "16:9"
+        resolution:
+          type: string
+          description: |
+            Output resolution tier, measured on the longest edge. Defaults to
+            `1K` when omitted.
+            * `0.5K`: ~512 px
+            * `1K`: ~1024 px
+            * `2K`: ~2048 px
+            * `4K`: ~4096 px
+          enum:
+            - 0.5K
+            - 1K
+            - 2K
+            - 4K
+          example: 2K
+    Target:
+      description: |
+        Where to store the generated output, determined by `target_type`.
+        Optional; defaults to a `temporary` target when omitted.
+      oneOf:
+        - $ref: "#/components/schemas/ManagedAssetTarget"
+        - $ref: "#/components/schemas/TemporaryTarget"
+      discriminator:
+        propertyName: target_type
+        mapping:
+          managed_asset: "#/components/schemas/ManagedAssetTarget"
+          temporary: "#/components/schemas/TemporaryTarget"
+    ManagedAssetTarget:
+      type: object
+      description: Store the output as a permanent managed asset in your Cloudinary product environment.
+      additionalProperties: false
+      required:
+        - target_type
+      properties:
+        target_type:
+          type: string
+          enum:
+            - managed_asset
+        public_id:
+          type: string
+          description: Public ID to store the asset under. Auto-assigned when omitted.
+          example: my-public-id
+        upload_preset:
+          type: string
+          description: Upload preset to apply. Uses the product environment's default when omitted.
+          example: some-preset
+    TemporaryTarget:
+      type: object
+      description: Store the output as a short-lived asset on the upload service (the default).
+      additionalProperties: false
+      required:
+        - target_type
+      properties:
+        target_type:
+          type: string
+          enum:
+            - temporary
+    Storage:
+      description: |
+        Where a generated asset is stored — mirrors the request `target`,
+        determined by `storage_type`. `secure_url` is always present.
+      oneOf:
+        - $ref: "#/components/schemas/ManagedAssetStorage"
+        - $ref: "#/components/schemas/TemporaryStorage"
+      discriminator:
+        propertyName: storage_type
+        mapping:
+          managed_asset: "#/components/schemas/ManagedAssetStorage"
+          temporary: "#/components/schemas/TemporaryStorage"
+    ManagedAssetStorage:
+      type: object
+      description: |
+        A generated asset stored as a permanent managed asset. Reference it in
+        other Cloudinary APIs by `asset_id`, or by the
+        `resource_type` / `type` / `public_id` triple.
+      additionalProperties: false
+      required:
+        - storage_type
+        - secure_url
+        - public_id
+        - resource_type
+        - type
+        - version
+      properties:
+        storage_type:
+          type: string
+          enum:
+            - managed_asset
+        secure_url:
+          type: string
+          format: uri
+          description: The URL to fetch the generated asset.
+          example: https://res.cloudinary.com/demo/image/upload/v1/my-public-id.png
+        asset_id:
+          type: string
+          description: Cloudinary asset ID — a stable, globally-unique reference to the asset.
+          example: 0d6f8e1c2b3a4d5e6f7a8b9c0d1e2f3a
+        public_id:
+          type: string
+          description: Public ID of the stored asset.
+          example: my-public-id
+        resource_type:
+          type: string
+          description: Cloudinary resource type of the stored asset.
+          enum:
+            - image
+            - video
+            - raw
+          example: image
+        type:
+          type: string
+          description: Cloudinary delivery type of the stored asset (e.g. `upload`, `private`, `authenticated`).
+          example: upload
+        version:
+          type: integer
+          format: int64
+          description: Version of the stored asset.
+    TemporaryStorage:
+      type: object
+      description: A generated asset stored as a short-lived asset on the upload service.
+      additionalProperties: false
+      required:
+        - storage_type
+        - secure_url
+        - expires_at
+      properties:
+        storage_type:
+          type: string
+          enum:
+            - temporary
+        secure_url:
+          type: string
+          format: uri
+          description: The URL to fetch the generated asset.
+          example: https://upload-global.cloudinary.com/v2/demo/uploads/a78a2e043c2da0b50a98961d60a8b05a/stream
+        expires_at:
+          type: string
+          format: date-time
+          description: Time in UTC when secure_url stops being valid.
+          example: "2026-06-25T12:50:26Z"
+    GenerateImageResult:
+      type: object
+      description: Successful synchronous image-generation response.
+      required:
+        - request_id
+      properties:
+        data:
+          $ref: "#/components/schemas/GeneratedAssets"
+        limits:
+          $ref: "#/components/schemas/Limits"
+        request_id:
+          type: string
+          example: 17c3b70c5096df0e77e838323abb7029
+    GeneratedAssets:
+      type: object
+      description: Wrapper holding the array of generated assets.
+      required:
+        - assets
+      properties:
+        assets:
+          type: array
+          description: The generated assets. Currently a single asset is returned.
+          items:
+            $ref: "#/components/schemas/GeneratedAsset"
+    GeneratedAsset:
+      type: object
+      description: |
+        A generated asset: where it is stored (`storage`) plus its media
+        metadata. The media fields are populated once the task completes; an
+        in-progress asset carries only `storage`.
+      required:
+        - storage
+      properties:
+        storage:
+          $ref: "#/components/schemas/Storage"
+        format:
+          type: string
+          enum:
+            - png
+            - jpg
+            - webp
+          description: The image format of the stored asset.
+          example: png
+        width:
+          type: integer
+          description: The width of the generated image in pixels; zero if the model doesn't provide dimensions.
+          example: 1024
+        height:
+          type: integer
+          description: The height of the generated image in pixels; zero if the model doesn't provide dimensions.
+          example: 768
+        bytes:
+          type: integer
+          format: int64
+          description: The size of the generated image in bytes.
+          example: 2048576
+        model:
+          $ref: "#/components/schemas/Model"
+        seed:
+          type: integer
+          nullable: true
+          description: |
+            The seed used for generation. Echoes input or returns the model-generated seed.
+            Null when the model doesn't support seeds.
+          example: 42
+        created_at:
+          type: string
+          format: date-time
+          description: The timestamp when the image was generated.
+          example: "2026-04-21T14:30:00Z"
+    Model:
+      type: object
+      description: Identifies the model that produced a generation result.
+      required:
+        - family
+        - tier
+        - id
+      properties:
+        family:
+          type: string
+          description: The model family used.
+          example: flux
+        tier:
+          type: string
+          description: The quality tier used.
+          example: premium
+        id:
+          type: string
+          description: The exact model identifier used for generation.
+          example: flux-2-pro
+    TaskStatus:
+      type: string
+      description: The status of an async task.
+      enum:
+        - pending
+        - processing
+        - completed
+        - failed
+    Task:
+      type: object
+      description: |
+        An async generation task. Returned when a generation is accepted (202)
+        and from GET /tasks/{task_id} as it progresses. The `result` is filled
+        in once `status` is `completed`.
+      required:
+        - task_id
+        - status
+      properties:
+        task_id:
+          type: string
+          example: 053f4bde4b933c8ecef23724ecde63b667c1ea21816d56c161c7ec1df6297da4b43109625650e9edf0f42152cc4cc32c8ad57824ac75ba8e05020f827c415559ac1248076a2d72c0a73af0479cca77eb
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        result:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/GeneratedAssets'
+          nullable: true
+          description: |
+            The generated assets. Populated once `status` is `completed`.
+        limits:
+          $ref: '#/components/schemas/Limits'
+    TaskResponse:
+      type: object
+      description: |
+        Envelope for an async generation task — returned by the accepted (202)
+        response and by GET /tasks/{task_id}.
+      required:
+        - request_id
+      properties:
+        data:
+          $ref: '#/components/schemas/Task'
+        request_id:
+          type: string
+          example: 17c3b70c5096df0e77e838323abb7029
+      example:
+        data:
+          task_id: "053f4bde4b933c8ecef23724ecde63b667c1ea21816d56c161c7ec1df6297da4b43109625650e9edf0f42152cc4cc32c8ad57824ac75ba8e05020f827c415559ac1248076a2d72c0a73af0479cca77eb"
+          status: pending
+        request_id: "17c3b70c5096df0e77e838323abb7029"
+    ErrorResponse:
+      type: object
+      description: Wrapper for error responses; includes the error object and a request_id for correlation.
+      required:
+        - error
+        - request_id
+      properties:
+        error:
+          $ref: '#/components/schemas/Error'
+        request_id:
+          type: string
+          example: 17c3b70c5096df0e77e838323abb7029
+    Error:
+      type: object
+      description: Details of an error, including a coarse category for retry logic, a stable error code, and a human-readable message.
+      example:
+        category: user_error
+        code: MG_00001
+        message: missing parameters
+        details:
+          parameters: [param1, param2]
+      properties:
+        category:
+          $ref: "#/components/schemas/ErrorCategory"
+        code:
+          type: string
+          example: MG_00001
+        message:
+          type: string
+          example: missing parameters
+        details:
+          type: object
+          example:
+            parameters: [prompt]
+    ErrorCategory:
+      type: string
+      description: Coarse classification of an error, primarily used by clients to decide whether to retry.
+      enum:
+        - user_error
+        - auth_error
+        - server_error
+        - rate_limit_error
+    Limits:
+      type: object
+      description: Rate limit information for the account's add-on quotas.
+      properties:
+        addons_quota:
+          type: array
+          description: Per-add-on quota usage for this account.
+          items:
+            $ref: '#/components/schemas/AddonQuota'
+          example: [ { type: "image_generation", used_by_request: 1, remaining: 48, limit: 50 } ]
+    AddonQuota:
+      type: object
+      description: Quota usage for a single add-on.
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/Feature'
+        used_by_request:
+          type: integer
+          nullable: true
+          description: Number of generations consumed by this request.
+        remaining:
+          type: integer
+          nullable: true
+          description: Generations remaining in the current period.
+        limit:
+          type: integer
+          nullable: true
+          description: Maximum generations allowed per period.
+    Feature:
+      type: string
+      description: The add-on a quota applies to.
+      enum:
+        - image_generation
+  examples:
+    GenerateImageBasicExample:
+      summary: Basic image generation
+      description: Minimal request — only a prompt; falls back to the default model.
+      value:
+        prompt: A man with a hat
+    GenerateImageDeclarativeSizeExample:
+      summary: Declarative size (aspect ratio + resolution)
+      description: |
+        Portable size selection — the service resolves aspect_ratio + resolution
+        to the nearest dimensions the chosen model supports.
+      value:
+        prompt: A photorealistic sunset over a mountain lake, 8K detail
+        model:
+          family: flux
+          tier: premium
+        image_size:
+          aspect_ratio: "16:9"
+          resolution: 2K
+        target:
+          target_type: managed_asset
+          public_id: my-public-id
+          upload_preset: some-preset
+        seed: 42
+    GenerateImageDimensionsSizeExample:
+      summary: Dimensions size (explicit pixels)
+      description: Pixel-precise size selection via width + height.
+      value:
+        prompt: A photorealistic sunset over a mountain lake, 8K detail
+        model:
+          id: flux-2-pro
+        image_size:
+          width: 1280
+          height: 720
+        target:
+          target_type: temporary
+        seed: 42
+    GenerateImageAsyncExample:
+      summary: Async image generation
+      description: |
+        Request the generation be performed asynchronously. The API responds
+        202 with a task_id; the caller polls /tasks/{task_id} or waits for
+        the webhook.
+      value:
+        prompt: A futuristic city skyline at night
+        model:
+          family: gpt-image
+          tier: premium
+        async: true
+        notification_url: https://path.to/webhook
+    GenerateImageSuccessExample:
+      summary: Successful synchronous generation
+      description: The 200 response body returned for a completed sync generation.
+      value:
+        data:
+          assets:
+            - storage:
+                storage_type: temporary
+                secure_url: https://upload-global.cloudinary.com/v2/demo/uploads/a78a2e043c2da0b50a98961d60a8b05a/image.png
+                expires_at: "2026-06-25T12:50:26Z"
+              format: png
+              width: 1024
+              height: 768
+              bytes: 2048576
+              model:
+                family: flux
+                tier: premium
+                id: flux-2-pro
+              seed: 42
+              created_at: "2026-04-21T14:30:00Z"
+        limits:
+          addons_quota:
+            - type: image_generation
+              used_by_request: 1
+              remaining: 48
+              limit: 50
+        request_id: 17c3b70c5096df0e77e838323abb7029
+    GenerateImageManagedAssetSuccessExample:
+      summary: Successful synchronous generation (managed asset target)
+      description: The 200 response body when the request targeted a managed asset.
+      value:
+        data:
+          assets:
+            - storage:
+                storage_type: managed_asset
+                secure_url: https://res.cloudinary.com/demo/image/upload/v1750000000/my-public-id.png
+                asset_id: 0d6f8e1c2b3a4d5e6f7a8b9c0d1e2f3a
+                public_id: my-public-id
+                resource_type: image
+                type: upload
+                version: 1750000000
+              format: png
+              width: 1024
+              height: 768
+              bytes: 2048576
+              model:
+                family: flux
+                tier: premium
+                id: flux-2-pro
+              seed: 42
+              created_at: "2026-04-21T14:30:00Z"
+        limits:
+          addons_quota:
+            - type: image_generation
+              used_by_request: 1
+              remaining: 48
+              limit: 50
+        request_id: 17c3b70c5096df0e77e838323abb7029
+    GenerateTaskCompletedExample:
+      summary: Completed task (GET /tasks/{task_id})
+      description: A completed async task — the asset is fully populated (storage + media).
+      value:
+        data:
+          task_id: "053f4bde4b933c8ecef23724ecde63b667c1ea21816d56c161c7ec1df6297da4b43109625650e9edf0f42152cc4cc32c8ad57824ac75ba8e05020f827c415559ac1248076a2d72c0a73af0479cca77eb"
+          status: completed
+          result:
+            assets:
+              - storage:
+                  storage_type: temporary
+                  secure_url: https://upload-global.cloudinary.com/v2/demo/uploads/a78a2e043c2da0b50a98961d60a8b05a/stream
+                  expires_at: "2026-06-25T12:50:26Z"
+                format: png
+                width: 1024
+                height: 768
+                bytes: 2048576
+                model:
+                  family: flux
+                  tier: premium
+                  id: flux-2-pro
+                seed: 42
+                created_at: "2026-04-21T14:30:00Z"
+        request_id: 17c3b70c5096df0e77e838323abb7029
+    RateLimitedExample:
+      summary: 429 rate-limited response
+      description: Returned when the account has exhausted its generation quota for the period.
+      value:
+        error:
+          category: rate_limit_error
+          code: MG_00429
+          message: Daily generation limit exceeded. Limit resets at 2026-04-22T00:00:00Z
+        limits:
+          addons_quota:
+            - type: image_generation
+              used_by_request: 1
+              remaining: 0
+              limit: 50
+        request_id: 17c3b70c5096df0e77e838323abb7029
