@@ -7,3 +7,5 @@ schemas:
   - permissions
   - provisioning
   - video-live-streaming
+  - image-to-video
+  - media-generation

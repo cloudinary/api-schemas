@@ -12,6 +12,8 @@ This repository contains publicly accessible OpenAPI schemas for various APIs, e
 - **Permissions API**: Manages user permissions, roles, and related access controls.
 - **Provisioning API**: Handles resource provisioning, management, and related tasks.
 - **Video Live Streaming API**: Enables streaming functionalities including live broadcasts and stream management.
+- **Image to Video API**: Generates videos from images using AI based on a source image and a text prompt, and manages reusable prompts. _(Beta)_
+- **Image Generation API**: Generates images from text prompts across multiple AI model families (FLUX, Recraft, GPT Image, Nano Banana, Ideogram), with generated assets available through Cloudinary for delivery and transformation.
 
 ## Tools
 
