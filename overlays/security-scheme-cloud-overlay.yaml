@@ -8,6 +8,12 @@ actions:
       cloudinaryAuth: []
   - target: $["security"][0]["basicAuth"]
     remove: true
+  # per-operation security that still references basicAuth (no-op when none exist)
+  - target: $.paths.*.*.security[?(@.basicAuth)]
+    update:
+      cloudinaryAuth: []
+  - target: $.paths.*.*.security[?(@.basicAuth)].basicAuth
+    remove: true
   - target: $["components"]["securitySchemes"]
     update:
       cloudinaryAuth:

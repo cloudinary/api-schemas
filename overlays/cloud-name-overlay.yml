@@ -3,6 +3,17 @@ info:
   title: Cloudinary signature based authentication modifications
   version: 0.0.0
 actions:
+  # Seed x-speakeasy-globals so schemas without one don't no-op the update below.
+  # (merge update — harmless for schemas that already define it)
+  - target: $
+    update:
+      x-speakeasy-globals:
+        parameters: []
+  # Drop a pre-existing cloudName-named component + its refs (media-generation variant).
+  - target: $.paths.*.parameters[?(@['$ref']=='#/components/parameters/cloudName')]
+    remove: true
+  - target: $.components.parameters.cloudName
+    remove: true
   - target: $.components
     update:
       parameters:
