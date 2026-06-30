@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/CloudinaryLtd/public-interfaces/compare/media-generation-api-v1.0.0...media-generation-api-v1.0.1) (2026-06-30)
+
+
+### Bug Fixes
+
+* **media-generation-api:** Mark used_by_request, remaining and limit as required in AddonQuota ([301a7dd](https://github.com/CloudinaryLtd/public-interfaces/commit/301a7ddee316f75e5af765e8ce588a00eab1641e))
+
 ## [1.0.0](https://github.com/CloudinaryLtd/public-interfaces/compare/media-generation-api-v1.0.0...media-generation-api-v1.0.0) (2026-06-28)
 
 
