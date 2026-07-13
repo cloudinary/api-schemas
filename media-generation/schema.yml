@@ -26,7 +26,7 @@ info:
     
     This is an early version of our Image Generation API. As the capability grows, certain features and endpoints may be adjusted. We invite you to try it out and share your [feedback with our support team](https://support.cloudinary.com/hc/en-us/requests/new).
 
-  version: 1.0.1 # x-release-please-version
+  version: 1.0.2 # x-release-please-version
   license:
     name: UNLICENSED
     url: https://cloudinary.com/tos
@@ -406,7 +406,7 @@ components:
     Target:
       description: |
         Where to store the generated output, determined by `target_type`.
-        Optional; defaults to a `temporary` target when omitted.
+        Optional; defaults to a `managed_asset` target when omitted.
       oneOf:
         - $ref: "#/components/schemas/ManagedAssetTarget"
         - $ref: "#/components/schemas/TemporaryTarget"
@@ -417,7 +417,7 @@ components:
           temporary: "#/components/schemas/TemporaryTarget"
     ManagedAssetTarget:
       type: object
-      description: Store the output as a permanent managed asset in your Cloudinary product environment.
+      description: Store the output as a permanent managed asset in your Cloudinary product environment (the default).
       additionalProperties: false
       required:
         - target_type
@@ -436,7 +436,7 @@ components:
           example: some-preset
     TemporaryTarget:
       type: object
-      description: Store the output as a short-lived asset on the upload service (the default).
+      description: Store the output as a short-lived asset on the upload service.
       additionalProperties: false
       required:
         - target_type

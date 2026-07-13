@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/CloudinaryLtd/public-interfaces/compare/media-generation-api-v1.0.1...media-generation-api-v1.0.2) (2026-07-13)
+
+
+### Bug Fixes
+
+* **media-generation-api:** Document managed_asset as the default target ([0d5baad](https://github.com/CloudinaryLtd/public-interfaces/commit/0d5baad41461ee5cdd921e7357baf10660564f56))
+
 ## [1.0.1](https://github.com/CloudinaryLtd/public-interfaces/compare/media-generation-api-v1.0.0...media-generation-api-v1.0.1) (2026-06-30)
 
 
