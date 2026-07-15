@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/CloudinaryLtd/public-interfaces/compare/media-generation-api-v1.0.2...media-generation-api-v1.1.0) (2026-07-15)
+
+
+### Features
+
+* **media-generation-api:** Add support for OAuth2 security scheme ([4b5e01e](https://github.com/CloudinaryLtd/public-interfaces/commit/4b5e01e63815918cb85bb5445385ea9a3c081a2d))
+
+
+### Bug Fixes
+
+* **media-generation-api:** Use global security in endpoints ([558d87c](https://github.com/CloudinaryLtd/public-interfaces/commit/558d87c78814846032f5a7f9e584a2446c16a325))
+
 ## [1.0.2](https://github.com/CloudinaryLtd/public-interfaces/compare/media-generation-api-v1.0.1...media-generation-api-v1.0.2) (2026-07-13)
 
 
