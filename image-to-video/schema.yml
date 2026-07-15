@@ -1,13 +1,13 @@
 openapi: 3.0.3
 info:
-  title: Image to Video API
+  title: Image to Video API (Beta)
   description: |
     Use the Image to Video API to generate videos from images using AI, and to manage reusable prompts. You provide a source image and a text prompt describing the motion or scene, and Cloudinary generates a video and saves it to your product environment. See the [Image to Video Add-on](https://cloudinary.com/documentation/image_to_video_addon) guide for the Console-based workflow.
 
       The API supports Basic Authentication using your Cloudinary API Key and API Secret (which can be found in the API Keys page of your [Cloudinary Console](https://console.cloudinary.com/app/settings/api-keys)).
 
-    > **Note:** The Image to Video API is in **Beta** and isn't yet in its final form. Endpoints, parameters, and response payloads may change before the general access release.
-  version: 0.1.1 # x-release-please-version
+    **Note**: The Image to Video API is currently in development and is available as a Public Beta — endpoints, parameters, and response payloads may change before the general access release. We value your feedback, so please feel free to [share any thoughts with us](https://support.cloudinary.com/hc/en-us/requests/new).
+  version: 0.1.2 # x-release-please-version
   contact:
     name: Cloudinary Support
     email: support@cloudinary.com
@@ -42,6 +42,7 @@ paths:
       x-cld-use-for-readme: true
       requestBody:
         required: true
+        description: A JSON object with the source image, prompt, and generation options.
         content:
           application/json:
             schema:
@@ -95,7 +96,7 @@ paths:
     get:
       tags:
         - Video Generate
-      summary: 'Poll video generation job status and result'
+      summary: 'Poll a video generation job'
       description: Returns the current status of a generation job. When the status is `completed`, the response includes the generated video's asset details and delivery URL.
       operationId: getVideoGenerateJobStatus
       responses:
@@ -139,6 +140,7 @@ paths:
       tags:
         - Image To Video Prompts
       summary: 'Get a list of image to video prompts'
+      description: Returns all saved image-to-video prompts for your product environment.
       operationId: getImageToVideoPrompts
       responses:
         '200':
@@ -177,8 +179,10 @@ paths:
       tags:
         - Image To Video Prompts
       summary: 'Create an image to video prompt'
+      description: Saves a reusable prompt with a display name so you can apply it to future generations.
       operationId: createImageToVideoPrompt
       requestBody:
+        description: A JSON object with the prompt text and its display name.
         content:
           application/json:
             schema:
@@ -225,11 +229,13 @@ paths:
       tags:
         - Image To Video Prompts
       summary: 'Get an image to video prompt'
+      description: Returns a single saved prompt by its ID.
       operationId: getImageToVideoPrompt
       parameters:
         - name: promptId
           in: path
           required: true
+          description: The ID of the image-to-video prompt.
           schema:
             type: string
       responses:
@@ -275,14 +281,17 @@ paths:
       tags:
         - Image To Video Prompts
       summary: 'Update an image to video prompt'
+      description: Updates the display name and/or prompt text of a saved prompt.
       operationId: updateImageToVideoPrompt
       parameters:
         - name: promptId
           in: path
           required: true
+          description: The ID of the image-to-video prompt.
           schema:
             type: string
       requestBody:
+        description: A JSON object with the fields to update (display name and/or prompt text).
         content:
           application/json:
             schema:
@@ -333,11 +342,13 @@ paths:
       tags:
         - Image To Video Prompts
       summary: 'Delete an image to video prompt'
+      description: Permanently deletes a saved prompt by its ID.
       operationId: deleteImageToVideoPrompt
       parameters:
         - name: promptId
           in: path
           required: true
+          description: The ID of the image-to-video prompt.
           schema:
             type: string
       responses:
@@ -381,6 +392,7 @@ components:
     basicAuth:
       type: http
       scheme: basic
+      description: Basic authentication using your Cloudinary API Key and API Secret.
   schemas:
     ImageToVideoGeneratePayload:
       type: object
@@ -515,9 +527,11 @@ components:
         display_name:
           type: string
           maxLength: 255
+          description: A human-readable name for the prompt.
         prompt:
           type: string
           maxLength: 1000
+          description: The prompt text describing the motion or scene to generate.
 
     ImageToVideoPromptUpdatePayload:
       type: object
@@ -526,10 +540,12 @@ components:
           type: string
           nullable: true
           maxLength: 255
+          description: A human-readable name for the prompt.
         prompt:
           type: string
           nullable: true
           maxLength: 1000
+          description: The prompt text describing the motion or scene to generate.
 
     MessageWrappedResponse:
       type: object
