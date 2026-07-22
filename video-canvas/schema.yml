@@ -1,0 +1,621 @@
+openapi: 3.0.3
+info:
+  title: Video Canvas API (Beta)
+  description: |
+    Use the Video Canvas API to create and manage applets. An applet is a visual, node-based video transformation pipeline, defined by its inputs, blocks, connections, and outputs; Cloudinary compiles it into a [named transformation](https://cloudinary.com/documentation/video_named_transformations) that you can deliver like any other transformation. See the [Video Canvas](https://cloudinary.com/documentation/video_canvas) guide for the Console-based workflow.
+
+      The API supports Basic Authentication using your Cloudinary API Key and API Secret (which can be found in the API Keys page of your [Cloudinary Console](https://console.cloudinary.com/app/settings/api-keys)).
+
+    **Note**: The Video Canvas API is currently in **Beta**. There may be minor changes to parameter names or other implementation details before the general access release. We invite you to try it out. We would appreciate any feedback via our [support team](https://support.cloudinary.com/hc/en-us/requests/new).
+  version: 0.1.1 # x-release-please-version
+  contact:
+    name: Cloudinary Support
+    email: support@cloudinary.com
+    url: https://support.cloudinary.com
+  termsOfService: https://cloudinary.com/tou
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  x-cld-module-context: cloud
+  x-cld-module-name: video-canvas
+servers:
+  - url: https://api.cloudinary.com/v2/video/{cloudName}
+    variables:
+      cloudName:
+        default: CLOUD_NAME
+        description: The cloud name for your product environment.
+security:
+  - basicAuth: []
+tags:
+  - name: Video Canvas
+    description: Create and manage Video Canvas applets.
+paths:
+  /video_canvas/applets:
+    get:
+      tags:
+        - Video Canvas
+      summary: 'List applets'
+      description: Returns the account's saved Video Canvas applets as summaries, without their inputs, blocks, connections, or outputs.
+      operationId: listVideoCanvasApplets
+      responses:
+        '200':
+          description: A list of Video Canvas applets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoCanvasAppletsWrappedResponse'
+        '401':
+          description: Authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    post:
+      tags:
+        - Video Canvas
+      summary: 'Create an applet'
+      description: Creates an applet from its content (inputs, blocks, connections, and outputs). Cloudinary compiles the action blocks into a named transformation and returns the stored applet.
+      operationId: createVideoCanvasApplet
+      x-cld-use-for-readme: true
+      requestBody:
+        required: true
+        description: The applet content to create.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoCanvasAppletContentPayload'
+      responses:
+        '201':
+          description: The created Video Canvas applet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoCanvasAppletDetailsWrappedResponse'
+        '400':
+          description: The applet could not be compiled into a valid transformation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /video_canvas/applets/{appletId}:
+    get:
+      tags:
+        - Video Canvas
+      summary: 'Get an applet'
+      description: Returns a single applet with its full content, including its inputs, blocks, connections, and outputs.
+      operationId: getVideoCanvasApplet
+      parameters:
+        - name: appletId
+          in: path
+          required: true
+          description: The server-generated id of the applet.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A Video Canvas applet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoCanvasAppletDetailsWrappedResponse'
+        '401':
+          description: Authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No applet exists with the given id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    put:
+      tags:
+        - Video Canvas
+      summary: "Replace an applet's content"
+      description: Replaces the full content of an existing applet and recompiles its backing named transformation.
+      operationId: updateVideoCanvasApplet
+      parameters:
+        - name: appletId
+          in: path
+          required: true
+          description: The server-generated id of the applet.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: The new applet content.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoCanvasAppletContentPayload'
+      responses:
+        '200':
+          description: The updated Video Canvas applet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoCanvasAppletDetailsWrappedResponse'
+        '400':
+          description: The applet could not be compiled into a valid transformation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No applet exists with the given id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    delete:
+      tags:
+        - Video Canvas
+      summary: 'Delete an applet'
+      description: Deletes an applet and its stored content.
+      operationId: deleteVideoCanvasApplet
+      parameters:
+        - name: appletId
+          in: path
+          required: true
+          description: The server-generated id of the applet.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The applet was deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+        '401':
+          description: Authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No applet exists with the given id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic authentication using your Cloudinary API Key and API Secret.
+  schemas:
+    VideoCanvasInputPayload:
+      type: object
+      description: A declared parameter of the applet. Its id can be referenced by the serializer inline as `$<id>`.
+      required:
+        - id
+        - kind
+        - state
+      properties:
+        id:
+          type: string
+          description: Client-supplied id. Must match `^[a-zA-Z_][a-zA-Z0-9_]*$` and be at most 64 characters.
+          example: source
+        kind:
+          type: string
+          description: The value type of the input.
+          enum: [video, image, text]
+          example: video
+        state:
+          type: string
+          description: How the caller supplies the value. `required` means the caller must provide it, `optional` uses `value` as an overridable default, and `hidden` bakes `value` in and does not expose it to callers.
+          enum: [required, optional, hidden]
+          example: required
+        value:
+          type: string
+          description: The default (for `optional`) or fixed (for `hidden`) value.
+        label:
+          type: string
+          description: A human-readable label for the input.
+          example: Source video
+    VideoCanvasBlockPayload:
+      type: object
+      description: |
+        A node on the canvas. Most blocks are action groups; a kind ending in
+        `_input` or `_output` marks a boundary block, and `preview_node` marks a
+        preview tap.
+      required:
+        - id
+        - kind
+      properties:
+        id:
+          type: string
+          description: Client-supplied id, unique within the applet.
+          example: speed
+        kind:
+          type: string
+          description: |
+            Either a special type or the name of a group of actions, and it
+            determines how `content` is read. Special types: a kind ending in
+            `_input` or `_output` is a boundary block (content is an
+            `{"input":...}`/`{"output":...}` reference) and `preview_node` is a
+            preview tap (no content). Any other value is an action group whose
+            content is an array of serializer actions; the exact string (e.g.
+            `group`) only names the actions for the UI and has no backend role
+            beyond that grouping.
+          example: group
+        content:
+          description: |
+            For an action group, an ordered array of serializer action items
+            (opaque to this service), e.g. `[{"actionType":"scale","dimensions":{"width":200}}]`.
+            The groups are concatenated in connection order and encoded into a
+            Cloudinary transformation. The action item format (actionType and its
+            fields) is defined by the JSON Schema at
+            https://production-transformations-bff.cloudinary.com/schemas/transformation.json.
+            For an input boundary block (kind ending in `_input`) it references a
+            declared input (`{"input":"<inputId>"}`); for an output boundary block
+            (kind ending in `_output`) a declared output (`{"output":"<outputId>"}`).
+          example:
+            - { actionType: scale, dimensions: { width: 200 } }
+            - { actionType: blur, strength: 500 }
+        metadata:
+          type: object
+          description: Editor state; must contain `position_x` and `position_y`.
+    VideoCanvasConnectionPayload:
+      type: object
+      description: |
+        A directed edge between two block ports. Endpoints reference blocks by
+        their client-supplied id. Connections define the order in which action
+        groups are applied.
+      required:
+        - id
+        - source_block_id
+        - source_port_id
+        - target_block_id
+        - target_port_id
+      properties:
+        id:
+          type: string
+          description: Client-supplied id, unique within the applet.
+          example: c1
+        source_block_id:
+          type: string
+          description: Client-supplied id of the source block.
+          example: in
+        source_port_id:
+          type: string
+          description: The output port on the source block.
+          example: out
+        target_block_id:
+          type: string
+          description: Client-supplied id of the target block.
+          example: speed
+        target_port_id:
+          type: string
+          description: The input port on the target block.
+          example: in
+    VideoCanvasOutputPayload:
+      type: object
+      description: A declared result of the applet.
+      required:
+        - id
+        - kind
+      properties:
+        id:
+          type: string
+          description: Client-supplied id, unique within the applet.
+          example: result
+        kind:
+          type: string
+          description: The type of the result.
+          enum: [image, video, video_player, raw]
+          example: video
+        label:
+          type: string
+          description: A human-readable label for the output.
+          example: Scaled video
+    VideoCanvasAppletContentPayload:
+      type: object
+      description: |
+        The full content of a Video Canvas applet: its inputs, blocks,
+        connections, and outputs. The blocks are ordered by the connections and
+        their action-group content is compiled into a Cloudinary named
+        transformation.
+      required:
+        - name
+        - blocks
+      example:
+        name: Scale to 200px
+        description: Downscale the source video
+        inputs:
+          - { id: source, kind: video, state: required, label: Source video }
+        blocks:
+          - id: in
+            kind: video_input
+            content: { input: source }
+            metadata: { position_x: 0, position_y: 0 }
+          - id: speed
+            kind: group
+            content:
+              - { actionType: scale, dimensions: { width: 200 } }
+            metadata: { position_x: 200, position_y: 0 }
+          - id: out
+            kind: video_output
+            content: { output: result }
+            metadata: { position_x: 400, position_y: 0 }
+        connections:
+          - { id: c1, source_block_id: in, source_port_id: out, target_block_id: speed, target_port_id: in }
+          - { id: c2, source_block_id: speed, source_port_id: out, target_block_id: out, target_port_id: in }
+        outputs:
+          - { id: result, kind: video, label: Scaled video }
+      properties:
+        name:
+          type: string
+          description: A display name for the applet.
+          example: Scale to 200px
+        description:
+          type: string
+          description: An optional description of what the applet does.
+        inputs:
+          type: array
+          description: The applet's declared parameters.
+          items:
+            $ref: '#/components/schemas/VideoCanvasInputPayload'
+        blocks:
+          type: array
+          description: The nodes on the canvas.
+          items:
+            $ref: '#/components/schemas/VideoCanvasBlockPayload'
+        connections:
+          type: array
+          description: The directed edges between block ports.
+          items:
+            $ref: '#/components/schemas/VideoCanvasConnectionPayload'
+        outputs:
+          type: array
+          description: The applet's declared results.
+          items:
+            $ref: '#/components/schemas/VideoCanvasOutputPayload'
+    VideoCanvasAppletResponse:
+      type: object
+      description: A summary of a saved applet, without its content.
+      properties:
+        id:
+          type: string
+          description: The server-generated, immutable applet id.
+        name:
+          type: string
+          description: The applet's display name.
+        description:
+          type: string
+          description: The applet's description.
+        named_transformation:
+          type: string
+          description: The name of the named transformation that backs the applet.
+        created_at:
+          type: integer
+          format: int64
+          description: Creation time, as a Unix timestamp in seconds.
+        updated_at:
+          type: integer
+          format: int64
+          description: Last-modified time, as a Unix timestamp in seconds.
+    VideoCanvasBlockResponse:
+      type: object
+      description: A node on the canvas, as returned in a response.
+      properties:
+        id:
+          type: string
+          description: The client-supplied block id.
+        kind:
+          type: string
+          description: The block kind (see the block payload for how kind is interpreted).
+        content:
+          description: Block content; mirrors the payload shape (an action-group array or a boundary reference object).
+        metadata:
+          type: object
+          description: Editor state, including the block's position.
+    VideoCanvasConnectionResponse:
+      type: object
+      description: A directed edge between two block ports, as returned in a response.
+      properties:
+        id:
+          type: string
+          description: The client-supplied connection id.
+        source_block_id:
+          type: string
+          description: The client-supplied id of the source block.
+        source_port_id:
+          type: string
+          description: The output port on the source block.
+        target_block_id:
+          type: string
+          description: The client-supplied id of the target block.
+        target_port_id:
+          type: string
+          description: The input port on the target block.
+    VideoCanvasInputResponse:
+      type: object
+      description: A declared parameter of the applet, as returned in a response.
+      properties:
+        id:
+          type: string
+          description: The client-supplied input id.
+        kind:
+          type: string
+          description: The value type of the input.
+          enum: [video, image, text]
+        state:
+          type: string
+          description: How the caller supplies the value.
+          enum: [required, optional, hidden]
+        value:
+          type: string
+          description: The default or fixed value, if any.
+        label:
+          type: string
+          description: A human-readable label for the input.
+    VideoCanvasOutputResponse:
+      type: object
+      description: A declared result of the applet, as returned in a response.
+      properties:
+        id:
+          type: string
+          description: The client-supplied output id.
+        kind:
+          type: string
+          description: The type of the result.
+          enum: [image, video, video_player, raw]
+        label:
+          type: string
+          description: A human-readable label for the output.
+    VideoCanvasAppletDetailsResponse:
+      type: object
+      description: A saved applet with its full content.
+      properties:
+        id:
+          type: string
+          description: The server-generated, immutable applet id.
+        name:
+          type: string
+          description: The applet's display name.
+        description:
+          type: string
+          description: The applet's description.
+        named_transformation:
+          type: string
+          description: The name of the named transformation that backs the applet.
+        created_at:
+          type: integer
+          format: int64
+          description: Creation time, as a Unix timestamp in seconds.
+        updated_at:
+          type: integer
+          format: int64
+          description: Last-modified time, as a Unix timestamp in seconds.
+        inputs:
+          type: array
+          description: The applet's declared parameters.
+          items:
+            $ref: '#/components/schemas/VideoCanvasInputResponse'
+        blocks:
+          type: array
+          description: The nodes on the canvas.
+          items:
+            $ref: '#/components/schemas/VideoCanvasBlockResponse'
+        connections:
+          type: array
+          description: The directed edges between block ports.
+          items:
+            $ref: '#/components/schemas/VideoCanvasConnectionResponse'
+        outputs:
+          type: array
+          description: The applet's declared results.
+          items:
+            $ref: '#/components/schemas/VideoCanvasOutputResponse'
+    VideoCanvasAppletDetailsWrappedResponse:
+      type: object
+      description: A response envelope wrapping a single applet with its content.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        data:
+          $ref: '#/components/schemas/VideoCanvasAppletDetailsResponse'
+    VideoCanvasAppletsWrappedResponse:
+      type: object
+      description: A response envelope wrapping a list of applet summaries.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        data:
+          type: array
+          description: The list of applet summaries.
+          items:
+            $ref: '#/components/schemas/VideoCanvasAppletResponse'
+    MessageWrappedResponse:
+      type: object
+      description: A response envelope wrapping a simple message.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        data:
+          type: object
+          description: The message payload.
+          properties:
+            message:
+              type: string
+              description: A human-readable message.
+    ErrorWrappedResponse:
+      type: object
+      description: A response envelope returned when a request fails.
+      required:
+        - request_id
+        - error
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        error:
+          type: object
+          description: Details about the error.
+          properties:
+            message:
+              type: string
+              description: A human-readable error message.
