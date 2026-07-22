@@ -1,0 +1,10 @@
+overlay: 1.0.0
+info:
+  title: Add info.description for Environment Configuration README summary
+  version: 1.0.0
+
+actions:
+  # Populate info.description so Speakeasy renders the README `## Summary` section
+  - target: "$.info"
+    update:
+      description: The Cloudinary Environment Configuration MCP Server connects AI assistants (including Claude Desktop, Cursor, Gemini, Windsurf, and VS Code) directly to your Cloudinary account. Use natural language to manage named transformations, create and update upload presets, configure adaptive streaming profiles for video delivery, set up event-driven webhooks (triggers), and manage upload folder mappings. Designed for developers who want to control Cloudinary environment configuration without leaving their AI-powered coding environment.
