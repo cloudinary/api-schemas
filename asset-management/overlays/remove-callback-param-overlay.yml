@@ -1,0 +1,30 @@
+overlay: 1.0.0
+info:
+  title: Remove the deprecated callback parameter
+  version: 0.0.1
+actions:
+  # `callback` makes the Upload API 302-redirect to an arbitrary URL, and the
+  # generated SDK's fetch follows redirects, turning the MCP server into an
+  # SSRF proxy. The parameter is deprecated, browser-form-only, and already
+  # force-disabled for accounts created since July 2025 — no MCP client has a
+  # legitimate use for it.
+  - target: $.components.schemas.upload_base_parameters.properties.callback
+    remove: true
+  # Index-independent: signature-optional-overlay removes the signature_parameters
+  # $ref from this allOf, so the inline object member shifts from [1] to [0].
+  # Match it by shape instead of position.
+  - target: $.components.schemas.destroy_by_asset_id_request.allOf[?(@.type=='object')].properties.callback
+    remove: true
+
+  # Response side of the same feature: with `callback` gone from the request
+  # schema the 302 can never fire, so drop the declared redirect responses and
+  # the html_redirect body schema they are the only consumers of. Leaving them
+  # would keep "302 with an HTML body" modelled as a sanctioned SDK outcome.
+  - target: $.paths["/v1_1/{cloud_name}/{resource_type}/upload"].post.responses["302"]
+    remove: true
+  - target: $.paths["/v1_1/{cloud_name}/upload"].post.responses["302"]
+    remove: true
+  - target: $.paths["/v1_1/{cloud_name}/{resource_type}/upload_chunked"].post.responses["302"]
+    remove: true
+  - target: $.components.schemas.html_redirect
+    remove: true
