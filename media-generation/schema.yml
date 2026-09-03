@@ -26,11 +26,7 @@ info:
     
     [Learn more](https://cloudinary.com/documentation/image_generation_addon)
 
-    **Note**: 
-    
-    This is an early version of our Image Generation API. As the capability grows, certain features and endpoints may be adjusted. We invite you to try it out and share your [feedback with our support team](https://support.cloudinary.com/hc/en-us/requests/new).
-
-  version: 1.2.0 # x-release-please-version
+  version: 1.2.1 # x-release-please-version
   license:
     name: UNLICENSED
     url: https://cloudinary.com/tos
