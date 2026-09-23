@@ -9,3 +9,5 @@ schemas:
   - video-live-streaming
   - image-to-video
   - media-generation
+  - ai-video-analysis
+  - video-canvas

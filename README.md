@@ -14,6 +14,8 @@ This repository contains publicly accessible OpenAPI schemas for various APIs, e
 - **Video Live Streaming API**: Enables streaming functionalities including live broadcasts and stream management.
 - **Image to Video API**: Generates videos from images using AI based on a source image and a text prompt, and manages reusable prompts. _(Beta)_
 - **Image Generation API**: Generates images from text prompts across multiple AI model families (FLUX, Recraft, GPT Image, Nano Banana, Ideogram), with generated assets available through Cloudinary for delivery and transformation.
+- **AI Video Analysis API**: Generates visual transcriptions of stored videos (timestamped, natural-language descriptions of on-screen content) via asynchronous jobs, optionally guided by a prompt. _(Beta)_
+- **Video Canvas API**: Creates and manages applets: node-based video transformation pipelines that compile into named transformations for delivery. _(Beta)_
 
 ## Tools
 
