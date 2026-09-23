@@ -7,7 +7,7 @@ info:
       The API supports Basic Authentication using your Cloudinary API Key and API Secret (which can be found in the API Keys page of your [Cloudinary Console](https://console.cloudinary.com/app/settings/api-keys)).
 
     **Note**: The Video Canvas API is currently in **Beta**. There may be minor changes to parameter names or other implementation details before the general access release. We invite you to try it out. We would appreciate any feedback via our [support team](https://support.cloudinary.com/hc/en-us/requests/new).
-  version: 0.1.1 # x-release-please-version
+  version: 0.1.2 # x-release-please-version
   contact:
     name: Cloudinary Support
     email: support@cloudinary.com
@@ -189,7 +189,9 @@ paths:
       tags:
         - Video Canvas
       summary: 'Delete an applet'
-      description: Deletes an applet and its stored content.
+      description: Deletes an applet and its stored content. The named transformation that backs the applet
+        isn't deleted, so delivery URLs and SDK calls that reference it keep working. To stop delivering the
+        transformation, delete the named transformation separately.
       operationId: deleteVideoCanvasApplet
       parameters:
         - name: appletId
