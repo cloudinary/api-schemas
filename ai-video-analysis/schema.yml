@@ -1,0 +1,222 @@
+openapi: 3.0.3
+info:
+  title: AI Video Analysis API (Beta)
+  description: |
+    Use the AI Video Analysis API to generate a visual transcription of a video: a sequence of timestamped, natural-language descriptions of what's visible on screen. You submit a stored video asset, optionally guide the analysis with a prompt, and poll the asynchronous job until the generated visual transcript file is ready. See the [AI Video Analysis](https://cloudinary.com/documentation/ai_video_analysis) guide for the full workflow.
+
+      The API supports Basic Authentication using your Cloudinary API Key and API Secret (which can be found in the API Keys page of your [Cloudinary Console](https://console.cloudinary.com/app/settings/api-keys)).
+
+    **Note**: The AI Video Analysis API is currently in **Beta**. There may be minor changes to parameter names or other implementation details before the general access release. We invite you to try it out. We would appreciate any feedback via our [support team](https://support.cloudinary.com/hc/en-us/requests/new).
+  version: 0.1.1 # x-release-please-version
+  contact:
+    name: Cloudinary Support
+    email: support@cloudinary.com
+    url: https://support.cloudinary.com
+  termsOfService: https://cloudinary.com/tou
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  x-cld-module-context: cloud
+  x-cld-module-name: ai-video-analysis
+servers:
+  - url: https://api.cloudinary.com/v2/video/{cloudName}
+    variables:
+      cloudName:
+        default: CLOUD_NAME
+        description: The cloud name for your product environment.
+security:
+  - basicAuth: []
+tags:
+  - name: AI Video Analysis
+    description: Generate a visual transcription of a video and poll the analysis job.
+paths:
+  /ai_video_analysis:
+    post:
+      tags:
+        - AI Video Analysis
+      summary: 'Create an AI Video Analysis job'
+      description: Submits a stored video asset for visual analysis and returns a job you can poll for the result.
+      operationId: createAIVideoAnalysisJob
+      x-cld-use-for-readme: true
+      requestBody:
+        required: true
+        description: A JSON object with the video asset to analyze and optional analysis options.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIVideoAnalysisPayload'
+            example:
+              video_asset_id: 2fb8263411604d13a5d33e7623edc750
+              visual_transcription_prompt: focus on describing colors
+      responses:
+        '201':
+          description: AI Video Analysis job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIVideoAnalysisWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  job_id: 550e8400e29b41d4a716446655440000
+                  status: pending
+        '400':
+          description: Bad request - validation or safety error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+
+  /ai_video_analysis/{jobId}:
+    parameters:
+      - in: path
+        name: jobId
+        schema:
+          type: string
+        required: true
+        description: The AI Video Analysis job ID returned from the create endpoint.
+    get:
+      tags:
+        - AI Video Analysis
+      summary: 'Poll an AI Video Analysis job'
+      description: Returns the current status of an analysis job. When the status is `completed`, the response includes the generated visual transcript file's asset details and delivery URL.
+      operationId: getAIVideoAnalysisJobStatus
+      responses:
+        '200':
+          description: Job status (pending, completed, or failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIVideoAnalysisWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  job_id: 550e8400e29b41d4a716446655440000
+                  status: completed
+                  visual_transcription:
+                    asset_id: 9f8e7d6c5b4a30291807a6b5c4d3e2f1
+                    public_id: samples/sea-turtle.visual.transcript
+                    resource_type: raw
+                    delivery_type: upload
+                    url: https://res.cloudinary.com/demo/raw/upload/v1/samples/sea-turtle.visual.transcript
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic authentication using your Cloudinary API Key and API Secret.
+  schemas:
+    AIVideoAnalysisPayload:
+      type: object
+      required:
+        - video_asset_id
+      properties:
+        video_asset_id:
+          type: string
+          description: Cloudinary asset ID of the input video to analyze.
+        visual_transcription_prompt:
+          type: string
+          description: 'A natural-language instruction that guides the description style or focus, for example `focus on describing colors`. If omitted, a default prompt is used.'
+
+    AIVideoAnalysisResponse:
+      type: object
+      required:
+        - job_id
+        - status
+      properties:
+        job_id:
+          type: string
+          description: Unique identifier of the analysis job, used to poll for the result.
+          example: '550e8400e29b41d4a716446655440000'
+        status:
+          type: string
+          enum: [pending, completed, failed]
+          description: Current status of the analysis job.
+          example: pending
+        visual_transcription:
+          $ref: '#/components/schemas/AIVideoAnalysisVisualTranscription'
+        message:
+          type: string
+          description: Error message when the analysis has failed.
+
+    AIVideoAnalysisVisualTranscription:
+      type: object
+      nullable: true
+      description: Details of the generated visual transcript file, stored as a raw asset in your product environment (present when the status is `completed`).
+      properties:
+        asset_id:
+          type: string
+          description: Cloudinary asset ID of the visual transcript file.
+        public_id:
+          type: string
+          description: Cloudinary public ID of the visual transcript file.
+        resource_type:
+          type: string
+          description: Cloudinary resource type of the visual transcript file.
+        delivery_type:
+          type: string
+          description: Cloudinary delivery type of the visual transcript file.
+        url:
+          type: string
+          description: HTTPS URL of the visual transcript file.
+
+    AIVideoAnalysisWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: Unique identifier of the API request, useful for support and debugging.
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        data:
+          $ref: '#/components/schemas/AIVideoAnalysisResponse'
+
+    ErrorWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - error
+      properties:
+        request_id:
+          type: string
+          description: Unique identifier of the API request, useful for support and debugging.
+          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+        error:
+          type: object
+          description: Details of the error that occurred.
+          properties:
+            message:
+              type: string
+              description: Human-readable description of the error.
