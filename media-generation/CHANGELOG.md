@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 (2026-09-24)
+
+
+### Features
+
+* **media-generation:** Add 26 models
+* **media-generation:** Add the auto model-selection form
+
 ## 1.2.1 (2026-09-03)
 
 

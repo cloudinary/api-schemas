@@ -15,18 +15,22 @@ info:
     * **Cloudinary Integration**: Generated images are automatically available for delivery, transformation, and optimization through Cloudinary's platform.
     * **Future-proof**: Adopt new state-of-the-art models as they become available, without rebuilding your integration.
     
-    **Supported Model Families:**
+    **Model Families (`model.family` / `model.tier`):**
     * **flux**: Photorealistic images (FLUX.2 Klein 9B / FLUX.2 Pro).
     * **recraft**: Vector and illustration (Recraft V3 / Recraft V4).
     * **gpt-image**: Campaign and marketing images (GPT Image 1 Mini / GPT Image 2).
     * **nano-banana**: General purpose generation (Nano Banana 1 / Nano Banana 2).
     * **ideogram**: Realism, text rendering, and artistic generation (Ideogram V4).
 
+    These families are the selection matrix, not the full roster: each family offers a
+    `standard` and a `premium` tier. Many models are available only by `model.id` and
+    belong to no family — see the `model.id` enum for the complete list.
+
     The Image Generation API requires the [Cloudinary Image Generation add-on](https://console.cloudinary.com/app/marketplace/details/image_generation).
     
     [Learn more](https://cloudinary.com/documentation/image_generation_addon)
 
-  version: 1.2.1 # x-release-please-version
+  version: 1.3.0 # x-release-please-version
   license:
     name: UNLICENSED
     url: https://cloudinary.com/tos
@@ -63,7 +67,8 @@ paths:
         The model is selected via the optional `model` object:
         1. If `model.id` is provided, use that exact model.
         2. Else if `model.family` (+ optional `model.tier`) is provided, resolve via the model registry; a missing tier defaults to `standard`.
-        3. If `model` is omitted, use the global default (nano-banana / premium, i.e. `nano-banana-2`).
+        3. Else if `model.mode` is `auto`, the service picks the model for the request (optionally steered by `model.preference`).
+        4. Otherwise, use the global default (nano-banana / premium, i.e. `nano-banana-2`).
       operationId: generate_image
       requestBody:
         required: true
@@ -81,6 +86,8 @@ paths:
                 $ref: "#/components/examples/GenerateImageDimensionsSizeExample"
               AsyncExample:
                 $ref: "#/components/examples/GenerateImageAsyncExample"
+              AutoModelExample:
+                $ref: "#/components/examples/GenerateImageAutoModelExample"
       responses:
         '200':
           description: Image generated successfully (synchronous).
@@ -131,7 +138,9 @@ paths:
         2. Else if `model.family` (+ optional `model.tier`) is provided, resolve
            to that family's edit model (e.g. `nano-banana` / `premium` →
            `nano-banana-2-edit`).
-        3. If `model` is omitted, use the default edit model (`nano-banana-2-edit`).
+        3. Else if `model.mode` is `auto`, the service picks an edit model for
+           the request (optionally steered by `model.preference`).
+        4. Otherwise, use the default edit model (`nano-banana-2-edit`).
 
         Each reference image is either a stored managed asset (by `asset_id`,
         read-permission checked) or an external HTTPS `url`.
@@ -143,6 +152,15 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ImageToImageRequest"
+            examples:
+              BasicExample:
+                $ref: "#/components/examples/ImageToImageBasicExample"
+              FamilyModelExample:
+                $ref: "#/components/examples/ImageToImageFamilyModelExample"
+              ExplicitModelExample:
+                $ref: "#/components/examples/ImageToImageExplicitModelExample"
+              AutoModelExample:
+                $ref: "#/components/examples/ImageToImageAutoModelExample"
       responses:
         '200':
           description: Image generated successfully (synchronous).
@@ -320,7 +338,7 @@ components:
           minLength: 1
           maxLength: 4000
           description: The text description of the image to generate.
-          example: A photorealistic sunset over a mountain lake, 8K detail
+          example: A photorealistic sunset over a mountain lake
         model:
           $ref: "#/components/schemas/ModelSelection"
         image_size:
@@ -353,8 +371,10 @@ components:
       nullable: true
       minimum: 0
       description: |
-        Seed for reproducible generation. Supported by most models. Silently
-        ignored by models that don't support it.
+        Seed for reproducible generation. Supported by the `flux`, `nano-banana`
+        and `ideogram` models and by `qwen-image-3`; silently ignored by the
+        models that don't support it, which report `seed` as null in the
+        response.
       example: 42
     Async:
       type: boolean
@@ -393,9 +413,10 @@ components:
             Reference images that steer the generation, in order (1-indexed; the
             prompt may address them positionally as `[1]`, `[2]`, …). Each entry
             is either a managed asset (by `asset_id`) or an external `url`. The
-            platform accepts up to 4; a specific model may accept fewer (e.g.
-            Recraft accepts 1) — exceeding the selected model's capacity returns
-            400.
+            platform accepts up to 4; a specific model may accept fewer — the
+            `recraft-v3-edit` and `mai-image` edit models accept 1, and the
+            `grok-imagine` and `qwen-image` edit models accept 3. Exceeding the
+            selected model's capacity returns 400.
           items:
             $ref: "#/components/schemas/ReferenceImage"
         model:
@@ -468,14 +489,17 @@ components:
           example: https://example.com/product.png
     ModelSelection:
       description: |
-        Selects the model, in one of two mutually exclusive forms (omit to use
+        Selects the model, in one of three mutually exclusive forms (omit to use
         the global default):
           * `ModelByFamily`: `family` (+ optional `tier`); the stable-over-time
             selector.
           * `ModelById`: an explicit `id`, pinning one exact model.
+          * `ModelAuto`: `mode: auto`, letting the service choose the model for
+            the request (+ optional `preference`).
       oneOf:
         - $ref: "#/components/schemas/ModelByFamily"
         - $ref: "#/components/schemas/ModelById"
+        - $ref: "#/components/schemas/ModelAuto"
     ModelByFamily:
       type: object
       title: ModelByFamily
@@ -522,28 +546,90 @@ components:
           enum:
             - nano-banana-1
             - nano-banana-2
+            - nano-banana-2-lite
             - flux-2-klein-9b
             - flux-2-pro
+            - flux-2-flash
             - recraft-v3
             - recraft-v4
             - gpt-image-1-mini
             - gpt-image-2
+            - gpt-image-2.5-flare
+            - gpt-image-2.5-sunburst
+            - muse-image
+            - mai-image-2.5
+            - mai-image-2.5-pro
+            - seedream-5-pro
+            - grok-imagine-image
+            - recraft-v4.1-utility
+            - recraft-v4.1-utility-pro
+            - seedream-5-lite
+            - grok-imagine-image-2.0-low
+            - qwen-image-3
             - ideogram-v4-base
             - ideogram-v4-turbo
             # Edit models — same model kind, used by image_to_image (they accept
             # reference images). Selectable only on the image_to_image endpoint.
             - nano-banana-1-edit
             - nano-banana-2-edit
+            - nano-banana-2-lite-edit
             - flux-2-klein-9b-edit
             - flux-2-pro-edit
+            - flux-2-flash-edit
             - recraft-v3-edit
             - gpt-image-1-mini-edit
             - gpt-image-2-edit
+            - gpt-image-2.5-flare-edit
+            - gpt-image-2.5-sunburst-edit
+            - muse-image-edit
+            - mai-image-2.5-edit
+            - mai-image-2.5-pro-edit
+            - seedream-5-pro-edit
+            - grok-imagine-image-edit
+            - seedream-5-lite-edit
+            - grok-imagine-image-2.0-low-edit
+            - qwen-image-3-edit
           description: |
             Exact model identifier; overrides family/tier when provided. The
             `-edit` models accept reference images and are selectable only on
             `image_to_image`; the others only on `text_to_image`.
           example: flux-2-pro
+    ModelAuto:
+      type: object
+      title: ModelAuto
+      description: |
+        Let the service choose the model for this request. The response reports
+        the resolved model in `data.assets[].model`, as for the other forms; on
+        `image_to_image` it is always an edit model.
+      additionalProperties: false
+      required:
+        - mode
+      properties:
+        mode:
+          type: string
+          enum:
+            - auto
+          description: The only valid value; selects automatic model selection.
+          example: auto
+        preference:
+          type: string
+          enum:
+            - balanced
+            - quality
+            - economy
+            - balanced_fast
+            - quality_fast
+            - economy_fast
+          default: balanced
+          description: |
+            What the choice optimizes for:
+            * `balanced` (default): quality and cost weighted equally.
+            * `quality`: quality only; cost isn't weighed.
+            * `economy`: cost first, quality second.
+            * `balanced_fast`, `quality_fast`, `economy_fast`: as above, but also
+              favor faster generation, and never pick a model that typically
+              takes longer than 30 seconds.
+          example: quality
     ImageSize:
       description: |
         Desired output size, given in **one** of two mutually exclusive forms:
@@ -827,15 +913,33 @@ components:
       properties:
         family:
           type: string
-          description: The model family used.
+          description: |
+            The family this model belongs to, or `unmapped` when it belongs to
+            none.
+
+            A family holds exactly two tiers, so the family/tier taxonomy can
+            name only part of the roster. Models outside it are offered by `id`
+            only and genuinely have no family — `unmapped` says so, rather than
+            attributing a grouping the model is not part of. This describes the
+            model, not how the request selected it: a model that does belong to
+            a family reports it whether it was chosen by `family`/`tier` or
+            pinned by `id`.
+
+            Not an enum: new families are added over time, so treat any value
+            as possible.
           example: flux
         tier:
           type: string
-          description: The quality tier used.
+          description: |
+            The quality tier this model holds within its family, or `unmapped`
+            when it holds none — see `family`.
           example: premium
         id:
           type: string
-          description: The exact model identifier used for generation.
+          description: |
+            The exact model identifier used for generation. Always a concrete
+            model, and always the reliable field to key on — unlike `family`
+            and `tier`, which can be `unmapped`.
           example: flux-2-pro
     TaskStatus:
       type: string
@@ -995,7 +1099,7 @@ components:
         Portable size selection — the service resolves aspect_ratio + resolution
         to the nearest dimensions the chosen model supports.
       value:
-        prompt: A photorealistic sunset over a mountain lake, 8K detail
+        prompt: A photorealistic sunset over a mountain lake
         model:
           family: flux
           tier: premium
@@ -1011,7 +1115,7 @@ components:
       summary: Dimensions size (explicit pixels)
       description: Pixel-precise size selection via width + height.
       value:
-        prompt: A photorealistic sunset over a mountain lake, 8K detail
+        prompt: A photorealistic sunset over a mountain lake
         model:
           id: flux-2-pro
         image_size:
@@ -1033,6 +1137,87 @@ components:
           tier: premium
         async: true
         notification_url: https://path.to/webhook
+    GenerateImageAutoModelExample:
+      summary: Automatic model selection
+      description: |
+        Let the service choose the model for the prompt; `preference` says what
+        the choice optimizes for (default `balanced`). The response echoes the
+        model that was actually used.
+      value:
+        prompt: A photorealistic sunset over a mountain lake
+        model:
+          mode: auto
+          preference: quality
+        image_size:
+          aspect_ratio: "16:9"
+          resolution: 2K
+        target:
+          target_type: temporary
+        seed: 42
+    ImageToImageBasicExample:
+      summary: Basic image-to-image edit
+      description: |
+        Minimal request: an edit instruction and one reference image by HTTPS
+        URL; falls back to the default edit model.
+      value:
+        prompt: Place the product from [1] on a marble kitchen counter, soft morning light
+        reference_images:
+          - source_type: url
+            url: https://example.com/product.png
+    ImageToImageFamilyModelExample:
+      summary: Edit model by family and tier
+      description: |
+        Select the edit model by family (+ optional tier); the family resolves to
+        that family's edit model, here `nano-banana-2-edit`.
+      value:
+        prompt: Restyle [1] as a watercolor painting, keep the composition
+        reference_images:
+          - source_type: managed_asset
+            asset_id: 0d6f8e1c2b3a4d5e6f7a8b9c0d1e2f3a
+        model:
+          family: nano-banana
+          tier: premium
+        image_size:
+          aspect_ratio: "4:3"
+          resolution: 1K
+        target:
+          target_type: temporary
+        seed: 42
+    ImageToImageExplicitModelExample:
+      summary: Edit model by ID
+      description: |
+        Pin one exact edit model by ID. Only `-edit` models are selectable on
+        this endpoint.
+      value:
+        prompt: Replace the background of [1] with a bright studio backdrop
+        reference_images:
+          - source_type: url
+            url: https://example.com/product.png
+        model:
+          id: flux-2-pro-edit
+        image_size:
+          width: 1280
+          height: 720
+        target:
+          target_type: managed_asset
+          public_id: my-public-id
+          upload_preset: some-preset
+        seed: 42
+    ImageToImageAutoModelExample:
+      summary: Automatic edit-model selection
+      description: |
+        Let the service choose the edit model for the reference images and the
+        instruction; the resolved model in the response is always an `-edit` model.
+      value:
+        prompt: Make it look like a watercolor painting, keep the composition
+        reference_images:
+          - source_type: url
+            url: https://example.com/photo.jpg
+        model:
+          mode: auto
+        image_size:
+          aspect_ratio: "4:3"
+          resolution: 1K
     GenerateImageSuccessExample:
       summary: Successful synchronous generation
       description: The 200 response body returned for a completed sync generation.
