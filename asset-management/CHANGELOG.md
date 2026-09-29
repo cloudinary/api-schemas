@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.7 (2026-09-29)
+
+
+### Features
+
+* **media-generation:** Add notices array to response envelopes
+* **media-generation:** Raise the prompt maxLength to 16384 characters
+
+
+### Bug Fixes
+
+* **media-generation:** Report none instead of unmapped for id-only model family and tier
+
 ## 0.7.6 (2026-09-24)
 
 
