@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.8 (2026-10-22)
+
+
+### Features
+
+* **media-generation:** Add the flux-3 and flux-3-edit models
+
+
+### Bug Fixes
+
+* **media-generation:** Rewrite descriptions and examples for AI agents
+
 ## 0.7.7 (2026-09-29)
 
 
