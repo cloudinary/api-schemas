@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.9 (2026-11-05)
+
+
+### Features
+
+* **collections:** Add Collections API
+
 ## 0.7.8 (2026-10-22)
 
 
