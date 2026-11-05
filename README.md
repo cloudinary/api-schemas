@@ -16,6 +16,7 @@ This repository contains publicly accessible OpenAPI schemas for various APIs, e
 - **Image Generation API**: Generates images from text prompts across multiple AI model families (FLUX, Recraft, GPT Image, Nano Banana, Ideogram), with generated assets available through Cloudinary for delivery and transformation.
 - **AI Video Analysis API**: Generates visual transcriptions of stored videos (timestamped, natural-language descriptions of on-screen content) via asynchronous jobs, optionally guided by a prompt. _(Beta)_
 - **Video Canvas API**: Creates and manages applets: node-based video transformation pipelines that compile into named transformations for delivery. _(Beta)_
+- **Collections API**: Organizes assets into manual or dynamic collections and shares them through public pages, optionally restricted to allowed emails or domains.
 
 ## Tools
 

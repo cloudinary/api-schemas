@@ -11,3 +11,4 @@ schemas:
   - media-generation
   - ai-video-analysis
   - video-canvas
+  - collections
