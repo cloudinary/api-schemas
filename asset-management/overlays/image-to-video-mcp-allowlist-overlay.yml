@@ -1,0 +1,15 @@
+overlay: 1.0.0
+info:
+  title: Expose only the allowed Image to Video MCP tools
+  version: 0.0.1
+actions:
+  # Disable every Image to Video operation, matched by its tags.
+  - target: "$.paths.*.*[?(@.tags[?(@ == 'Video Generate' || @ == 'Image To Video Prompts')])]"
+    update:
+      x-speakeasy-mcp:
+        disabled: true
+  # Re-enable the allowed tools.
+  - target: "$.paths.*.*[?(@['x-speakeasy-mcp'].name == 'generate-video-from-image' || @['x-speakeasy-mcp'].name == 'get-video-generation-job')]"
+    update:
+      x-speakeasy-mcp:
+        disabled: false
