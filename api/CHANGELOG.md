@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.10 (2026-11-13)
+
+
+### Features
+
+* Add the Image to Video API to the api and asset-management
+
 ## 0.7.9 (2026-11-05)
 
 
