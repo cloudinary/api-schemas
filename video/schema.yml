@@ -1,0 +1,2595 @@
+openapi: 3.0.3
+info:
+  title: Cloudinary Video API
+  description: |
+    The Video API enables you to stream, generate, analyze, and transform video in your product environment. Broadcast **live streams** over RTMP, generate videos from images with **Image to Video**, produce timestamped visual transcripts with **AI Video Analysis**, and build node-based transformation pipelines as **Video Canvas** applets.
+
+    The API uses **Basic Authentication** over HTTPS with your **API Key** and **API Secret** from the [Cloudinary Console](https://console.cloudinary.com/app/settings/api-keys), or **OAuth 2.0** with the `video` scope.
+
+    Key capabilities:
+    * Create and manage RTMP live streams and their outputs, and start or stop a stream manually. See the [live streaming guide](https://cloudinary.com/documentation/video_live_streaming).
+    * Generate a video from a source image and a text prompt describing the motion or scene, and manage reusable prompts. See the [Image to Video add-on](https://cloudinary.com/documentation/image_to_video_addon) guide.
+    * Generate a visual transcript of a stored video: timestamped, natural-language descriptions of what's visible on screen, optionally guided by a prompt. See the [AI Video Analysis](https://cloudinary.com/documentation/ai_video_analysis) guide.
+    * Create applets that Cloudinary compiles into a [named transformation](https://cloudinary.com/documentation/video_named_transformations) you can deliver like any other transformation. See the [Video Canvas](https://cloudinary.com/documentation/video_canvas) guide.
+
+    Image to Video and AI Video Analysis requests run as asynchronous jobs: you submit a request, then poll the job until the result is ready.
+
+    **Note**: Image to Video and AI Video Analysis are currently in **Beta**. There may be minor changes to parameter names or other implementation details before the general access release. We invite you to try them out, and would appreciate any feedback via our [support team](https://support.cloudinary.com/hc/en-us/requests/new).
+  version: 0.1.1 # x-release-please-version
+  contact:
+    name: Cloudinary Support
+    email: support@cloudinary.com
+    url: https://support.cloudinary.com
+  termsOfService: https://cloudinary.com/tou
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  x-cld-module-context: cloud
+  x-cld-module-name: video
+servers:
+  - url: https://{region}.cloudinary.com
+    description: Regional API endpoints for optimal performance.
+    variables:
+      region:
+        default: api
+        description: Regional endpoint selection
+        enum:
+          - api
+          - api-eu
+          - api-ap
+  - url: https://{host}
+    description: Custom domains for enterprise deployments.
+    variables:
+      host:
+        default: api.cloudinary.com
+        description: API host domain.
+security:
+  - basicAuth: []
+  - oauth2:
+      - video
+paths:
+  /v2/video/{cloud_name}/video_canvas/applets:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    get:
+      x-speakeasy-mcp:
+        name: list-canvas-applets
+        title: List Video Canvas Applets
+      tags:
+        - Video Canvas
+      summary: List applets
+      description: Returns the account's saved Video Canvas applets as summaries, without their inputs, blocks, connections, or outputs.
+      operationId: listVideoCanvasApplets
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          description: comma-separated applet kinds to return (derived, create); defaults to derived
+          schema:
+            type: string
+            example: derived,create
+      responses:
+        '200':
+          description: A list of Video Canvas applets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoCanvasAppletsWrappedResponse'
+        '401':
+          description: Authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    post:
+      x-speakeasy-mcp:
+        name: create-canvas-applet
+        title: Create Video Canvas Applet
+      tags:
+        - Video Canvas
+      summary: Create an applet
+      description: Creates an applet from its content (inputs, blocks, connections, and outputs). Cloudinary compiles the action blocks to validate them and returns the stored applet. For a derived applet, the compiled blocks are also saved as a named transformation.
+      operationId: createVideoCanvasApplet
+      x-cld-use-for-readme: true
+      requestBody:
+        description: The applet content to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoCanvasAppletContentPayload'
+      responses:
+        '201':
+          description: The created Video Canvas applet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoCanvasAppletDetailsWrappedResponse'
+        '400':
+          description: The applet content is invalid, for example a missing name, a reference to an unknown block, input, or output, or action blocks that can't be compiled into a valid transformation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/video_canvas/applets/{appletId}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    get:
+      x-speakeasy-mcp:
+        name: get-canvas-applet
+        title: Get Video Canvas Applet
+      tags:
+        - Video Canvas
+      summary: Get an applet
+      description: Returns a single applet with its full content, including its inputs, blocks, connections, and outputs.
+      operationId: getVideoCanvasApplet
+      parameters:
+        - name: appletId
+          description: The server-generated id of the applet.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A Video Canvas applet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoCanvasAppletDetailsWrappedResponse'
+        '401':
+          description: Authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No applet exists with the given id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    put:
+      x-speakeasy-mcp:
+        name: replace-canvas-applet
+        title: Replace Video Canvas Applet
+        idempotentHint: true
+      tags:
+        - Video Canvas
+      summary: Replace an applet's content
+      description: Replaces the full content of an existing applet and recompiles its action blocks to validate them. For a derived applet, its backing named transformation is also updated.
+      operationId: updateVideoCanvasApplet
+      parameters:
+        - name: appletId
+          description: The server-generated id of the applet.
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: The new applet content.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoCanvasAppletContentPayload'
+      responses:
+        '200':
+          description: The updated Video Canvas applet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoCanvasAppletDetailsWrappedResponse'
+        '400':
+          description: The applet content is invalid, for example a missing name, a reference to an unknown block, input, or output, action blocks that can't be compiled into a valid transformation, or an attempt to change the applet's kind.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No applet exists with the given id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-canvas-applet
+        title: Delete Video Canvas Applet
+        idempotentHint: true
+      tags:
+        - Video Canvas
+      summary: Delete an applet
+      description: Deletes an applet and its stored content. For a derived applet, the named transformation that backs it isn't deleted, so delivery URLs and SDK calls that reference it keep working. To stop delivering the transformation, delete the named transformation separately.
+      operationId: deleteVideoCanvasApplet
+      parameters:
+        - name: appletId
+          description: The server-generated id of the applet.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The applet was deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+        '401':
+          description: Authentication error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No applet exists with the given id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/live_streams:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    get:
+      x-speakeasy-mcp:
+        name: list-live-streams
+        title: List Live Streams
+      tags:
+        - Live Stream
+      summary: Get a list of live streams
+      operationId: getLiveStreams
+      x-cld-use-for-readme: true
+      responses:
+        '200':
+          description: A list of live streams
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamsWrappedResponse'
+              examples:
+                MyLiveStreamsWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamsWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    post:
+      x-speakeasy-mcp:
+        name: create-live-stream
+        title: Create Live Stream
+      tags:
+        - Live Stream
+      summary: Create a new live stream
+      operationId: createLiveStream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveStreamCreatePayload'
+      responses:
+        '201':
+          description: Created live stream
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  id: 0bd7f11c043da975e2a8ad9ebae0b6ec
+                  name: My Live Stream
+                  input:
+                    type: rtmp
+                    uri: rtmp://live.cloudinary.com/streams
+                    stream_key: dh8bxtg97t9cns4bddoa
+                  status: idle
+                  outputs:
+                    - id: 8132d2dc5251432bb57f32ee55a336c1
+                      name: default hls
+                      type: hls
+                      uri: https://res.cloudinary.com/demo/video/live/live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_hls.m3u8
+                      created_at: 1712914020253
+                      updated_at: 1712914020253
+                    - id: 29b5cd6f54474bea9cec3834e763e12c
+                      name: default archive
+                      type: archive
+                      public_id: live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_archive
+                      created_at: 1712914020253
+                      updated_at: 1714378330476
+                  idle_timeout_sec: 120
+                  max_runtime_sec: 10800
+                  created_at: 1697265900621
+                  updated_at: 1697265900621
+        '400':
+          description: Bad request - invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/live_streams/{liveStreamId}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: live stream id
+    get:
+      x-speakeasy-mcp:
+        name: get-live-stream
+        title: Get Live Stream
+      tags:
+        - Live Stream
+      summary: Get a single live stream
+      operationId: getLiveStream
+      responses:
+        '200':
+          description: A live stream
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamWrappedResponse'
+              examples:
+                MyLiveStreamWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    patch:
+      x-speakeasy-mcp:
+        name: update-live-stream
+        title: Update Live Stream
+        idempotentHint: true
+      tags:
+        - Live Stream
+      summary: Update a live stream
+      operationId: updateLiveStream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveStreamUpdatePayload'
+      responses:
+        '200':
+          description: A live stream
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamWrappedResponse'
+              examples:
+                MyUpdatedLiveStreamWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamWrappedResponse'
+        '400':
+          description: Bad request - invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-live-stream
+        title: Delete Live Stream
+        idempotentHint: true
+      tags:
+        - Live Stream
+      summary: Delete a live stream
+      operationId: deleteLiveStream
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/live_streams/{liveStreamId}/activate:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: live stream id
+    post:
+      x-speakeasy-mcp:
+        name: activate-live-stream
+        title: Activate Live Stream
+      tags:
+        - Live Stream
+      summary: Manually activate a live stream
+      operationId: activateLiveStream
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/live_streams/{liveStreamId}/idle:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: live stream id
+    post:
+      x-speakeasy-mcp:
+        name: idle-live-stream
+        title: Idle Live Stream
+      tags:
+        - Live Stream
+      summary: Manually idle a live stream
+      operationId: idleLiveStream
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/live_streams/{liveStreamId}/outputs:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: live stream id
+    get:
+      x-speakeasy-mcp:
+        name: list-live-stream-outputs
+        title: List Live Stream Outputs
+      tags:
+        - Live Stream
+      summary: Get a list of live stream outputs
+      operationId: getLiveStreamOutputs
+      responses:
+        '200':
+          description: A list of outputs for a live stream
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamOutputsWrappedResponse'
+              examples:
+                MyLiveStreamOutputsWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamOutputsWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    post:
+      x-speakeasy-mcp:
+        name: create-live-stream-output
+        title: Create Live Stream Output
+      tags:
+        - Live Stream
+      summary: Create a new live stream output
+      operationId: createLiveStreamOutput
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveStreamOutputCreatePayload'
+            examples:
+              MyLiveStreamOutputCreatePayload:
+                $ref: '#/components/examples/MyLiveStreamOutputCreatePayload'
+      responses:
+        '201':
+          description: Created live stream output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamOutputWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  id: f11c043da975e2a8ad9ebae0b6ec0bd7
+                  name: new youtube
+                  type: simulcast
+                  uri: rtmp://a.rtmp.youtube.com/live2
+                  stream_key: 43q7qmah2e1p83jhfpbs
+                  vendor: youtube
+                  created_at: 1697265900621
+                  updated_at: 1697265900621
+        '400':
+          description: Bad request - invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/live_streams/{liveStreamId}/outputs/{liveStreamOutputId}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: live stream id
+      - in: path
+        name: liveStreamOutputId
+        schema:
+          type: string
+        required: true
+        description: live stream output id
+    get:
+      x-speakeasy-mcp:
+        name: get-live-stream-output
+        title: Get Live Stream Output
+      tags:
+        - Live Stream
+      summary: Get a single live stream output
+      operationId: getLiveStreamOutput
+      responses:
+        '200':
+          description: A live stream output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamOutputWrappedResponse'
+              examples:
+                MyLiveStreamOutputWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamOutputWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Live stream output not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    patch:
+      x-speakeasy-mcp:
+        name: update-live-stream-output
+        title: Update Live Stream Output
+        idempotentHint: true
+      tags:
+        - Live Stream
+      summary: Update a live stream output
+      operationId: updateLiveStreamOutput
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiveStreamOutputUpdatePayload'
+            examples:
+              MyLiveStreamOutputUpdatePayload:
+                $ref: '#/components/examples/MyLiveStreamOutputUpdatePayload'
+      responses:
+        '200':
+          description: A live stream output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamOutputWrappedResponse'
+              examples:
+                MyLiveStreamOutputWrappedResponse:
+                  $ref: '#/components/examples/MyLiveStreamOutputWrappedResponse'
+        '400':
+          description: Bad request - invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Live stream output not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-live-stream-output
+        title: Delete Live Stream Output
+        idempotentHint: true
+      tags:
+        - Live Stream
+      summary: Delete a live stream output
+      operationId: deleteLiveStreamOutput
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Live stream output not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/image_to_video/generate:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    post:
+      x-speakeasy-mcp:
+        name: generate-video-from-image
+        title: Generate Video from Image
+      tags:
+        - Video Generate
+      summary: Create a video generation job
+      description: Submits an image and prompt for video generation and returns a job you can poll for the result.
+      operationId: createVideoGenerateJob
+      x-cld-use-for-readme: true
+      requestBody:
+        description: A JSON object with the source image, prompt, and generation options.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageToVideoGeneratePayload'
+            example:
+              prompt: A serene beach at sunset with gentle waves rolling in
+              image_asset_id: 0a1b2c3d4e5f60718293a4b5c6d7e8f9
+              aspect_ratio: '16:9'
+              resolution: 1080p
+              duration: 8
+              generate_audio: true
+              folder: campaigns/spring
+              negative_prompt:
+                - watermark
+                - flickering
+      responses:
+        '201':
+          description: Video generation job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoGenerateWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  job_id: 550e8400e29b41d4a716446655440000
+                  status: pending
+        '400':
+          description: Bad request - validation or safety error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/image_to_video/generate/{jobId}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: jobId
+        schema:
+          type: string
+        required: true
+        description: The video generation job ID returned from the create endpoint.
+    get:
+      x-speakeasy-mcp:
+        name: get-video-generation-job
+        title: Get Video Generation Job
+      tags:
+        - Video Generate
+      summary: Poll a video generation job
+      description: Returns the current status of a generation job. When the status is `completed`, the response includes the generated video's asset details and delivery URL.
+      operationId: getVideoGenerateJobStatus
+      responses:
+        '200':
+          description: Job status (pending, completed, or failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoGenerateWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  job_id: 550e8400e29b41d4a716446655440000
+                  status: completed
+                  asset_id: 9f8e7d6c5b4a30291807a6b5c4d3e2f1
+                  public_id: image-to-video/i2v_550e8400e29b41d4a716446655440000
+                  resource_type: video
+                  delivery_type: upload
+                  url: https://res.cloudinary.com/demo/video/upload/v1/image-to-video/i2v_550e8400e29b41d4a716446655440000.mp4
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/image_to_video/prompts:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    get:
+      x-speakeasy-mcp:
+        name: list-image-to-video-prompts
+        title: List Image-to-Video Prompts
+      tags:
+        - Image To Video Prompts
+      summary: Get a list of image to video prompts
+      description: Returns all saved image-to-video prompts for your product environment.
+      operationId: getImageToVideoPrompts
+      responses:
+        '200':
+          description: A list of image to video prompts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoPromptsWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  - id: c4a8e2f1d3b74a6e9f0b5d2c8e1a7f39
+                    display_name: Beach sunset
+                    prompt: A serene beach at sunset with gentle waves rolling in
+                    created_at: 1781000000000
+                    updated_at: 1781000000000
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    post:
+      x-speakeasy-mcp:
+        name: create-image-to-video-prompt
+        title: Create Image-to-Video Prompt
+      tags:
+        - Image To Video Prompts
+      summary: Create an image to video prompt
+      description: Saves a reusable prompt with a display name so you can apply it to future generations.
+      operationId: createImageToVideoPrompt
+      requestBody:
+        description: A JSON object with the prompt text and its display name.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageToVideoPromptCreatePayload'
+            example:
+              display_name: Beach sunset
+              prompt: A serene beach at sunset with gentle waves rolling in
+      responses:
+        '201':
+          description: Created image to video prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoPromptWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  id: c4a8e2f1d3b74a6e9f0b5d2c8e1a7f39
+                  display_name: Beach sunset
+                  prompt: A serene beach at sunset with gentle waves rolling in
+                  created_at: 1781000000000
+                  updated_at: 1781000000000
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/image_to_video/prompts/{promptId}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    get:
+      x-speakeasy-mcp:
+        name: get-image-to-video-prompt
+        title: Get Image-to-Video Prompt
+      tags:
+        - Image To Video Prompts
+      summary: Get an image to video prompt
+      description: Returns a single saved prompt by its ID.
+      operationId: getImageToVideoPrompt
+      parameters:
+        - name: promptId
+          description: The ID of the image-to-video prompt.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: An image to video prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoPromptWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  id: c4a8e2f1d3b74a6e9f0b5d2c8e1a7f39
+                  display_name: Beach sunset
+                  prompt: A serene beach at sunset with gentle waves rolling in
+                  created_at: 1781000000000
+                  updated_at: 1781000000000
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    patch:
+      x-speakeasy-mcp:
+        name: update-image-to-video-prompt
+        title: Update Image-to-Video Prompt
+        idempotentHint: true
+      tags:
+        - Image To Video Prompts
+      summary: Update an image to video prompt
+      description: Updates the display name and/or prompt text of a saved prompt.
+      operationId: updateImageToVideoPrompt
+      parameters:
+        - name: promptId
+          description: The ID of the image-to-video prompt.
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: A JSON object with the fields to update (display name and/or prompt text).
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageToVideoPromptUpdatePayload'
+            example:
+              display_name: Beach sunset (golden hour)
+              prompt: A serene beach during golden hour with gentle waves
+      responses:
+        '200':
+          description: Updated image to video prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageToVideoPromptWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  id: c4a8e2f1d3b74a6e9f0b5d2c8e1a7f39
+                  display_name: Beach sunset (golden hour)
+                  prompt: A serene beach during golden hour with gentle waves
+                  created_at: 1781000000000
+                  updated_at: 1781009999000
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-image-to-video-prompt
+        title: Delete Image-to-Video Prompt
+        idempotentHint: true
+      tags:
+        - Image To Video Prompts
+      summary: Delete an image to video prompt
+      description: Permanently deletes a saved prompt by its ID.
+      operationId: deleteImageToVideoPrompt
+      parameters:
+        - name: promptId
+          description: The ID of the image-to-video prompt.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  message: Prompt deleted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/ai_video_analysis:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+    post:
+      x-speakeasy-mcp:
+        name: analyze-video
+        title: Analyze Video
+      tags:
+        - AI Video Analysis
+      summary: Create an AI Video Analysis job
+      description: Submits a stored video asset for visual analysis and returns a job you can poll for the result.
+      operationId: createAIVideoAnalysisJob
+      x-cld-use-for-readme: true
+      requestBody:
+        description: A JSON object with the video asset to analyze and optional analysis options.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIVideoAnalysisPayload'
+            example:
+              video_asset_id: 2fb8263411604d13a5d33e7623edc750
+              visual_transcription_prompt: focus on describing colors
+      responses:
+        '201':
+          description: AI Video Analysis job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIVideoAnalysisWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  job_id: 550e8400e29b41d4a716446655440000
+                  status: pending
+        '400':
+          description: Bad request - validation or safety error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/ai_video_analysis/{jobId}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: jobId
+        schema:
+          type: string
+        required: true
+        description: The AI Video Analysis job ID returned from the create endpoint.
+    get:
+      x-speakeasy-mcp:
+        name: get-video-analysis-job
+        title: Get Video Analysis Job
+      tags:
+        - AI Video Analysis
+      summary: Poll an AI Video Analysis job
+      description: Returns the current status of an analysis job. When the status is `completed`, the response includes the generated visual transcript file's asset details and delivery URL.
+      operationId: getAIVideoAnalysisJobStatus
+      responses:
+        '200':
+          description: Job status (pending, completed, or failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIVideoAnalysisWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  job_id: 550e8400e29b41d4a716446655440000
+                  status: completed
+                  visual_transcription:
+                    asset_id: 9f8e7d6c5b4a30291807a6b5c4d3e2f1
+                    public_id: samples/sea-turtle.visual.transcript
+                    resource_type: raw
+                    delivery_type: upload
+                    url: https://res.cloudinary.com/demo/raw/upload/v1/samples/sea-turtle.visual.transcript
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+components:
+  parameters:
+    cloud_name:
+      name: cloud_name
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The cloud name for your product environment.
+      example: my_cloud
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic authentication using your Cloudinary API Key and API Secret.
+    oauth2:
+      type: oauth2
+      description: OAuth2 Authorization Code flow for user authentication
+      flows:
+        authorizationCode:
+          authorizationUrl: https://oauth.cloudinary.com/oauth2/auth
+          tokenUrl: https://oauth.cloudinary.com/oauth2/token
+          scopes:
+            video: Use Video APIs
+  schemas:
+    MessageWrappedResponse:
+      type: object
+      description: A response envelope wrapping a simple message.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/MessageWrappedResponseData'
+    MessageWrappedResponseData:
+      type: object
+      description: An object carrying a human-readable message.
+      properties:
+        message:
+          type: string
+          description: A human-readable message.
+    ErrorWrappedResponse:
+      type: object
+      description: A response envelope returned when a request fails.
+      required:
+        - request_id
+        - error
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        error:
+          $ref: '#/components/schemas/MessageWrappedResponseData'
+    VideoCanvasBlockPayload:
+      type: object
+      description: |
+        A node on the canvas. Most blocks are action groups; a kind ending in
+        `_input` or `_output` marks a boundary block, and `preview_node` marks a
+        preview tap.
+      required:
+        - id
+        - kind
+        - metadata
+      properties:
+        id:
+          type: string
+          description: Client-supplied id, unique within the applet.
+          example: speed
+        kind:
+          type: string
+          description: |
+            Either a special type or the name of a group of actions, and it
+            determines how `content` is read. Special types: a kind ending in
+            `_input` or `_output` is a boundary block (content is an
+            `{"input":...}`/`{"output":...}` reference) and `preview_node` is a
+            preview tap (no content). Any other value is an action group whose
+            content is an array of serializer actions; the exact string (e.g.
+            `group`) only names the actions for the UI and has no backend role
+            beyond that grouping.
+          example: group
+        content:
+          description: |
+            For an action group, an ordered array of serializer action items
+            (opaque to this service), e.g. `[{"actionType":"scale","dimensions":{"width":200}}]`.
+            The groups are concatenated in connection order and encoded into a
+            Cloudinary transformation. The action item format (actionType and its
+            fields) is defined by the JSON Schema at
+            https://production-transformations-bff.cloudinary.com/schemas/transformation.json.
+            For an input boundary block (kind ending in `_input`) it references a
+            declared input (`{"input":"<inputId>"}`); for an output boundary block
+            (kind ending in `_output`) a declared output (`{"output":"<outputId>"}`).
+          example:
+            - actionType: scale
+              dimensions:
+                width: 200
+            - actionType: blur
+              strength: 500
+        metadata:
+          $ref: '#/components/schemas/VideoCanvasBlockMetadata'
+    VideoCanvasBlockMetadata:
+      type: object
+      description: Editor state of a block
+      additionalProperties: false
+      required:
+        - position_x
+        - position_y
+      properties:
+        position_x:
+          type: number
+          format: double
+          example: 120
+        position_y:
+          type: number
+          format: double
+          example: 80
+    VideoCanvasConnectionPayload:
+      type: object
+      description: |
+        A directed edge between two block ports. Endpoints reference blocks by
+        their client-supplied id. Connections define the order in which action
+        groups are applied.
+      required:
+        - id
+        - source_block_id
+        - source_port_id
+        - target_block_id
+        - target_port_id
+      properties:
+        id:
+          type: string
+          description: Client-supplied id, unique within the applet.
+          example: c1
+        source_block_id:
+          type: string
+          description: Client-supplied id of the source block.
+          example: in
+        source_port_id:
+          type: string
+          description: The output port on the source block.
+          example: out
+        target_block_id:
+          type: string
+          description: Client-supplied id of the target block.
+          example: speed
+        target_port_id:
+          type: string
+          description: The input port on the target block.
+          example: in
+    VideoCanvasInputPayload:
+      type: object
+      description: A declared parameter of the applet. Its id can be referenced by the serializer inline as `$<id>`.
+      required:
+        - id
+        - kind
+        - state
+      properties:
+        id:
+          type: string
+          description: Client-supplied id. Must match `^[a-zA-Z_][a-zA-Z0-9_]*$` and be at most 64 characters.
+          example: source
+        kind:
+          type: string
+          description: The value type of the input.
+          enum:
+            - video
+            - image
+            - text
+          example: video
+        state:
+          type: string
+          description: How the caller supplies the value. `required` means the caller must provide it, `optional` uses `value` as an overridable default, and `hidden` bakes `value` in and does not expose it to callers.
+          enum:
+            - required
+            - optional
+            - hidden
+          example: required
+        value:
+          type: string
+          description: The default (for `optional`) or fixed (for `hidden`) value.
+        label:
+          type: string
+          description: A human-readable label for the input.
+          example: Source video
+    VideoCanvasOutputPayload:
+      type: object
+      description: A declared result of the applet.
+      required:
+        - id
+        - kind
+      properties:
+        id:
+          type: string
+          description: Client-supplied id, unique within the applet.
+          example: result
+        kind:
+          type: string
+          description: The type of the result.
+          enum:
+            - image
+            - video
+            - video_player
+            - raw
+          example: video
+        label:
+          type: string
+          description: A human-readable label for the output.
+          example: Scaled video
+    VideoCanvasAppletContentPayload:
+      type: object
+      description: |
+        The full content of a Video Canvas applet: its inputs, blocks,
+        connections, and outputs. The blocks are ordered by the connections and
+        their action-group content is compiled to validate it. For derived
+        applets, the result is saved as a Cloudinary named transformation;
+        create applets don't get one.
+      required:
+        - name
+        - blocks
+      example:
+        name: Scale to 200px
+        description: Downscale the source video
+        inputs:
+          - id: source
+            kind: video
+            state: required
+            label: Source video
+        blocks:
+          - id: in
+            kind: video_input
+            content:
+              input: source
+            metadata:
+              position_x: 0
+              position_y: 0
+          - id: speed
+            kind: group
+            content:
+              - actionType: scale
+                dimensions:
+                  width: 200
+            metadata:
+              position_x: 200
+              position_y: 0
+          - id: out
+            kind: video_output
+            content:
+              output: result
+            metadata:
+              position_x: 400
+              position_y: 0
+        connections:
+          - id: c1
+            source_block_id: in
+            source_port_id: out
+            target_block_id: speed
+            target_port_id: in
+          - id: c2
+            source_block_id: speed
+            source_port_id: out
+            target_block_id: out
+            target_port_id: in
+        outputs:
+          - id: result
+            kind: video
+            label: Scaled video
+      properties:
+        name:
+          type: string
+          description: A display name for the applet.
+          example: Scale to 200px
+        description:
+          type: string
+          description: An optional description of what the applet does.
+        kind:
+          type: string
+          description: Applet kind. Derived applets compile into a named transformation; create applets do not. Omit on update to keep the current kind. Switching to create leaves an existing named transformation as is; switching to derived creates or redefines it.
+          enum:
+            - derived
+            - create
+          default: derived
+        inputs:
+          type: array
+          description: The applet's declared parameters.
+          items:
+            $ref: '#/components/schemas/VideoCanvasInputPayload'
+        blocks:
+          type: array
+          description: The nodes on the canvas.
+          items:
+            $ref: '#/components/schemas/VideoCanvasBlockPayload'
+        connections:
+          type: array
+          description: The directed edges between block ports.
+          items:
+            $ref: '#/components/schemas/VideoCanvasConnectionPayload'
+        outputs:
+          type: array
+          description: The applet's declared results.
+          items:
+            $ref: '#/components/schemas/VideoCanvasOutputPayload'
+    VideoCanvasAppletResponse:
+      type: object
+      description: A summary of a saved applet, without its content.
+      properties:
+        id:
+          type: string
+          description: The server-generated, immutable applet id.
+        name:
+          type: string
+          description: The applet's display name.
+        description:
+          type: string
+          description: The applet's description.
+        kind:
+          type: string
+          enum:
+            - derived
+            - create
+        named_transformation:
+          type: string
+          description: The name of the named transformation that backs a derived applet. Omitted for create applets.
+        created_at:
+          type: integer
+          description: Creation time, as a Unix timestamp in milliseconds.
+          format: int64
+        updated_at:
+          type: integer
+          description: Last-modified time, as a Unix timestamp in milliseconds.
+          format: int64
+    VideoCanvasBlockResponse:
+      type: object
+      description: A node on the canvas, as returned in a response.
+      properties:
+        id:
+          type: string
+          description: The client-supplied block id.
+        kind:
+          type: string
+          description: The block kind (see the block payload for how kind is interpreted).
+        content:
+          description: Block content; mirrors the payload shape (an action-group array or a boundary reference object).
+        metadata:
+          $ref: '#/components/schemas/VideoCanvasBlockMetadata'
+    VideoCanvasConnectionResponse:
+      type: object
+      description: A directed edge between two block ports, as returned in a response.
+      properties:
+        id:
+          type: string
+          description: The client-supplied connection id.
+        source_block_id:
+          type: string
+          description: The client-supplied id of the source block.
+        source_port_id:
+          type: string
+          description: The output port on the source block.
+        target_block_id:
+          type: string
+          description: The client-supplied id of the target block.
+        target_port_id:
+          type: string
+          description: The input port on the target block.
+    VideoCanvasInputResponse:
+      type: object
+      description: A declared parameter of the applet, as returned in a response.
+      properties:
+        id:
+          type: string
+          description: The client-supplied input id.
+        kind:
+          type: string
+          description: The value type of the input.
+          enum:
+            - video
+            - image
+            - text
+        state:
+          type: string
+          description: How the caller supplies the value.
+          enum:
+            - required
+            - optional
+            - hidden
+        value:
+          type: string
+          description: The default or fixed value, if any.
+        label:
+          type: string
+          description: A human-readable label for the input.
+    VideoCanvasOutputResponse:
+      type: object
+      description: A declared result of the applet, as returned in a response.
+      properties:
+        id:
+          type: string
+          description: The client-supplied output id.
+        kind:
+          type: string
+          description: The type of the result.
+          enum:
+            - image
+            - video
+            - video_player
+            - raw
+        label:
+          type: string
+          description: A human-readable label for the output.
+    VideoCanvasAppletDetailsResponse:
+      type: object
+      description: A saved applet with its full content.
+      properties:
+        id:
+          type: string
+          description: The server-generated, immutable applet id.
+        name:
+          type: string
+          description: The applet's display name.
+        description:
+          type: string
+          description: The applet's description.
+        kind:
+          type: string
+          enum:
+            - derived
+            - create
+        named_transformation:
+          type: string
+          description: The name of the named transformation that backs a derived applet. Omitted for create applets.
+        created_at:
+          type: integer
+          description: Creation time, as a Unix timestamp in milliseconds.
+          format: int64
+        updated_at:
+          type: integer
+          description: Last-modified time, as a Unix timestamp in milliseconds.
+          format: int64
+        inputs:
+          type: array
+          description: The applet's declared parameters.
+          items:
+            $ref: '#/components/schemas/VideoCanvasInputResponse'
+        blocks:
+          type: array
+          description: The nodes on the canvas.
+          items:
+            $ref: '#/components/schemas/VideoCanvasBlockResponse'
+        connections:
+          type: array
+          description: The directed edges between block ports.
+          items:
+            $ref: '#/components/schemas/VideoCanvasConnectionResponse'
+        outputs:
+          type: array
+          description: The applet's declared results.
+          items:
+            $ref: '#/components/schemas/VideoCanvasOutputResponse'
+    VideoCanvasAppletDetailsWrappedResponse:
+      type: object
+      description: A response envelope wrapping a single applet with its content.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+          description: A unique id for the request, useful when contacting support.
+        data:
+          $ref: '#/components/schemas/VideoCanvasAppletDetailsResponse'
+    VideoCanvasAppletsWrappedResponse:
+      type: object
+      description: A response envelope wrapping a list of applet summaries.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+          description: A unique id for the request, useful when contacting support.
+        data:
+          type: array
+          description: The list of applet summaries.
+          items:
+            $ref: '#/components/schemas/VideoCanvasAppletResponse'
+    LiveStreamsWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          nullable: true
+          type: array
+          items:
+            $ref: '#/components/schemas/LiveStreamResponse'
+    LiveStreamWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/LiveStreamResponse'
+    LiveStreamOutputsWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          nullable: true
+          type: array
+          items:
+            $ref: '#/components/schemas/LiveStreamOutputResponse'
+    LiveStreamOutputWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/LiveStreamOutputResponse'
+    LiveStreamResponse:
+      type: object
+      required:
+        - id
+        - name
+        - input
+        - status
+        - outputs
+        - idle_timeout_sec
+        - max_runtime_sec
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          example: 0bd7f11c043da975e2a8ad9ebae0b6ec
+        name:
+          nullable: true
+          type: string
+          example: My first stream
+        input:
+          $ref: '#/components/schemas/LiveStreamInputResponse'
+        status:
+          type: string
+          example: idle
+        outputs:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/LiveStreamOutputResponse'
+        embedded_captions:
+          type: array
+          items:
+            $ref: '#/components/schemas/LiveStreamEmbeddedCaption'
+        idle_timeout_sec:
+          type: integer
+          example: 120
+        max_runtime_sec:
+          type: integer
+          example: 10800
+        created_at:
+          type: integer
+          format: int64
+          example: 1697265900621
+        updated_at:
+          type: integer
+          format: int64
+          example: 1697265900621
+    LiveStreamInputResponse:
+      type: object
+      required:
+        - type
+        - uri
+      properties:
+        type:
+          type: string
+          example: rtmp
+        uri:
+          type: string
+          example: rtmp://live.cloudinary.com/streams
+        stream_key:
+          type: string
+          nullable: true
+          example: dh8bxtg97t9cns4bddoa
+    LiveStreamOutputResponse:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          example: f11c043da975e2a8ad9ebae0b6ec0bd7
+        name:
+          type: string
+          nullable: true
+          example: main stream
+        type:
+          type: string
+          example: hls
+        uri:
+          type: string
+          example: https://res.cloudinary.com/demo/video/live/f11c043da975e2a8ad9ebae0b6ec0bd7.m3u8
+          nullable: true
+        stream_key:
+          type: string
+          example: f11c043da975e2a8ad9ebae0b6ec0bd7
+          nullable: true
+        vendor:
+          type: string
+          example: youtube
+          nullable: true
+        asset_folder:
+          type: string
+          example: live_streams
+          nullable: true
+        public_id:
+          type: string
+          example: main_stream_archive
+          nullable: true
+        created_at:
+          type: integer
+          format: int64
+          example: 1697265900621
+        updated_at:
+          type: integer
+          format: int64
+          example: 1697265900621
+    LiveStreamCreatePayload:
+      type: object
+      required:
+        - input
+      properties:
+        name:
+          type: string
+          example: My first stream
+        input:
+          $ref: '#/components/schemas/LiveStreamInputCreatePayload'
+        idle_timeout_sec:
+          type: integer
+          example: 120
+          nullable: true
+        max_runtime_sec:
+          type: integer
+          example: 10800
+          nullable: true
+        embedded_captions:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/LiveStreamEmbeddedCaption'
+    LiveStreamInputCreatePayload:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          example: rtmp
+    LiveStreamEmbeddedCaption:
+      type: object
+      required:
+        - caption_channel
+        - language_code
+        - language_description
+      properties:
+        caption_channel:
+          type: integer
+          example: 1
+        language_code:
+          type: string
+          example: eng
+          description: ISO 639-2 language code
+        language_description:
+          type: string
+          example: English
+    LiveStreamOutputCreatePayload:
+      type: object
+      required:
+        - type
+      properties:
+        name:
+          type: string
+          example: main stream
+          nullable: true
+        type:
+          type: string
+          example: hls
+        uri:
+          type: string
+          example: rtmp://a.rtmp.youtube.com/live2
+          nullable: true
+        stream_key:
+          type: string
+          example: f11c043da975e2a8ad9ebae0b6ec0bd7
+          nullable: true
+        vendor:
+          type: string
+          example: youtube
+          nullable: true
+        asset_folder:
+          type: string
+          example: live_streams
+          nullable: true
+        public_id:
+          type: string
+          example: main_stream_archive
+          nullable: true
+    LiveStreamUpdatePayload:
+      type: object
+      properties:
+        name:
+          type: string
+          example: My first stream
+          nullable: true
+        idle_timeout_sec:
+          type: integer
+          example: 120
+          nullable: true
+        max_runtime_sec:
+          type: integer
+          example: 10800
+          nullable: true
+        embedded_captions:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/LiveStreamEmbeddedCaption'
+    LiveStreamOutputUpdatePayload:
+      type: object
+      properties:
+        name:
+          type: string
+          example: main stream
+          nullable: true
+        uri:
+          type: string
+          example: rtmp://a.rtmp.youtube.com/live2
+          nullable: true
+        stream_key:
+          type: string
+          example: f11c043da975e2a8ad9ebae0b6ec0bd7
+          nullable: true
+        asset_folder:
+          type: string
+          example: live_streams
+          nullable: true
+        public_id:
+          type: string
+          example: main_stream_archive
+          nullable: true
+    ImageToVideoGeneratePayload:
+      type: object
+      required:
+        - prompt
+        - image_asset_id
+      properties:
+        prompt:
+          type: string
+          description: Video description prompt.
+        image_asset_id:
+          type: string
+          description: Cloudinary asset ID of the input image for image-to-video generation.
+        aspect_ratio:
+          type: string
+          enum:
+            - auto
+            - '16:9'
+            - '9:16'
+          default: auto
+          description: Video aspect ratio. `auto` resolves based on image dimensions (defaults to landscape). `16:9` = landscape, `9:16` = portrait.
+        resolution:
+          type: string
+          enum:
+            - 720p
+            - 1080p
+          default: 720p
+          description: Video resolution. `1080p` is only supported with a duration of 8 seconds.
+        duration:
+          type: integer
+          enum:
+            - 4
+            - 6
+            - 8
+          default: 8
+          description: Video duration in seconds.
+        generate_audio:
+          type: boolean
+          default: false
+          description: Whether to generate audio. Enabling audio consumes twice as many credits.
+        enhance_prompt:
+          nullable: true
+          type: boolean
+          description: Whether to let Cloudinary automatically enhance the prompt.
+          default: true
+        last_frame_image_asset_id:
+          type: string
+          description: Cloudinary asset ID of the last frame image.
+        reference_image_asset_ids:
+          type: array
+          items:
+            type: string
+          maxItems: 2
+          description: Cloudinary asset IDs of reference images.
+        folder:
+          type: string
+          default: image-to-video
+          description: Path of the folder to save the generated video to, for example `campaigns/spring`. If the folder doesn't exist, it's created.
+        negative_prompt:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 100
+          maxItems: 50
+          description: Elements the video should avoid, for example `watermark` or `flickering`. Items must not be blank. If omitted, a default list of common artifacts is applied. Send an empty array to apply none.
+    ImageToVideoGenerateResponse:
+      type: object
+      required:
+        - job_id
+        - status
+      properties:
+        job_id:
+          type: string
+          example: 550e8400e29b41d4a716446655440000
+        status:
+          type: string
+          enum:
+            - pending
+            - completed
+            - failed
+          example: pending
+        asset_id:
+          type: string
+          description: Cloudinary asset ID of the generated video (present when completed).
+        public_id:
+          type: string
+          description: Cloudinary public ID of the generated video (present when completed).
+        resource_type:
+          type: string
+          description: Cloudinary resource type of the generated video (present when completed).
+        delivery_type:
+          type: string
+          description: Cloudinary delivery type of the generated video (present when completed).
+        url:
+          type: string
+          description: HTTPS URL of the generated video (present when completed).
+        message:
+          type: string
+          description: Error message when generation has failed.
+    ImageToVideoGenerateWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/ImageToVideoGenerateResponse'
+    ImageToVideoPromptResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        display_name:
+          type: string
+        prompt:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+    ImageToVideoPromptWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+        data:
+          $ref: '#/components/schemas/ImageToVideoPromptResponse'
+    ImageToVideoPromptsWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageToVideoPromptResponse'
+    ImageToVideoPromptCreatePayload:
+      type: object
+      required:
+        - display_name
+        - prompt
+      properties:
+        display_name:
+          type: string
+          description: A human-readable name for the prompt.
+          maxLength: 255
+        prompt:
+          type: string
+          description: The prompt text describing the motion or scene to generate.
+          maxLength: 1000
+    ImageToVideoPromptUpdatePayload:
+      type: object
+      properties:
+        display_name:
+          type: string
+          description: A human-readable name for the prompt.
+          nullable: true
+          maxLength: 255
+        prompt:
+          type: string
+          description: The prompt text describing the motion or scene to generate.
+          nullable: true
+          maxLength: 1000
+    AIVideoAnalysisPayload:
+      type: object
+      required:
+        - video_asset_id
+      properties:
+        visual_transcription_prompt:
+          type: string
+          description: A natural-language instruction that guides the description style or focus, for example `focus on describing colors`. If omitted, a default prompt is used.
+        video_asset_id:
+          type: string
+          description: Cloudinary asset ID of the input video to analyze.
+    AIVideoAnalysisResponse:
+      type: object
+      required:
+        - job_id
+        - status
+      properties:
+        job_id:
+          type: string
+          description: Unique identifier of the analysis job, used to poll for the result.
+          example: 550e8400e29b41d4a716446655440000
+        status:
+          type: string
+          description: Current status of the analysis job.
+          enum:
+            - pending
+            - completed
+            - failed
+          example: pending
+        visual_transcription:
+          $ref: '#/components/schemas/AIVideoAnalysisVisualTranscription'
+        message:
+          type: string
+          description: Error message when the analysis has failed.
+    AIVideoAnalysisVisualTranscription:
+      type: object
+      nullable: true
+      description: Details of the generated visual transcript file, stored as a raw asset in your product environment (present when the status is `completed`).
+      properties:
+        asset_id:
+          type: string
+          description: Cloudinary asset ID of the visual transcript file.
+        public_id:
+          type: string
+          description: Cloudinary public ID of the visual transcript file.
+        resource_type:
+          type: string
+          description: Cloudinary resource type of the visual transcript file.
+        delivery_type:
+          type: string
+          description: Cloudinary delivery type of the visual transcript file.
+        url:
+          type: string
+          description: HTTPS URL of the visual transcript file.
+    AIVideoAnalysisWrappedResponse:
+      type: object
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/AIVideoAnalysisResponse'
+  examples:
+    MyLiveStreamWrappedResponse:
+      summary: My Live Stream Response
+      value:
+        request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          id: 0bd7f11c043da975e2a8ad9ebae0b6ec
+          name: My Live Stream
+          input:
+            type: rtmp
+            uri: rtmp://live.cloudinary.com/streams
+            stream_key: dh8bxtg97t9cns4bddoa
+          status: idle
+          outputs:
+            - id: 8132d2dc5251432bb57f32ee55a336c1
+              name: default hls
+              type: hls
+              uri: https://res.cloudinary.com/demo/video/live/live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_hls.m3u8
+              created_at: 1712914020253
+              updated_at: 1712914020253
+            - id: 29b5cd6f54474bea9cec3834e763e12c
+              name: default archive
+              type: archive
+              public_id: live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_archive
+              created_at: 1712914020253
+              updated_at: 1714378330476
+          idle_timeout_sec: 120
+          max_runtime_sec: 10800
+          created_at: 1697265900621
+          updated_at: 1697265900621
+    MyLiveStreamsWrappedResponse:
+      summary: My Live Streams Response
+      value:
+        request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          - id: 0bd7f11c043da975e2a8ad9ebae0b6ec
+            name: My Live Stream 1
+            input:
+              type: rtmp
+              uri: rtmp://live.cloudinary.com/streams
+              stream_key: dh8bxtg97t9cns4bddoa
+            status: idle
+            outputs:
+              - id: 8132d2dc5251432bb57f32ee55a336c1
+                name: default hls
+                type: hls
+                uri: https://res.cloudinary.com/demo/video/live/live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_hls.m3u8
+                created_at: 1712914020253
+                updated_at: 1712914020253
+              - id: 29b5cd6f54474bea9cec3834e763e12c
+                name: default archive
+                type: archive
+                public_id: live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_archive
+                created_at: 1712914020253
+                updated_at: 1714378330476
+            idle_timeout_sec: 120
+            max_runtime_sec: 10800
+            created_at: 1697265900621
+            updated_at: 1697265900621
+          - id: 92aa375287aa4f2b82be628060c46f43
+            name: My Live Stream 2
+            input:
+              type: rtmp
+              uri: rtmp://live.cloudinary.com/streams
+              stream_key: 48224ec768164e11a685a558605f52f5
+            status: idle
+            outputs:
+              - id: 2c5e87b0648c4767acd93ea66d34a3c0
+                name: default hls
+                type: hls
+                uri: https://res.cloudinary.com/demo/video/live/live_stream_92aa375287aa4f2b82be628060c46f43_hls.m3u8
+                created_at: 1712914020253
+                updated_at: 1712914020253
+              - id: bb55ab0c159445df93cffbfc1d3a85db
+                name: default archive
+                type: archive
+                public_id: live_stream_92aa375287aa4f2b82be628060c46f43_archive
+                created_at: 1712914020253
+                updated_at: 1714378330476
+            idle_timeout_sec: 120
+            max_runtime_sec: 10800
+            created_at: 1697265900621
+            updated_at: 1697265900621
+    MyLiveStreamOutputWrappedResponse:
+      summary: My Live Stream Output Wrapped Response
+      value:
+        request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          id: f11c043da975e2a8ad9ebae0b6ec0bd7
+          name: new youtube
+          type: simulcast
+          uri: rtmp://a.rtmp.youtube.com/live2
+          stream_key: 43q7qmah2e1p83jhfpbs
+          vendor: youtube
+          created_at: 1697265900621
+          updated_at: 1697265900621
+    MyLiveStreamOutputsWrappedResponse:
+      summary: My Live Stream Outputs Response
+      value:
+        request_id: 2f9754330d613b998bb572696869b1ed
+        data:
+          - id: 2c5e87b0648c4767acd93ea66d34a3c0
+            name: default hls
+            type: hls
+            uri: https://res.cloudinary.com/demo/video/live/live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_hls.m3u8
+            created_at: 1714480579982
+            updated_at: 1714480579982
+          - id: bb55ab0c159445df93cffbfc1d3a85db
+            name: default archive
+            type: archive
+            public_id: 92aa375287aa_archive
+            created_at: 1714480579982
+            updated_at: 1714480579982
+          - id: 54434dddf7d44ed7abf55ca34ec70527
+            name: new youtube
+            type: simulcast
+            uri: rtmp://a.rtmp.youtube.com/live2
+            stream_key: 43q7qmah2e1p83jhfpbs
+            vendor: youtube
+            created_at: 1715859923186
+            updated_at: 1715859923186
+    MyLiveStreamOutputCreatePayload:
+      summary: My Live Stream Output Create Payload
+      value:
+        name: new youtube
+        type: simulcast
+        uri: rtmp://a.rtmp.youtube.com/live2
+        stream_key: 43q7qmah2e1p83jhfpbs
+        vendor: youtube
+    MyLiveStreamOutputUpdatePayload:
+      summary: My Live Stream Output Update Payload
+      value:
+        name: new youtube
+        uri: rtmp://a.rtmp.youtube.com/live2
+        stream_key: 43q7qmah2e1p83jhfpbs
+tags:
+  - name: Video Canvas
+    description: Create and manage Video Canvas applets.
+  - name: Live Stream
+    description: Live Stream endpoint
+  - name: Live Stream Output
+    description: Live Stream Output endpoint
+  - name: Video Generate
+    description: Generate a video from an image and poll the generation job.
+  - name: Image To Video Prompts
+    description: Manage reusable image-to-video prompts.
+  - name: AI Video Analysis
+    description: Generate a visual transcription of a video and poll the analysis job.
