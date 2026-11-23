@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.11 (2026-11-23)
+
+
+### Features
+
+* Add batch_id and poll:// notification_url to api and asset-management
+* **backups:** Delete every backup version with all=true, in the background with async=true
+* **people:** List the people recognized in an asset
+* **resources:** Return created_by and uploaded_by on get resource
+* **search:** Return and filter by provenance and image_analysis.hdr
+* **upload:** Add ai_generated to declare an AI-generated asset
+
+
+### Bug Fixes
+
+* **resources:** Use the repeated form for asset_ids, public_ids and external_ids
+* **search:** Return one identity in created_by and uploaded_by
+
 ## 0.7.10 (2026-11-13)
 
 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Cloudinary Asset Management API
-  version: 0.7.10 # x-release-please-version
+  version: 0.7.11 # x-release-please-version
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -1633,7 +1633,8 @@ paths:
         - name: external_ids
           in: query
           required: true
-          explode: false
+          style: form
+          explode: true
           schema:
             type: array
             items:
@@ -1971,7 +1972,8 @@ paths:
     delete:
       summary: Delete backed up versions
       description: |
-        Deletes specific backed up versions of an asset identified by asset ID.
+        Deletes specific backed up versions of an asset identified by asset ID (`version_ids` in the body), or every backed up version of the asset (`all=true`).
+        With `all=true` one call removes up to 100 versions; an asset with more versions is rejected with a 400 asking for `async=true`, which removes them in the background.
         This operation is irreversible and deleted versions cannot be recovered.
       tags:
         - assets
@@ -1980,28 +1982,45 @@ paths:
       parameters:
         - $ref: '#/components/parameters/cloud_name'
         - $ref: '#/components/parameters/asset_id'
+        - name: all
+          in: query
+          required: false
+          description: Set to `true` to delete every backed up version of the asset. Cannot be combined with `version_ids`.
+          schema:
+            type: boolean
+            default: false
+        - name: async
+          in: query
+          required: false
+          description: With `all=true`, set to `true` to delete the versions in the background; the response is `{"status":"pending"}` and completion is confirmed by listing the asset's versions later. Only valid together with `all=true`.
+          schema:
+            type: boolean
+            default: false
       requestBody:
-        description: The asset IDs and version IDs to delete.
-        required: true
+        description: The version IDs to delete. Required unless `all=true` is passed.
+        required: false
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/delete_backup_versions_request'
       responses:
         '200':
-          description: Backup versions successfully deleted
+          description: Backup versions successfully deleted, or, with `async=true`, the deletion was accepted and runs in the background.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/delete_backup_versions_response'
+                oneOf:
+                  - $ref: '#/components/schemas/delete_backup_versions_response'
+                  - $ref: '#/components/schemas/delete_backup_versions_pending_response'
         '207':
-          description: Multi-status - some versions deleted successfully, others failed
+          description: Multi-status - some versions deleted successfully, others failed.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/delete_backup_versions_partial_response'
         '400':
-          description: Bad request - Invalid parameters or values
+          description: |
+            Bad request - Invalid parameters or values. Also returned when `all=true` is combined with `version_ids`, when `async=true` is passed without `all=true`, when `all=true` is requested for an asset that has no backed up versions, and when the asset has more versions than one synchronous call removes (`Asset has more than 100 backup versions; repeat the call with async=true to delete them in the background`).
           content:
             application/json:
               schema:
@@ -3239,7 +3258,7 @@ paths:
       description: |
         Returns a list of resources matching the specified search criteria.
 
-        Uses a Lucene-like query language to filter assets by descriptive attributes (`public_id`, `asset_id`, `filename`, `display_name`, `folder` / `asset_folder`, `tags`, `context.<key>`), file details (`resource_type`, `type`, `format`, `bytes`, `width`, `height`, `duration`, `pages`, `aspect_ratio`, `transparent`, `grayscale`), lifecycle dates (`uploaded_at`, `created_at`, `taken_at`, `updated_at`, `last_updated.<kind>`), moderation and lifecycle state (`status`, `moderation_status`, `moderation_kind`), embedded data (`image_metadata.*`), structured metadata (`metadata.<external_id>`), and analysis fields (`face_count`, `colors`, `quality_score`, `illustration_score`, `accessibility_analysis.*`). Supports sorting, aggregate counts, and complex boolean expressions.
+        Uses a Lucene-like query language to filter assets by descriptive attributes (`public_id`, `asset_id`, `filename`, `display_name`, `folder` / `asset_folder`, `tags`, `context.<key>`), file details (`resource_type`, `type`, `format`, `bytes`, `width`, `height`, `duration`, `pages`, `aspect_ratio`, `transparent`, `grayscale`), provenance flags (`has_c2pa` and `hdr`, matched as `true` or `false`, and `ai_generated`, which additionally has an undeclared state that matches neither value), lifecycle dates (`uploaded_at`, `created_at`, `taken_at`, `updated_at`, `last_updated.<kind>`), moderation and lifecycle state (`status`, `moderation_status`, `moderation_kind`), embedded data (`image_metadata.*`), structured metadata (`metadata.<external_id>`), and analysis fields (`face_count`, `colors`, `quality_score`, `illustration_score`, `accessibility_analysis.*`). Supports sorting, aggregate counts, and complex boolean expressions.
 
         Examples: `tags:shirt AND uploaded_at>1d`, `resource_type:image AND bytes>1000000`, `folder:products OR context.category:electronics`. See the [search expressions guide](https://cloudinary.com/documentation/search_expressions.md) for the full syntax and field reference.
       tags:
@@ -3585,6 +3604,70 @@ paths:
               example:
                 error:
                   message: People Search is not enabled for this customer
+  /v1_1/{cloud_name}/people/by_asset/{asset_id}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - name: asset_id
+        in: path
+        required: true
+        description: The external ID of the asset.
+        schema:
+          type: string
+        example: 2262b0b5eb88f1fd7724e29b0e57d730
+    get:
+      x-speakeasy-mcp:
+        disabled: true
+        name: list-people-by-asset
+        scopes:
+          - admin
+        title: List People by Asset
+        readOnlyHint: true
+        idempotentHint: true
+      operationId: listPeopleByAsset
+      summary: List the people recognized in an asset
+      description: |
+        Returns the recognized people found in an image, one entry per person, each with the face crop
+        in that image. A person is listed once, using their most confident face in the image, then the largest one.
+        The list is empty if the asset is not an image, is not active, or has not been analyzed yet.
+        People you are not permitted to read are left out, and a thumbnail is returned only if you can read
+        the asset it comes from.
+        People Search must be enabled for this product environment.
+      tags:
+        - people
+      responses:
+        '200':
+          description: People retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/people_by_asset_response'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+              example:
+                error:
+                  message: Invalid credentials
+        '403':
+          description: Feature not enabled, or no permission to read the asset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+              example:
+                error:
+                  message: People Search is not enabled for this customer
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api_error'
+              example:
+                error:
+                  message: Can't find asset with id 2262b0b5eb88f1fd7724e29b0e57d730
   /v1_1/{cloud_name}/people/{person_id}:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
@@ -5164,7 +5247,8 @@ components:
       name: public_ids
       in: query
       required: false
-      explode: false
+      style: form
+      explode: true
       schema:
         type: array
         items:
@@ -5245,7 +5329,8 @@ components:
       name: asset_ids
       in: query
       required: true
-      explode: false
+      style: form
+      explode: true
       schema:
         type: array
         items:
@@ -5685,6 +5770,12 @@ components:
         accessibility_analysis:
           type: boolean
           description: Whether to return accessibility analysis values for the image.
+        ai_generated:
+          type: boolean
+          description: |
+            Whether to declare that the asset was generated by AI. Omit the parameter to leave the declaration unknown.
+            Note that a declaration of true is permanent: once an asset is declared AI-generated it cannot be changed back
+            to false, including by uploading over the same public ID.
         asset_folder:
           type: string
           description: The asset folder to assign to the asset.
@@ -5802,7 +5893,7 @@ components:
         eager_notification_url:
           type: string
           format: uri
-          description: A URL to notify when eager transformations are completed.
+          description: A URL to notify when eager transformations are completed. Use a webhook URL, or a `poll://<channel>` or `poll://*` address to hold the notification for retrieval with the Notifications API. Retrieve a `poll://*` notification by `batch_id`.
         eval:
           type: string
           description: Allows you to modify upload parameters by specifying custom logic with JavaScript. This can be useful for conditionally adding tags, contextual metadata, structured metadata or eager transformations depending on specific criteria of the uploaded file.
@@ -5864,7 +5955,7 @@ components:
         notification_url:
           type: string
           format: uri
-          description: A URL to notify when the asset is ready.
+          description: A URL to notify when the asset is ready. Use a webhook URL, or a `poll://<channel>` or `poll://*` address to hold the notification for retrieval with the Notifications API. Retrieve a `poll://*` notification by `batch_id`.
         ocr:
           type: string
           description: |
@@ -6044,6 +6135,7 @@ components:
         - $ref: '#/components/schemas/signature_parameters'
         - $ref: '#/components/schemas/upload_parameters'
         - $ref: '#/components/schemas/upload_request_parameters'
+        - $ref: '#/components/schemas/notification_batch_parameter'
         - type: object
           properties:
             file:
@@ -6059,6 +6151,7 @@ components:
         - $ref: '#/components/schemas/signature_parameters'
         - $ref: '#/components/schemas/upload_parameters'
         - $ref: '#/components/schemas/upload_request_parameters'
+        - $ref: '#/components/schemas/notification_batch_parameter'
         - type: object
           properties:
             file:
@@ -6072,6 +6165,16 @@ components:
                 - Local file path starting with file://.
       required:
         - file
+    batch_id_param:
+      type: string
+      pattern: '^[A-Za-z0-9_\-./:]{1,128}$'
+      description: The identifier that correlates related notifications so they can be retrieved together from a `poll://*` notification destination. Send your own value to be sure that you can retrieve the notifications. When omitted, retrieve them by the `batch_id` that an asynchronous response returns, or, for a synchronous request, by the `X-Request-Id` response header.
+      example: orders/2026-07/import-42
+    notification_batch_parameter:
+      type: object
+      properties:
+        batch_id:
+          $ref: '#/components/schemas/batch_id_param'
     version_id:
       type: string
       pattern: ^([0-9a-f]{32})+$
@@ -6412,7 +6515,9 @@ components:
             notification_url:
               type: string
               format: uri
-              description: URL to notify when the operation is complete.
+              description: URL to notify when the operation is complete. Use a webhook URL, or a `poll://<channel>` or `poll://*` address to hold the notification for retrieval with the Notifications API. Retrieve a `poll://*` notification by `batch_id` (see the `batch_id` parameter).
+            batch_id:
+              $ref: '#/components/schemas/batch_id_param'
           required:
             - from_public_id
             - to_public_id
@@ -6476,7 +6581,9 @@ components:
             notification_url:
               type: string
               format: uri
-              description: URL to receive a notification when the operation is complete.
+              description: URL to receive a notification when the operation is complete. Use a webhook URL, or a `poll://<channel>` or `poll://*` address to hold the notification for retrieval with the Notifications API. Retrieve a `poll://*` notification by `batch_id` (see the `batch_id` parameter).
+            batch_id:
+              $ref: '#/components/schemas/batch_id_param'
     destroy_response:
       type: object
       properties:
@@ -6503,7 +6610,9 @@ components:
             notification_url:
               type: string
               format: uri
-              description: The webhook URL to notify when the operation is complete.
+              description: The URL to notify when the operation is complete. Use a webhook URL, or a `poll://<channel>` or `poll://*` address to hold the notification for retrieval with the Notifications API. Retrieve a `poll://*` notification by `batch_id` (see the `batch_id` parameter).
+            batch_id:
+              $ref: '#/components/schemas/batch_id_param'
             type:
               $ref: '#/components/schemas/managed_delivery_type'
               description: 'The delivery type of the asset. Default: upload'
@@ -6532,6 +6641,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/signature_parameters'
         - $ref: '#/components/schemas/upload_common_parameters'
+        - $ref: '#/components/schemas/notification_batch_parameter'
         - type: object
           properties:
             public_id:
@@ -6752,7 +6862,9 @@ components:
             notification_url:
               type: string
               format: uri
-              description: ("create" mode only), specifies the URL to notify when the archive generation is complete.
+              description: ("create" mode only), specifies the URL to notify when the archive generation is complete. Use a webhook URL, or a `poll://<channel>` or `poll://*` address to hold the notification for retrieval with the Notifications API. Retrieve a `poll://*` notification by `batch_id` (see the `batch_id` parameter).
+            batch_id:
+              $ref: '#/components/schemas/batch_id_param'
             target_tags:
               type: array
               items:
@@ -6877,7 +6989,9 @@ components:
             notification_url:
               type: string
               format: uri
-              description: URL to receive completion notification.
+              description: URL to receive completion notification. Use a webhook URL, or a `poll://<channel>` or `poll://*` address to hold the notification for retrieval with the Notifications API. Retrieve a `poll://*` notification by `batch_id` (see the `batch_id` parameter).
+            batch_id:
+              $ref: '#/components/schemas/batch_id_param'
             callback:
               type: string
               format: uri
@@ -7034,6 +7148,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/signature_parameters'
         - $ref: '#/components/schemas/upload_common_parameters'
+        - $ref: '#/components/schemas/notification_batch_parameter'
         - type: object
           required:
             - urls
@@ -7130,6 +7245,27 @@ components:
         - regions
         - is_audio
       description: Valid field names for selective resource responses.
+    contributor:
+      type: object
+      description: |
+        The identity behind the upload. Either the console user who performed it (custom_id and external_id)
+        or, when no console user was involved, the API key that signed the upload (access_key). The
+        get-resource and Search responses return one or the other, never both. When no contributor was
+        recorded (for example assets created before creator tracking) the Search API returns the field as
+        null and the get-resource response omits it.
+      properties:
+        access_key:
+          type: string
+          description: The API key used for the upload. Returned only when no console user was recorded.
+          example: '149945967172831'
+        custom_id:
+          type: string
+          description: The email address of the console user who performed the upload, as it was at upload time. The stored value never changes, even if the user later changes their email, so it may not match the user's current address.
+          example: matthew@example.com
+        external_id:
+          type: string
+          description: The identifier of the console user who performed the upload. It identifies the actual user behind the operation and stays the same even if their email changes; use it to look the user up.
+          example: 0b8cd452de3ce172a6aec7af0a90db
     info:
       type: object
       properties:
@@ -7278,6 +7414,14 @@ components:
             updated_at:
               type: string
               format: date-time
+        created_by:
+          allOf:
+            - $ref: '#/components/schemas/contributor'
+          description: 'Who created the asset: the console user when known, otherwise the API key that signed the upload. Omitted when no contributor was recorded; never null.'
+        uploaded_by:
+          allOf:
+            - $ref: '#/components/schemas/contributor'
+          description: 'Who performed the most recent upload of the asset: the console user when known, otherwise the API key that signed the upload. Equal to created_by unless the asset was overwritten. Omitted when no contributor was recorded; never null.'
         next_cursor:
           type: string
           description: Cursor for paginating derived assets.
@@ -7410,8 +7554,10 @@ components:
         notification_url:
           type: string
           format: uri
-          description: The URL that will receive notification when restore is complete.
+          description: The URL that will receive notification when restore is complete. Use a webhook URL, or a `poll://<channel>` or `poll://*` address to hold the notification for retrieval with the Notifications API. Retrieve a `poll://*` notification by `batch_id` (see the `batch_id` parameter).
           example: https://example.com/webhook
+        batch_id:
+          $ref: '#/components/schemas/batch_id_param'
     restore_response:
       type: object
       additionalProperties:
@@ -7571,12 +7717,10 @@ components:
           type: array
           items:
             type: string
-          description: The list of version IDs to delete from backup.
+          description: The list of version IDs to delete from backup. Omit it and pass the `all=true` query parameter to delete every backed up version of the asset.
           example:
             - 5552aa57e67445552a3cdc1110a0115
             - 383e22a57167445552a3cdc16f0a0c85
-      required:
-        - version_ids
     delete_backup_versions_response:
       type: object
       properties:
@@ -7590,6 +7734,19 @@ components:
       required:
         - asset_id
         - deleted_version_ids
+    delete_backup_versions_pending_response:
+      type: object
+      description: Returned for `all=true&async=true`; the versions are deleted in the background.
+      properties:
+        status:
+          type: string
+          enum:
+            - pending
+        asset_id:
+          $ref: '#/components/schemas/asset_id'
+      required:
+        - status
+        - asset_id
     backup_version_failure:
       type: object
       properties:
@@ -8711,14 +8868,16 @@ components:
               - metadata
               - quality_analysis
               - accessibility_analysis
+              - provenance
             x-enum-descriptions:
               - Includes the `context` key-value pairs attached to each asset.
               - Includes the list of `tags` attached to each asset.
               - Includes embedded metadata extracted from the asset file (EXIF, IPTC, XMP under `image_metadata`). Tier 2 feature.
-              - Includes analysis results such as `colors`, `face_count`, `illustration_score`, and `grayscale` under `image_analysis`. Tier 2 feature.
+              - Includes analysis results such as `colors`, `face_count`, `illustration_score`, `grayscale`, and `hdr` under `image_analysis`. Tier 2 feature.
               - Includes values of structured metadata fields under `metadata`. Tier 2 feature.
               - Includes `quality_analysis.*` scores for assets analyzed at upload time.
               - Includes `accessibility_analysis.*` scores for assets analyzed at upload time.
+              - Includes the provenance indications `has_c2pa` and `ai_generated` under `provenance`.
           description: |
             The additional asset attributes to include in each search result. The `fields` parameter takes precedence over this parameter. `image_metadata`, `image_analysis`, and `metadata` require a Tier 2 search plan.
           example:
@@ -8732,6 +8891,20 @@ components:
             - This parameter takes precedence over the with_field parameter, so if you want any additional asset attributes returned, make sure to also include them in this list (e.g., tags or context).
             - The following fields are always included in the response: public_id, asset_id, asset_folder, created_at, status, type, and resource_type.
           example: tags,context,metadata
+    provenance_response:
+      type:
+        - object
+        - 'null'
+      description: Provenance indications derived from the asset at upload. Returned in searches including a with_field parameter specifying provenance. A key is present only when there is an answer for it.
+      properties:
+        has_c2pa:
+          type: boolean
+          description: Whether the asset carries a C2PA content credentials manifest. False when no manifest was found.
+          example: false
+        ai_generated:
+          type: boolean
+          description: Whether the asset is AI-generated, either declared on upload or read from its C2PA manifest. Omitted when unknown, which is not the same as false.
+          example: true
     context_response:
       type:
         - object
@@ -8881,25 +9054,19 @@ components:
                 description: The ETag of the asset.
                 example: 7242da7b353e7da2c3eb8c006165b385
               created_by:
-                type:
-                  - object
-                  - 'null'
-                description: Information about who created the asset.
-                properties:
-                  access_key:
-                    type: string
-                    description: The access key of the user who created the asset.
-                    example: '614335564976464'
+                anyOf:
+                  - $ref: '#/components/schemas/contributor'
+                  - type: 'null'
+                description: Who created the asset, as one identity (see contributor). Null when no contributor was recorded.
               uploaded_by:
-                type:
-                  - object
-                  - 'null'
-                description: Information about who uploaded the asset.
-                properties:
-                  access_key:
-                    type: string
-                    description: The access key of the user who uploaded the asset.
-                    example: '614335564976464'
+                anyOf:
+                  - $ref: '#/components/schemas/contributor'
+                  - type: 'null'
+                description: Who uploaded the asset, as one identity (see contributor). Null when no contributor was recorded.
+              provenance:
+                allOf:
+                  - $ref: '#/components/schemas/provenance_response'
+                description: 'Provenance indications for the asset. Note: the provenance object is returned in searches including a with_field parameter specifying provenance.'
               context:
                 allOf:
                   - $ref: '#/components/schemas/context_response'
@@ -8918,6 +9085,11 @@ components:
                   - object
                   - 'null'
                 description: Results of image analysis.
+                properties:
+                  hdr:
+                    type: boolean
+                    description: Whether the stored asset is in high dynamic range. False when no HDR was detected.
+                    example: false
               metadata:
                 type:
                   - object
@@ -9122,11 +9294,11 @@ components:
         - hidden
     thumbnail:
       type: object
-      description: The thumbnail image for a person.
+      description: An image of a person's face, taken from an asset.
       properties:
         asset_id:
           type: string
-          description: The external ID of the asset used for the thumbnail.
+          description: The external ID of the asset the image is taken from.
           example: 2262b0b5eb88f1fd7724e29b0e57d730
         bounding_box:
           type: array
@@ -9143,7 +9315,7 @@ components:
         url:
           type: string
           format: uri
-          description: The secure URL of the thumbnail asset.
+          description: The secure URL of the asset the image is taken from.
           example: https://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg
         resource_type:
           type: string
@@ -9199,6 +9371,29 @@ components:
         next_cursor:
           type: string
           description: The cursor to use for the next page of results.
+    person_on_asset:
+      description: A recognized person, with their face in the requested asset.
+      allOf:
+        - $ref: '#/components/schemas/person_details'
+        - type: object
+          properties:
+            face:
+              description: The person's face in the requested asset, or null if no face image is available.
+              oneOf:
+                - $ref: '#/components/schemas/thumbnail'
+                - type: 'null'
+    people_by_asset_response:
+      type: object
+      properties:
+        asset_id:
+          type: string
+          description: The external ID of the asset.
+          example: 2262b0b5eb88f1fd7724e29b0e57d730
+        people:
+          type: array
+          description: The recognized people found in the asset.
+          items:
+            $ref: '#/components/schemas/person_on_asset'
     person_response:
       type: object
       properties:
@@ -11464,6 +11659,12 @@ components:
           public_id_updated_at: '2022-12-11T05:41:21Z'
           tags_updated_at: '2022-12-14T06:09:21Z'
           updated_at: '2022-12-14T06:09:21Z'
+        created_by:
+          custom_id: matthew@example.com
+          external_id: 0b8cd452de3ce172a6aec7af0a90db
+        uploaded_by:
+          custom_id: matthew@example.com
+          external_id: 0b8cd452de3ce172a6aec7af0a90db
         next_cursor: 041a39fc10971b9eabd4993470f6bfaf
         derived:
           - transformation: c_fill,w_100,h_100
