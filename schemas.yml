@@ -14,3 +14,4 @@ schemas:
   - collections
   - video
   - notifications
+  - video-elements

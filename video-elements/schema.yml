@@ -1,0 +1,428 @@
+openapi: 3.0.3
+info:
+  title: Video Elements API
+  description: |
+    Use the Video Elements API to manage the elements attached to a video: its poster, transcripts and their translations, visual transcript, and chapters. You can list a video's elements, upload a poster, transcript, or visual transcript, and delete elements. Each element is stored as its own asset, related to the video. To deliver elements by URL, see [Delivering video elements by URL](https://cloudinary.com/documentation/video_player_studio#delivering_video_elements_by_url).
+
+      The API supports Basic Authentication using your Cloudinary API Key and API Secret (which can be found in the API Keys page of your [Cloudinary Console](https://console.cloudinary.com/app/settings/api-keys)).
+  version: 0.1.1 # x-release-please-version
+  contact:
+    name: Cloudinary Support
+    email: support@cloudinary.com
+    url: https://support.cloudinary.com
+  termsOfService: https://cloudinary.com/tou
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  x-cld-module-context: cloud
+  x-cld-module-name: video-elements
+servers:
+  - url: https://api.cloudinary.com/v2/video/{cloudName}
+    variables:
+      cloudName:
+        default: CLOUD_NAME
+        description: The cloud name for your product environment.
+security:
+  - basicAuth: []
+tags:
+  - name: Video Elements
+    description: List, upload, and delete the elements attached to a video, such as its poster and transcripts.
+paths:
+  /elements/{videoAssetId}/{subkind}:
+    parameters:
+      - in: path
+        name: videoAssetId
+        schema:
+          type: string
+        required: true
+        description: The asset ID of the video. This is the video's `asset_id`, not its public ID.
+      - in: path
+        name: subkind
+        schema:
+          type: string
+        required: true
+        description: |
+          The type of video element. One of:
+          - `poster`: the image shown before the video plays.
+          - `transcript`: the video's transcript, or a translation of it.
+          - `visual_transcript`: descriptions of what's shown in the video.
+          - `chapters`: the video's chapters. You can list and delete chapters, but not upload them.
+    get:
+      x-speakeasy-mcp:
+        name: list-video-elements
+        title: List Video Elements
+        readOnlyHint: true
+      tags:
+        - Video Elements
+      summary: List a video's elements
+      description: Returns the elements of the given type that are attached to a video, such as its custom poster or its transcript files. Each element is a separate asset related to the video. Results are paginated; when `next_cursor` is returned, pass it as `cursor` to get the next page.
+      operationId: getVideoElements
+      x-cld-use-for-readme: true
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: The `next_cursor` value from a previous response, to get the next page of results.
+      responses:
+        '200':
+          description: The video's elements of the given type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoElementsWrappedResponse'
+              example:
+                request_id: 54fa10b700125e701b4e1dd0570b9a63
+                data:
+                  - type: visual_transcript
+                    asset_id: 3a4bf9a18670c7b24947bacb156b90e7
+                    public_id: samples/sea-turtle.visual.transcript
+                    metadata: {}
+        '400':
+          description: Bad request. The element type isn't supported.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: a59557e743338a5a26795a4bf7f600f6
+                error:
+                  message: 'validation failed: unrecognized video element subkind ''subtitles'''
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: 78fa2cbe6d2e16cdb9734f8c2b6de2c3
+                error:
+                  message: 'error while authenticating: api_secret mismatch'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No video with this asset ID exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: 591e30d43eadf7e9461c65bafd2a4930
+                error:
+                  message: 'resource not found: video ''00000000000000000000000000000000'' not found'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    post:
+      x-speakeasy-mcp:
+        name: upload-video-element
+        title: Upload Video Element
+      tags:
+        - Video Elements
+      summary: Upload a video element
+      description: |
+        Uploads a file as a video element and attaches it to the video whose asset ID you pass as `videoAssetId` in the path. The element is stored as its own asset, in the same asset folder as the video, with a public ID based on the video's public ID.
+
+        How to send the file depends on the element type:
+        - `poster`: send the image as `file` in a `multipart/form-data` request, or send `{"url": "<image URL>"}` as `application/json` to upload it from a URL. The poster's public ID is `<video public ID>_poster`.
+        - `transcript`: send a `.srt`, `.vtt`, or `.transcript` file as `file` in a `multipart/form-data` request. Cloudinary converts it to its `.transcript` format. To upload a translation, also send `language_code`. The public ID is `<video public ID>.<language_code>.transcript`, or `<video public ID>.transcript` without a language code.
+        - `visual_transcript`: send a `.srt`, `.vtt`, or `.transcript` file as `file` in a `multipart/form-data` request. Cloudinary converts it to its `.transcript` format. The public ID is `<video public ID>.visual.transcript`.
+
+        Files can be up to 30 MB. Chapters can't be uploaded.
+      operationId: uploadVideoElement
+      requestBody:
+        description: The element file, or for a poster, the URL of the image to upload.
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VideoElementFileUpload'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoElementURLUpload'
+            example:
+              url: https://res.cloudinary.com/demo/image/upload/sample.jpg
+      responses:
+        '200':
+          description: The element was uploaded and attached to the video.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoElementUploadWrappedResponse'
+              example:
+                request_id: 9e1a3c5e7b9d1f3a5c7e9b1d3f5a7c9e
+                data:
+                  message: video element poster uploaded
+                  public_id: dog_poster
+                  asset_id: 43da975e2a8ad6ec0bd7f11c09ebae0b
+                  file_url: https://res.cloudinary.com/demo/image/upload/v1763548800/dog_poster.jpg
+        '400':
+          description: Bad request. For example, the element type can't be uploaded, or the file is missing, too large, or in an unsupported format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: b29592417bf6437233c9073f541a3ee6
+                error:
+                  message: 'bad request: transcript upload requires multipart form with file part'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: 796aa421102594ce8c072c62bca3b0f4
+                error:
+                  message: 'error while authenticating: api_secret mismatch'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No video with this asset ID exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: 6b10e3e257f31f9ddd48cb2aa71a0ce9
+                error:
+                  message: 'resource not found: video ''00000000000000000000000000000000'' not found'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-video-elements
+        title: Delete Video Elements
+        destructiveHint: true
+      tags:
+        - Video Elements
+      summary: Delete video elements
+      description: Deletes elements of the given type from a video. By default, deletes all of the video's elements of that type, for example every transcript including translations. To delete a single element, pass its `assetId`. The element assets are deleted, not just detached from the video. The response confirms the request but doesn't list the deleted elements, so to check what's left, list the video's elements.
+      operationId: deleteVideoElement
+      parameters:
+        - in: query
+          name: assetId
+          required: false
+          schema:
+            type: string
+          description: The asset ID of a single element to delete, as returned when you list the video's elements. When omitted, deletes all elements of the given type for the video.
+      responses:
+        '200':
+          description: The elements were deleted, or the video had no elements of this type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+              example:
+                request_id: d99c6557b8573bbb48c4a38ae3eb3dca
+                data:
+                  message: video element transcript deleted
+        '400':
+          description: Bad request. The element type isn't supported.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: 6c367455025915942298d34c7ede6bf3
+                error:
+                  message: 'validation failed: unrecognized video element subkind ''subtitles'''
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: dd92862fa230ff87d0a0893bac1c99c1
+                error:
+                  message: 'error while authenticating: api_secret mismatch'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No video with this asset ID exists, or the video has no element of this type with the given `assetId`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: a761f913ec2477852cc0a77a28b276a8
+                error:
+                  message: 'resource not found: video element with asset id ''00000000000000000000000000000000'' not found for video'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic authentication using your Cloudinary API Key and API Secret.
+  schemas:
+    MessageWrappedResponse:
+      type: object
+      description: A response envelope wrapping a simple message.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/MessageWrappedResponseData'
+    MessageWrappedResponseData:
+      type: object
+      description: An object carrying a human-readable message.
+      properties:
+        message:
+          type: string
+          description: A human-readable message.
+    ErrorWrappedResponse:
+      type: object
+      description: A response envelope returned when a request fails.
+      required:
+        - request_id
+        - error
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        error:
+          $ref: '#/components/schemas/MessageWrappedResponseData'
+    VideoElementsWrappedResponse:
+      type: object
+      description: A response envelope wrapping a page of video elements.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        next_cursor:
+          type: string
+          description: A cursor for the next page of results. Pass it as `cursor` in your next request. When there are no more results, it's `null`.
+          example: da975e2a8ad9ebae0b6ec0bd7f11c043d
+        data:
+          nullable: true
+          type: array
+          description: The video's elements of the requested type.
+          items:
+            $ref: '#/components/schemas/VideoElementResponse'
+    VideoElementResponse:
+      type: object
+      description: A video element. Each element is an asset related to the video.
+      required:
+        - type
+        - asset_id
+        - public_id
+        - metadata
+      properties:
+        type:
+          type: string
+          description: The type of the element, for example `poster` or `transcript`.
+          example: poster
+        asset_id:
+          type: string
+          description: The asset ID of the element. Use it to delete this element.
+          example: 43da975e2a8ad6ec0bd7f11c09ebae0b
+        public_id:
+          type: string
+          description: The public ID of the element asset.
+          example: dog_poster
+        metadata:
+          type: object
+          description: Extra information about the element, for example the `language_code` of a translated transcript. Empty when there's none.
+          example:
+            language_code: es
+    VideoElementFileUpload:
+      type: object
+      description: The element file to upload, sent as `multipart/form-data`.
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary
+          description: The element file. For a poster, an image. For a transcript or visual transcript, a `.srt`, `.vtt`, or `.transcript` file. Up to 30 MB.
+        language_code:
+          type: string
+          description: For a transcript only, the language of the transcript, for example `en` or `de`. The uploaded transcript's public ID is then `<video public ID>.<language_code>.transcript`. Don't send this field for other element types.
+          example: de
+    VideoElementURLUpload:
+      type: object
+      description: The URL of a poster image to upload, sent as `application/json`. Only posters can be uploaded from a URL.
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          format: uri
+          description: The URL of the image to upload as the video's poster.
+          example: https://res.cloudinary.com/demo/image/upload/sample.jpg
+    VideoElementUploadWrappedResponse:
+      type: object
+      description: A response envelope wrapping the result of a video element upload.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/VideoElementUploadResponse'
+    VideoElementUploadResponse:
+      type: object
+      description: The uploaded element.
+      required:
+        - message
+        - public_id
+        - asset_id
+        - file_url
+      properties:
+        message:
+          type: string
+          description: A confirmation message, for example `video element poster uploaded`.
+          example: video element poster uploaded
+        public_id:
+          type: string
+          description: The public ID of the uploaded element asset.
+          example: dog_poster
+        asset_id:
+          type: string
+          description: The asset ID of the uploaded element.
+          example: 43da975e2a8ad6ec0bd7f11c09ebae0b
+        file_url:
+          type: string
+          format: uri
+          description: The secure delivery URL of the uploaded element asset.
+          example: https://res.cloudinary.com/demo/image/upload/v1763548800/dog_poster.jpg
