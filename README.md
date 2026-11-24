@@ -18,6 +18,7 @@ This repository contains publicly accessible OpenAPI schemas for various APIs, e
 - **Video Canvas API**: Creates and manages applets: node-based video transformation pipelines that compile into named transformations for delivery.
 - **Collections API**: Organizes assets into manual or dynamic collections and shares them through public pages, optionally restricted to allowed emails or domains.
 - **Video API**: Combines the Video Live Streaming, Image to Video, AI Video Analysis, and Video Canvas APIs into a single schema. _(Image to Video and AI Video Analysis are Beta)_
+- **Notifications API**: Retrieves the notifications Cloudinary buffered for a product environment, over long-poll or WebSocket, and acknowledges them.
 
 ## Tools
 

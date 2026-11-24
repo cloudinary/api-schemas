@@ -1,0 +1,523 @@
+openapi: 3.0.3
+info:
+  title: Notifications API
+  x-cld-module-context: cloud
+  x-cld-module-name: notifications
+  description: |
+    Retrieves the notifications Cloudinary buffered for a product environment,
+    over long-poll or WebSocket, and acknowledges them.
+
+    ## Authentication
+
+    Every path requires authentication. Use HTTP Basic with your API key and API
+    secret, an OAuth access token, or the Cloudinary signed-request triple
+    (`api_key` + `timestamp` + `signature`, as on the `/v1_1` upload surface).
+    API keys and secrets are on the Dashboard page of your
+    [Cloudinary Console](https://console.cloudinary.com/pm).
+
+    HTTP Basic accepts global (customer-scoped) API keys only and rejects
+    user-bound ("restricted") keys. The signed-request triple accepts both: a
+    user-bound key authenticates as its user, and is authorized as that user —
+    with a Trigger role it drains the whole product environment, without one it
+    receives and acknowledges only the notifications it initiated, by `batch_id`
+    only (a batch it did not initiate drains as an empty response, and a channel
+    drain is refused with 403). User-bound keys are accepted only when the
+    product environment has granular permissions and poll notification
+    ownership enabled. Poll notification ownership is not yet available, so
+    user-bound keys are refused today.
+
+    The signed-request triple is read from query parameters on every path, and
+    `access_token` on every GET. This is how a browser authenticates
+    `messages/subscribe`, because it cannot set request headers on a WebSocket
+    handshake. HTTP Basic is refused on `messages/subscribe`: a WebSocket
+    upgrade is not subject to CORS, so a browser replaying a cached Basic
+    credential would let any origin read the stream.
+
+    Precedence, when a request carries more than one credential: OAuth wins over
+    Basic, and a `signature` param always beats an `Authorization` header,
+    matching `/v1_1`.
+  version: 0.1.1 # x-release-please-version
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: Cloudinary Support
+    email: support@cloudinary.com
+    url: https://support.cloudinary.com
+  termsOfService: https://cloudinary.com/tou
+servers:
+  - url: https://api.cloudinary.com/v2
+    description: Cloudinary API.
+security:
+  - basicAuth: []
+  - oauth2: []
+  - {}
+tags:
+  - name: Messages
+    description: Retrieves and acknowledges buffered notifications.
+paths:
+  /notifications/{cloud_name}/messages:
+    parameters:
+      - $ref: '#/components/parameters/CloudName'
+    get:
+      x-speakeasy-mcp:
+        name: get-notifications
+        scopes:
+          - builder
+        title: Get Notifications
+        readOnlyHint: false
+        idempotentHint: false
+      tags:
+        - Messages
+      summary: Get notifications
+      description: |
+        Long-polls buffered notifications for exactly one addressing dimension —
+        a named channel XOR a batch_id (mutually exclusive; supplying neither or
+        both is 400 NT_00001). Holds the connection up to
+        wait_seconds, returning as soon as messages are claimed.
+
+        This call claims messages; it does not just read them. A returned message
+        is hidden from every other reader of the same channel or batch for
+        `visibility_timeout` seconds, then redelivered unless acknowledged.
+
+        * Use `batch_id` to receive the notifications of a request you made.
+          Poll the `batch_id` the request's response returned; use the one you
+          sent only if the response has none. A batch drain finds only
+          notifications sent to `notification_url=poll://*`, so send that, with a
+          unique `batch_id` you mint for each request. A batch then holds only
+          that request's notifications.
+        * Use `channel` only when asked to. A channel is a destination the
+          customer configured, and its usual reader is the customer's own
+          application: messages you claim are hidden from it, and messages you
+          acknowledge are gone.
+        * Notifications usually arrive about 20 seconds after the request. Set
+          `wait_seconds` to 60 and poll again on an empty response before
+          concluding that nothing arrived.
+      operationId: getMessages
+      parameters:
+        - in: query
+          name: channel
+          schema:
+            type: string
+          required: false
+          description: The named channel to drain (poll://<channel> destinations). Mutually exclusive with batch_id.
+        - in: query
+          name: batch_id
+          schema:
+            type: string
+          required: false
+          description: The batch to drain (poll://* anonymous destinations). Mutually exclusive with channel.
+        - in: query
+          name: max_messages
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 10
+          required: false
+          description: The maximum number of messages to return. Default 10.
+        - in: query
+          name: wait_seconds
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            maximum: 60
+            default: 20
+          required: false
+          description: The maximum seconds to hold the long-poll open when empty. Default 20.
+        - in: query
+          name: visibility_timeout
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 600
+            default: 30
+          required: false
+          description: The seconds a claimed message stays invisible before redelivery. Default 30.
+      responses:
+        '200':
+          description: Zero or more claimed messages.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PollResponse'
+        '400':
+          description: Invalid addressing or parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Authenticated, but not authorized to read this product environment's
+            notifications.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitError'
+        '503':
+          description: |
+            The buffer is unreachable, or the authorization decision could not be
+            made (fail-closed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /notifications/{cloud_name}/messages/ack:
+    parameters:
+      - $ref: '#/components/parameters/CloudName'
+    post:
+      x-speakeasy-mcp:
+        name: ack-notifications
+        scopes:
+          - builder
+        title: Acknowledge Notifications
+        destructiveHint: true
+        idempotentHint: true
+      tags:
+        - Messages
+      summary: Acknowledge notifications
+      description: |
+        Acknowledges (deletes) previously received messages by receipt handle.
+        The handles array is capped at 100; a larger array is 400 NT_00003.
+        Per-handle results are reported with HTTP 200 when the body is well-formed.
+
+        Deletion is permanent: no other reader receives an acknowledged message.
+        Acknowledge only messages you received and finished processing. An
+        unacknowledged message is redelivered after its visibility timeout.
+      operationId: ackMessages
+      requestBody:
+        description: The receipt handles to acknowledge.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AckRequest'
+      responses:
+        '200':
+          description: Per-handle acknowledgement results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckResponse'
+        '400':
+          description: Malformed request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Authenticated, but not authorized to read this product environment's
+            notifications.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: |
+            The buffer is unreachable, or the authorization decision could not be
+            made (fail-closed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limited.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitError'
+  /notifications/{cloud_name}/messages/subscribe:
+    parameters:
+      - $ref: '#/components/parameters/CloudName'
+    get:
+      x-speakeasy-ignore: true
+      tags:
+        - Messages
+      summary: Subscribe to notifications
+      description: |
+        Upgrades to a WebSocket that pushes the same message envelope as the
+        long-poll and accepts in-frame acks. OpenAPI 3.x has no native WebSocket
+        support, so this operation describes the handshake only. Same one-of
+        channel/batch_id addressing.
+
+        A browser authenticates with the query-parameter credentials, because it
+        cannot set headers on a WebSocket handshake. HTTP Basic is refused here —
+        see info.description.
+      operationId: subscribeMessages
+      security:
+        - oauth2: []
+        - {}
+      parameters:
+        - in: query
+          name: channel
+          schema:
+            type: string
+          required: false
+          description: The named channel to subscribe to. Mutually exclusive with batch_id.
+        - in: query
+          name: batch_id
+          schema:
+            type: string
+          required: false
+          description: The batch to subscribe to. Mutually exclusive with channel.
+        - in: query
+          name: visibility_timeout
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 600
+            default: 30
+          required: false
+          description: The seconds a claimed message stays invisible before redelivery. Default 30.
+        - $ref: '#/components/parameters/ApiKey'
+        - $ref: '#/components/parameters/Timestamp'
+        - $ref: '#/components/parameters/Signature'
+        - $ref: '#/components/parameters/AccessToken'
+      responses:
+        '101':
+          description: Switching protocols to WebSocket.
+        '400':
+          description: Invalid addressing or parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Authenticated, but not authorized to read this product environment's
+            notifications. Answered before the upgrade,
+            so it is a plain HTTP status rather than a WebSocket close code.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: |
+            The authorization decision could not be made (fail-closed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    oauth2:
+      description: OAuth access token. Ignored when a `signature` param is also present.
+      type: http
+      scheme: bearer
+    basicAuth:
+      description: |
+        HTTP Basic with the API key as username and the API secret as password.
+        Global (customer-scoped) keys only — user-bound ("restricted") keys are
+        rejected here; they are accepted by the signed-request triple, and
+        authorize as their user (see the description above).
+        Ignored when a `signature` param is also present, and refused outright on
+        `messages/subscribe`.
+      type: http
+      scheme: basic
+  parameters:
+    CloudName:
+      in: path
+      name: cloud_name
+      schema:
+        type: string
+      required: true
+      description: The cloud name (product environment) the request targets.
+    ApiKey:
+      in: query
+      name: api_key
+      schema:
+        type: string
+      required: false
+      description: The API key, for Cloudinary signature authentication.
+    Timestamp:
+      in: query
+      name: timestamp
+      schema:
+        type: integer
+        format: int64
+      required: false
+      description: The Unix timestamp of the request, for signature authentication.
+    Signature:
+      in: query
+      name: signature
+      schema:
+        type: string
+      required: false
+      description: The request signature, for Cloudinary signature authentication.
+    AccessToken:
+      in: query
+      name: access_token
+      schema:
+        type: string
+      required: false
+      description: An OAuth access token, for callers that cannot set an Authorization header.
+  schemas:
+    PollResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+      example:
+        messages:
+          - receipt_handle: AQEBzWwaftRI0KuVm4tP+/7q1rGgNqicHq...
+            batch_id: 4f1c2a9e-7d3b-4e8a-9b6f-2c1d0e5a8b7c
+            timestamp: '1732450000'
+            signature: 9f2c1e8b7a6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b
+            signed_payload: eyJub3RpZmljYXRpb25fdHlwZSI6InVwbG9hZCJ9
+            payload:
+              notification_type: upload
+              public_id: sample
+    Message:
+      type: object
+      properties:
+        receipt_handle:
+          type: string
+          description: Opaque handle used to acknowledge this message.
+        channel:
+          type: string
+          description: Present on channel-addressed items.
+        batch_id:
+          type: string
+          description: Present on batch-addressed items, or a channel item carrying one.
+        timestamp:
+          type: string
+        signature:
+          type: string
+        signature_v2:
+          type: string
+        signed_payload:
+          type: string
+          description: base64url of the byte-exact signed payload bytes.
+        payload:
+          type: object
+          additionalProperties: true
+          description: The parsed notification payload (for ergonomics; verify signatures against signed_payload).
+    AckRequest:
+      type: object
+      required:
+        - receipt_handles
+      properties:
+        receipt_handles:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+          description: The receipt handles to acknowledge. Capped at 100.
+      example:
+        receipt_handles:
+          - AQEBzWwaftRI0KuVm4tP+/7q1rGgNqicHq...
+    AckResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AckResult'
+      example:
+        results:
+          - receipt_handle: AQEBzWwaftRI0KuVm4tP+/7q1rGgNqicHq...
+            status: acked
+    AckResult:
+      type: object
+      properties:
+        receipt_handle:
+          type: string
+        status:
+          type: string
+          description: >-
+            acked | expired | stale | malformed | forbidden | unavailable.
+            "unavailable" is a transient storage failure for this handle only —
+            retry the ack for it; all other statuses are terminal.
+    ErrorObject:
+      type: object
+      properties:
+        category:
+          type: string
+          enum: [user_error, auth_error, server_error, rate_limit_error]
+          description: A classification of the error, indicating the general area or type of problem.
+        code:
+          type: string
+          example: NT_00001
+          description: A specific error code that uniquely identifies the error condition.
+        message:
+          type: string
+          example: exactly one of channel or batch_id must be supplied
+          description: A human-readable explanation of the error and its cause.
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional contextual information about the error, when there is any.
+        request_id:
+          type: string
+          example: 17c3b70c5096df0e77e838323abb7029
+          description: The identifier of this request, for support correlation.
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorObject'
+    Limit:
+      type: object
+      properties:
+        type:
+          type: string
+          description: The scope the limit applies to — credential, customer or fleet.
+        used_by_request:
+          type: integer
+          format: int32
+        remaining:
+          type: integer
+          format: int32
+        limit:
+          type: integer
+          format: int32
+        reset_time:
+          type: string
+          format: date-time
+          description: When the limit next resets.
+    LimitsObject:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Limit'
+    RateLimitError:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorObject'
+        limits:
+          $ref: '#/components/schemas/LimitsObject'

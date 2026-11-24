@@ -13,3 +13,4 @@ schemas:
   - video-canvas
   - collections
   - video
+  - notifications
