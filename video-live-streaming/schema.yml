@@ -3,10 +3,9 @@ info:
   title: Video Live Streaming
   description: |
     Use the Video Live Streaming API to create and manage your RTMP live streams. This includes managing outputs as well as manually starting and stopping streams. See the [live streaming guide](https://cloudinary.com/documentation/video_live_streaming) for information on how to use the Live Streaming API to stream video to your users.
-    
-      The API supports Basic Authentication using your Cloudinary API Key and API Secret (which can be found on the Dashboard page of your [Cloudinary Console](https://console.cloudinary.com/pm)).
 
-  version: 1.0.0 # x-release-please-version
+      The API supports Basic Authentication using your Cloudinary API Key and API Secret (which can be found on the Dashboard page of your [Cloudinary Console](https://console.cloudinary.com/pm)).
+  version: 1.1.0 # x-release-please-version
   contact:
     name: Cloudinary Support
     email: support@cloudinary.com
@@ -23,6 +22,8 @@ servers:
       cloudName:
         default: CLOUD_NAME
         description: The cloud name for your product environment.
+security:
+  - basicAuth: []
 tags:
   - name: Live Stream
     description: Live Stream endpoint
@@ -31,14 +32,17 @@ tags:
 paths:
   /live_streams:
     get:
+      x-speakeasy-mcp:
+        name: list-live-streams
+        title: List Live Streams
       tags:
         - Live Stream
-      summary: 'Get a list of live streams'
+      summary: Get a list of live streams
       operationId: getLiveStreams
       x-cld-use-for-readme: true
       responses:
         '200':
-          description: a list of live streams
+          description: A list of live streams
           content:
             application/json:
               schema:
@@ -46,52 +50,102 @@ paths:
               examples:
                 MyLiveStreamsWrappedResponse:
                   $ref: '#/components/examples/MyLiveStreamsWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
-
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
     post:
+      x-speakeasy-mcp:
+        name: create-live-stream
+        title: Create Live Stream
       tags:
         - Live Stream
-      summary: 'Create a new live stream'
+      summary: Create a new live stream
       operationId: createLiveStream
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/LiveStreamCreatePayload'
       responses:
-        '200':
-          description: created live stream
+        '201':
+          description: Created live stream
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveStreamWrappedResponse'
-              examples:
-                MyLiveStreamWrappedResponse:
-                  $ref: '#/components/examples/MyLiveStreamWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  id: 0bd7f11c043da975e2a8ad9ebae0b6ec
+                  name: My Live Stream
+                  input:
+                    type: rtmp
+                    uri: rtmp://live.cloudinary.com/streams
+                    stream_key: dh8bxtg97t9cns4bddoa
+                  status: idle
+                  outputs:
+                    - id: 8132d2dc5251432bb57f32ee55a336c1
+                      name: default hls
+                      type: hls
+                      uri: https://res.cloudinary.com/demo/video/live/live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_hls.m3u8
+                      created_at: 1712914020253
+                      updated_at: 1712914020253
+                    - id: 29b5cd6f54474bea9cec3834e763e12c
+                      name: default archive
+                      type: archive
+                      public_id: live_stream_0bd7f11c043da975e2a8ad9ebae0b6ec_archive
+                      created_at: 1712914020253
+                      updated_at: 1714378330476
+                  idle_timeout_sec: 120
+                  max_runtime_sec: 10800
+                  created_at: 1697265900621
+                  updated_at: 1697265900621
+        '400':
+          description: Bad request - invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
-
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
   /live_streams/{liveStreamId}:
     parameters:
       - in: path
@@ -101,13 +155,16 @@ paths:
         required: true
         description: live stream id
     get:
+      x-speakeasy-mcp:
+        name: get-live-stream
+        title: Get Live Stream
       tags:
         - Live Stream
-      summary: 'Get a single live stream'
+      summary: Get a single live stream
       operationId: getLiveStream
       responses:
         '200':
-          description: a live stream
+          description: A live stream
           content:
             application/json:
               schema:
@@ -115,38 +172,54 @@ paths:
               examples:
                 MyLiveStreamWrappedResponse:
                   $ref: '#/components/examples/MyLiveStreamWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '404':
-          description: live stream not found
+          description: Live stream not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
-
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
     patch:
+      x-speakeasy-mcp:
+        name: update-live-stream
+        title: Update Live Stream
+        idempotentHint: true
       tags:
         - Live Stream
-      summary: 'Update a live stream'
+      summary: Update a live stream
       operationId: updateLiveStream
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/LiveStreamUpdatePayload'
       responses:
         '200':
-          description: a live stream
+          description: A live stream
           content:
             application/json:
               schema:
@@ -154,56 +227,82 @@ paths:
               examples:
                 MyUpdatedLiveStreamWrappedResponse:
                   $ref: '#/components/examples/MyLiveStreamWrappedResponse'
+        '400':
+          description: Bad request - invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '404':
-          description: live stream not found
+          description: Live stream not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
-
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
     delete:
+      x-speakeasy-mcp:
+        name: delete-live-stream
+        title: Delete Live Stream
+        idempotentHint: true
       tags:
         - Live Stream
-      summary: 'Delete a live stream'
+      summary: Delete a live stream
       operationId: deleteLiveStream
       responses:
         '200':
-          description: ok
+          description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '404':
-          description: live stream not found
+          description: Live stream not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
-
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
   /live_streams/{liveStreamId}/activate:
     parameters:
       - in: path
@@ -213,30 +312,50 @@ paths:
         required: true
         description: live stream id
     post:
+      x-speakeasy-mcp:
+        name: activate-live-stream
+        title: Activate Live Stream
       tags:
         - Live Stream
-      summary: 'Manually activate a live stream'
+      summary: Manually activate a live stream
       operationId: activateLiveStream
       responses:
         '200':
-          description: ok
+          description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
-
+        '404':
+          description: Live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
   /live_streams/{liveStreamId}/idle:
     parameters:
       - in: path
@@ -246,30 +365,50 @@ paths:
         required: true
         description: live stream id
     post:
+      x-speakeasy-mcp:
+        name: idle-live-stream
+        title: Idle Live Stream
       tags:
         - Live Stream
-      summary: 'Manually idle a live stream'
+      summary: Manually idle a live stream
       operationId: idleLiveStream
       responses:
         '200':
-          description: ok
+          description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
-
+        '404':
+          description: Live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
   /live_streams/{liveStreamId}/outputs:
     parameters:
       - in: path
@@ -279,13 +418,16 @@ paths:
         required: true
         description: live stream id
     get:
+      x-speakeasy-mcp:
+        name: list-live-stream-outputs
+        title: List Live Stream Outputs
       tags:
         - Live Stream
-      summary: 'Get a list of live stream outputs'
+      summary: Get a list of live stream outputs
       operationId: getLiveStreamOutputs
       responses:
         '200':
-          description: a list of outputs for a live stream
+          description: A list of outputs for a live stream
           content:
             application/json:
               schema:
@@ -293,25 +435,40 @@ paths:
               examples:
                 MyLiveStreamOutputsWrappedResponse:
                   $ref: '#/components/examples/MyLiveStreamOutputsWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
-
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
     post:
+      x-speakeasy-mcp:
+        name: create-live-stream-output
+        title: Create Live Stream Output
       tags:
         - Live Stream
-      summary: 'Create a new live stream output'
+      summary: Create a new live stream output
       operationId: createLiveStreamOutput
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -320,28 +477,53 @@ paths:
               MyLiveStreamOutputCreatePayload:
                 $ref: '#/components/examples/MyLiveStreamOutputCreatePayload'
       responses:
-        '200':
-          description: created live stream output
+        '201':
+          description: Created live stream output
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveStreamOutputWrappedResponse'
-              examples:
-                MyLiveStreamOutputWrappedResponse:
-                  $ref: '#/components/examples/MyLiveStreamOutputWrappedResponse'
+              example:
+                request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
+                data:
+                  id: f11c043da975e2a8ad9ebae0b6ec0bd7
+                  name: new youtube
+                  type: simulcast
+                  uri: rtmp://a.rtmp.youtube.com/live2
+                  stream_key: 43q7qmah2e1p83jhfpbs
+                  vendor: youtube
+                  created_at: 1697265900621
+                  updated_at: 1697265900621
+        '400':
+          description: Bad request - invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
-
+        '404':
+          description: Live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
   /live_streams/{liveStreamId}/outputs/{liveStreamOutputId}:
     parameters:
       - in: path
@@ -357,13 +539,16 @@ paths:
         required: true
         description: live stream output id
     get:
+      x-speakeasy-mcp:
+        name: get-live-stream-output
+        title: Get Live Stream Output
       tags:
         - Live Stream
-      summary: 'Get a single live stream output'
+      summary: Get a single live stream output
       operationId: getLiveStreamOutput
       responses:
         '200':
-          description: a live stream output
+          description: A live stream output
           content:
             application/json:
               schema:
@@ -371,41 +556,57 @@ paths:
               examples:
                 MyLiveStreamOutputWrappedResponse:
                   $ref: '#/components/examples/MyLiveStreamOutputWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '404':
-          description: live stream output not found
+          description: Live stream output not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
-
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
     patch:
+      x-speakeasy-mcp:
+        name: update-live-stream-output
+        title: Update Live Stream Output
+        idempotentHint: true
       tags:
         - Live Stream
-      summary: 'Update a live stream output'
+      summary: Update a live stream output
       operationId: updateLiveStreamOutput
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/LiveStreamOutputUpdatePayload'
             examples:
-                MyLiveStreamOutputUpdatePayload:
-                    $ref: '#/components/examples/MyLiveStreamOutputUpdatePayload'
+              MyLiveStreamOutputUpdatePayload:
+                $ref: '#/components/examples/MyLiveStreamOutputUpdatePayload'
       responses:
         '200':
-          description: a live stream output
+          description: A live stream output
           content:
             application/json:
               schema:
@@ -413,92 +614,419 @@ paths:
               examples:
                 MyLiveStreamOutputWrappedResponse:
                   $ref: '#/components/examples/MyLiveStreamOutputWrappedResponse'
+        '400':
+          description: Bad request - invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '404':
-          description: live stream output not found
+          description: Live stream output not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
-
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
     delete:
+      x-speakeasy-mcp:
+        name: delete-live-stream-output
+        title: Delete Live Stream Output
+        idempotentHint: true
       tags:
         - Live Stream
-      summary: 'Delete a live stream output'
+      summary: Delete a live stream output
       operationId: deleteLiveStreamOutput
       responses:
         '200':
-          description: ok
+          description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageWrappedResponse'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
         '401':
-          description: authentication error
+          description: Authentication error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '403':
-          description: authorization error
+          description: Authorization error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '404':
-          description: live stream output not found
+          description: Live stream output not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /live_streams/{liveStreamId}/stats:
+    parameters:
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: The ID of the live stream.
+      - in: query
+        name: from
+        schema:
+          type: integer
+          format: int64
+        description: The start of the time range, as a Unix timestamp in milliseconds. Must be within the last 30 days. Defaults to five minutes before the request.
+      - in: query
+        name: to
+        schema:
+          type: integer
+          format: int64
+        description: The end of the time range, as a Unix timestamp in milliseconds. Defaults to the time of the request.
+    get:
+      x-speakeasy-mcp:
+        name: get-live-stream-stats
+        title: Get Live Stream Stats
+        readOnlyHint: true
+      tags:
+        - Live Stream
+      summary: Get live stream input stats
+      description: Returns the input stats collected for a live stream during a time range, such as the incoming video and audio bitrates, the resolution and codecs declared by the streaming software, and the number of dropped frames. Stats are kept for 30 days. Returns an empty list when no stats were collected in the time range, for example when the stream wasn't receiving input.
+      operationId: getLiveStreamStats
+      responses:
+        '200':
+          description: The stats collected during the time range, oldest first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamStatsWrappedResponse'
+              example:
+                request_id: 3c1f8e2a9b7d4e6f8a0b1c2d3e4f5a6b
+                data:
+                  - collected_at: 1763548800000
+                    video_bitrate: 4500000
+                    video_codec: H264
+                    video_width: 1920
+                    video_height: 1080
+                    video_frame_rate: 30
+                    audio_bitrate: 128000
+                    bitrate_in_to_out_ratio: 0.98
+                    audio_codec: AAC
+                    audio_channels: 2
+                    audio_sample_rate: 48000
+                    client_frames_dropped: 0
+        '400':
+          description: Bad request. A time value isn't a number, `from` is later than `to`, or the time range is outside the last 30 days.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /live_streams/{liveStreamId}/health:
+    parameters:
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: The ID of the live stream.
+      - in: query
+        name: from
+        schema:
+          type: integer
+          format: int64
+        description: The start of the time range to assess, as a Unix timestamp in milliseconds. Must be within the last 30 days. Defaults to 15 seconds before the request.
+      - in: query
+        name: to
+        schema:
+          type: integer
+          format: int64
+        description: The end of the time range to assess, as a Unix timestamp in milliseconds. Defaults to the time of the request.
+    get:
+      x-speakeasy-mcp:
+        name: get-live-stream-health
+        title: Get Live Stream Health
+        readOnlyHint: true
+      tags:
+        - Live Stream
+      summary: Get live stream health
+      description: Assesses the health of a live stream's input from the stats collected during a time range. The assessment compares the incoming video and audio bitrates to the bitrates expected for the stream's resolution, frame rate, and codecs, and also takes into account the ratio of incoming to outgoing bitrate and the number of dropped frames. By default, it covers the last 15 seconds, so you can poll it to monitor a stream while it runs.
+      operationId: getLiveStreamHealth
+      responses:
+        '200':
+          description: The health assessment for the time range.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamHealthWrappedResponse'
+              example:
+                request_id: 8d2e4f6a1b3c5d7e9f0a2b4c6d8e0f1a
+                data:
+                  assessment: excellent
+        '400':
+          description: Bad request. A time value isn't a number, `from` is later than `to`, or the time range is outside the last 30 days.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /live_streams/{liveStreamId}/analytics/metrics:
+    parameters:
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: The ID of the live stream.
+    get:
+      x-speakeasy-mcp:
+        name: get-live-stream-viewer-metrics
+        title: Get Live Stream Viewer Metrics
+        readOnlyHint: true
+      tags:
+        - Live Stream
+      summary: Get live stream viewer metrics
+      description: |
+        Returns viewer metrics for the latest session of a live stream: how many people are watching now, how many watched in total, and the average watch time. A session runs from when the stream is activated until it goes idle.
 
-security:
-  - basicAuth: [ ]
+        Viewer data is reported by the Cloudinary Video Player, which sends an event when a viewer starts and stops watching the stream, unless the player's `cloudinaryAnalytics` option is set to `false`. Viewers who watch the stream in other players aren't counted.
+      operationId: getLiveStreamAnalyticsMetrics
+      responses:
+        '200':
+          description: The viewer metrics for the latest session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamAnalyticsMetricsWrappedResponse'
+              example:
+                request_id: 5a7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b
+                data:
+                  current_viewers_count: 12
+                  total_viewers_count: 48
+                  average_watch_time: 754000
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: The live stream doesn't exist, or it hasn't had a session yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /live_streams/{liveStreamId}/analytics/time_series:
+    parameters:
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: The ID of the live stream.
+      - in: query
+        name: from
+        schema:
+          type: integer
+          format: int64
+        description: The start of the time range, as a Unix timestamp in milliseconds. Defaults to 15 seconds before the request.
+      - in: query
+        name: to
+        schema:
+          type: integer
+          format: int64
+        description: The end of the time range, as a Unix timestamp in milliseconds. Defaults to the time of the request. If the latest session has ended, the series stops at the end of the session.
+      - in: query
+        name: dimension
+        required: true
+        schema:
+          type: string
+        description: |
+          The metric to return. One of:
+          - `current_viewers_count`: the number of viewers watching at each point.
+          - `total_viewers_count`: the number of viewers who started watching up to each point.
+          - `average_watch_time`: the average watch time, in milliseconds, up to each point.
+    get:
+      x-speakeasy-mcp:
+        name: get-live-stream-viewer-time-series
+        title: Get Live Stream Viewer Time Series
+        readOnlyHint: true
+      tags:
+        - Live Stream
+      summary: Get live stream viewer metrics over time
+      description: Returns one viewer metric for the latest session of a live stream as a time series, with a data point every five seconds from `from` to `to`. Use it to chart how the audience changed during the session. Viewer data comes from the Cloudinary Video Player, as described for the viewer metrics endpoint.
+      operationId: getLiveStreamAnalyticsTimeSeries
+      responses:
+        '200':
+          description: The time series, oldest point first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamAnalyticsTimeSeriesWrappedResponse'
+              example:
+                request_id: 2b4d6f8a0c2e4a6c8e0b2d4f6a8c0e2d
+                data:
+                  - timestamp: 1763548800000
+                    value: 10
+                  - timestamp: 1763548805000
+                    value: 12
+                  - timestamp: 1763548810000
+                    value: 12
+        '400':
+          description: Bad request. `dimension` is missing or invalid, or a time value isn't a number.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: The live stream doesn't exist, or it hasn't had a session yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
 components:
   securitySchemes:
     basicAuth:
       type: http
       scheme: basic
+      description: Basic authentication using your Cloudinary API Key and API Secret.
   schemas:
     MessageWrappedResponse:
+      type: object
+      description: A response envelope wrapping a simple message.
       required:
         - request_id
         - data
       properties:
         request_id:
           type: string
-          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
         data:
-          type: object
-          properties:
-            message:
-              type: string
-
+          $ref: '#/components/schemas/MessageWrappedResponseData'
+    MessageWrappedResponseData:
+      type: object
+      description: An object carrying a human-readable message.
+      properties:
+        message:
+          type: string
+          description: A human-readable message.
     ErrorWrappedResponse:
+      type: object
+      description: A response envelope returned when a request fails.
       required:
         - request_id
-        - data
+        - error
       properties:
         request_id:
           type: string
-          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
         error:
-          type: object
-          properties:
-            message:
-              type: string
-
+          $ref: '#/components/schemas/MessageWrappedResponseData'
     LiveStreamsWrappedResponse:
       type: object
       required:
@@ -507,13 +1035,12 @@ components:
       properties:
         request_id:
           type: string
-          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
         data:
           nullable: true
           type: array
           items:
             $ref: '#/components/schemas/LiveStreamResponse'
-
     LiveStreamWrappedResponse:
       type: object
       required:
@@ -522,10 +1049,9 @@ components:
       properties:
         request_id:
           type: string
-          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
         data:
           $ref: '#/components/schemas/LiveStreamResponse'
-
     LiveStreamOutputsWrappedResponse:
       type: object
       required:
@@ -534,13 +1060,12 @@ components:
       properties:
         request_id:
           type: string
-          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
         data:
           nullable: true
           type: array
           items:
             $ref: '#/components/schemas/LiveStreamOutputResponse'
-
     LiveStreamOutputWrappedResponse:
       type: object
       required:
@@ -549,10 +1074,9 @@ components:
       properties:
         request_id:
           type: string
-          example: '6ec0bd7f11c043da975e2a8ad9ebae0b'
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
         data:
           $ref: '#/components/schemas/LiveStreamOutputResponse'
-    
     LiveStreamResponse:
       type: object
       required:
@@ -568,21 +1092,25 @@ components:
       properties:
         id:
           type: string
-          example: '0bd7f11c043da975e2a8ad9ebae0b6ec'
+          example: 0bd7f11c043da975e2a8ad9ebae0b6ec
         name:
           nullable: true
           type: string
-          example: 'My first stream'
+          example: My first stream
         input:
           $ref: '#/components/schemas/LiveStreamInputResponse'
         status:
           type: string
-          example: 'idle'
+          example: idle
         outputs:
           type: array
           nullable: true
           items:
             $ref: '#/components/schemas/LiveStreamOutputResponse'
+        embedded_captions:
+          type: array
+          items:
+            $ref: '#/components/schemas/LiveStreamEmbeddedCaption'
         idle_timeout_sec:
           type: integer
           example: 120
@@ -597,7 +1125,6 @@ components:
           type: integer
           format: int64
           example: 1697265900621
-
     LiveStreamInputResponse:
       type: object
       required:
@@ -606,15 +1133,14 @@ components:
       properties:
         type:
           type: string
-          example: 'rtmp'
+          example: rtmp
         uri:
           type: string
-          example: 'rtmp://live.cloudinary.com/streams'
+          example: rtmp://live.cloudinary.com/streams
         stream_key:
           type: string
           nullable: true
           example: dh8bxtg97t9cns4bddoa
-
     LiveStreamOutputResponse:
       type: object
       required:
@@ -626,29 +1152,33 @@ components:
       properties:
         id:
           type: string
-          example: 'f11c043da975e2a8ad9ebae0b6ec0bd7'
+          example: f11c043da975e2a8ad9ebae0b6ec0bd7
         name:
           type: string
           nullable: true
-          example: 'main stream'
+          example: main stream
         type:
           type: string
-          example: 'hls'
+          example: hls
         uri:
           type: string
-          example: 'https://res.cloudinary.com/demo/video/live/f11c043da975e2a8ad9ebae0b6ec0bd7.m3u8'
+          example: https://res.cloudinary.com/demo/video/live/f11c043da975e2a8ad9ebae0b6ec0bd7.m3u8
           nullable: true
         stream_key:
           type: string
-          example: 'f11c043da975e2a8ad9ebae0b6ec0bd7'
+          example: f11c043da975e2a8ad9ebae0b6ec0bd7
           nullable: true
         vendor:
           type: string
-          example: 'youtube'
+          example: youtube
+          nullable: true
+        asset_folder:
+          type: string
+          example: live_streams
           nullable: true
         public_id:
           type: string
-          example: 'main_stream_archive'
+          example: main_stream_archive
           nullable: true
         created_at:
           type: integer
@@ -658,17 +1188,14 @@ components:
           type: integer
           format: int64
           example: 1697265900621
-
     LiveStreamCreatePayload:
       type: object
       required:
         - input
-        - created_at
-        - updated_at
       properties:
         name:
           type: string
-          example: 'My first stream'
+          example: My first stream
         input:
           $ref: '#/components/schemas/LiveStreamInputCreatePayload'
         idle_timeout_sec:
@@ -679,7 +1206,11 @@ components:
           type: integer
           example: 10800
           nullable: true
-
+        embedded_captions:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/LiveStreamEmbeddedCaption'
     LiveStreamInputCreatePayload:
       type: object
       required:
@@ -687,8 +1218,24 @@ components:
       properties:
         type:
           type: string
-          example: 'rtmp'
-
+          example: rtmp
+    LiveStreamEmbeddedCaption:
+      type: object
+      required:
+        - caption_channel
+        - language_code
+        - language_description
+      properties:
+        caption_channel:
+          type: integer
+          example: 1
+        language_code:
+          type: string
+          example: eng
+          description: ISO 639-2 language code
+        language_description:
+          type: string
+          example: English
     LiveStreamOutputCreatePayload:
       type: object
       required:
@@ -696,34 +1243,37 @@ components:
       properties:
         name:
           type: string
-          example: 'main stream'
+          example: main stream
           nullable: true
         type:
           type: string
-          example: 'hls'
+          example: hls
         uri:
           type: string
-          example: 'rtmp://a.rtmp.youtube.com/live2'
+          example: rtmp://a.rtmp.youtube.com/live2
           nullable: true
         stream_key:
           type: string
-          example: 'f11c043da975e2a8ad9ebae0b6ec0bd7'
+          example: f11c043da975e2a8ad9ebae0b6ec0bd7
           nullable: true
         vendor:
           type: string
-          example: 'youtube'
+          example: youtube
+          nullable: true
+        asset_folder:
+          type: string
+          example: live_streams
           nullable: true
         public_id:
           type: string
-          example: 'main_stream_archive'
+          example: main_stream_archive
           nullable: true
-
     LiveStreamUpdatePayload:
       type: object
       properties:
         name:
           type: string
-          example: 'My first stream'
+          example: My first stream
           nullable: true
         idle_timeout_sec:
           type: integer
@@ -733,26 +1283,197 @@ components:
           type: integer
           example: 10800
           nullable: true
-
+        embedded_captions:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/LiveStreamEmbeddedCaption'
     LiveStreamOutputUpdatePayload:
       type: object
       properties:
         name:
           type: string
-          example: 'main stream'
+          example: main stream
           nullable: true
         uri:
           type: string
-          example: 'rtmp://a.rtmp.youtube.com/live2/f11c043da975e2a8ad9ebae0b6ec0bd7'
+          example: rtmp://a.rtmp.youtube.com/live2
           nullable: true
         stream_key:
           type: string
-          example: 'f11c043da975e2a8ad9ebae0b6ec0bd7'
+          example: f11c043da975e2a8ad9ebae0b6ec0bd7
+          nullable: true
+        asset_folder:
+          type: string
+          example: live_streams
           nullable: true
         public_id:
           type: string
-          example: 'main_stream_archive'
+          example: main_stream_archive
           nullable: true
+    LiveStreamStatsResponse:
+      type: object
+      description: The input stats of a live stream at one point in time.
+      required:
+        - collected_at
+        - video_bitrate
+        - video_codec
+        - video_width
+        - video_height
+        - video_frame_rate
+        - audio_bitrate
+        - bitrate_in_to_out_ratio
+        - audio_codec
+        - audio_channels
+        - audio_sample_rate
+        - client_frames_dropped
+      properties:
+        collected_at:
+          type: integer
+          format: int64
+          description: When the stats were collected, as a Unix timestamp in milliseconds.
+        video_bitrate:
+          type: integer
+          description: The measured bitrate of the incoming video, in bits per second.
+        video_codec:
+          type: string
+          description: The video codec declared by the streaming software, for example `H264`.
+        video_width:
+          type: integer
+          description: The video width declared by the streaming software, in pixels.
+        video_height:
+          type: integer
+          description: The video height declared by the streaming software, in pixels.
+        video_frame_rate:
+          type: integer
+          description: The video frame rate declared by the streaming software, in frames per second.
+        audio_bitrate:
+          type: integer
+          description: The measured bitrate of the incoming audio, in bits per second.
+        bitrate_in_to_out_ratio:
+          type: number
+          format: double
+          description: The measured ratio of the stream's incoming bitrate to its outgoing bitrate.
+        audio_codec:
+          type: string
+          description: The audio codec declared by the streaming software, for example `AAC`.
+        audio_channels:
+          type: integer
+          description: The number of audio channels declared by the streaming software.
+        audio_sample_rate:
+          type: integer
+          description: The audio sample rate declared by the streaming software, in hertz.
+        client_frames_dropped:
+          type: integer
+          description: A running total of the frames that the streaming software dropped. To see how many frames were dropped between two entries, subtract the earlier value from the later one.
+    LiveStreamHealthResponse:
+      type: object
+      description: The health assessment of a live stream.
+      required:
+        - assessment
+      properties:
+        assessment:
+          type: string
+          description: |
+            The health of the stream's input during the time range. One of:
+            - `excellent`: the input meets or nearly meets the expected quality.
+            - `good`: the input is acceptable but below the expected quality.
+            - `poor`: the input is well below the expected quality, or one of the measures is very low.
+            - `offline`: there weren't enough stats in the time range to assess the stream, for example because it isn't receiving input.
+          example: excellent
+    LiveStreamHealthWrappedResponse:
+      type: object
+      description: A response envelope wrapping a live stream health assessment.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/LiveStreamHealthResponse'
+    LiveStreamAnalyticsMetricsResponse:
+      type: object
+      description: Viewer metrics for the latest session of a live stream.
+      required:
+        - current_viewers_count
+        - total_viewers_count
+        - average_watch_time
+      properties:
+        current_viewers_count:
+          type: integer
+          description: The number of unique viewers watching the stream now. Always `0` when the session has ended.
+          example: 12
+        total_viewers_count:
+          type: integer
+          description: The number of unique viewers who watched the stream during the session.
+          example: 48
+        average_watch_time:
+          type: integer
+          format: int64
+          description: The average time that viewers watched the stream during the session, in milliseconds. Views still in progress count up to the time of the request.
+          example: 754000
+    LiveStreamAnalyticsMetricsWrappedResponse:
+      type: object
+      description: A response envelope wrapping live stream viewer metrics.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/LiveStreamAnalyticsMetricsResponse'
+    LiveStreamAnalyticsTimeSeriesResponse:
+      type: array
+      description: The data points of the time series, oldest first.
+      items:
+        type: object
+        description: One data point of the time series.
+        required:
+          - timestamp
+          - value
+        properties:
+          timestamp:
+            type: integer
+            format: int64
+            description: The time of the data point, as a Unix timestamp in milliseconds.
+          value:
+            type: integer
+            description: The value of the requested metric at that time. For `average_watch_time`, the value is in milliseconds.
+    LiveStreamAnalyticsTimeSeriesWrappedResponse:
+      type: object
+      description: A response envelope wrapping a live stream viewer time series.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/LiveStreamAnalyticsTimeSeriesResponse'
+    LiveStreamStatsWrappedResponse:
+      type: object
+      description: A response envelope wrapping a list of live stream stats.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          type: array
+          description: The stats collected during the time range, oldest first.
+          items:
+            $ref: '#/components/schemas/LiveStreamStatsResponse'
   examples:
     MyLiveStreamWrappedResponse:
       summary: My Live Stream Response
@@ -783,7 +1504,6 @@ components:
           max_runtime_sec: 10800
           created_at: 1697265900621
           updated_at: 1697265900621
-
     MyLiveStreamsWrappedResponse:
       summary: My Live Streams Response
       value:
@@ -837,13 +1557,12 @@ components:
             max_runtime_sec: 10800
             created_at: 1697265900621
             updated_at: 1697265900621
-
     MyLiveStreamOutputWrappedResponse:
       summary: My Live Stream Output Wrapped Response
       value:
-        request_id: "6ec0bd7f11c043da975e2a8ad9ebae0b"
+        request_id: 6ec0bd7f11c043da975e2a8ad9ebae0b
         data:
-          id: "f11c043da975e2a8ad9ebae0b6ec0bd7"
+          id: f11c043da975e2a8ad9ebae0b6ec0bd7
           name: new youtube
           type: simulcast
           uri: rtmp://a.rtmp.youtube.com/live2
@@ -851,7 +1570,6 @@ components:
           vendor: youtube
           created_at: 1697265900621
           updated_at: 1697265900621
-
     MyLiveStreamOutputsWrappedResponse:
       summary: My Live Stream Outputs Response
       value:
@@ -877,7 +1595,6 @@ components:
             vendor: youtube
             created_at: 1715859923186
             updated_at: 1715859923186
-
     MyLiveStreamOutputCreatePayload:
       summary: My Live Stream Output Create Payload
       value:
@@ -886,11 +1603,9 @@ components:
         uri: rtmp://a.rtmp.youtube.com/live2
         stream_key: 43q7qmah2e1p83jhfpbs
         vendor: youtube
-
     MyLiveStreamOutputUpdatePayload:
       summary: My Live Stream Output Update Payload
       value:
         name: new youtube
         uri: rtmp://a.rtmp.youtube.com/live2
         stream_key: 43q7qmah2e1p83jhfpbs
-        public_id: main_stream_archive
