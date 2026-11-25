@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.4 (2026-11-25)
+
+
+### Features
+
+* **video-canvas:** Update schema wording
+
+
+### Bug Fixes
+
+* **video-canvas:** Remove the Video Canvas Beta label now that the API is generally available
+
 ## 0.1.3 (2026-11-05)
 
 
