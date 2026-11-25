@@ -2,20 +2,21 @@ openapi: 3.0.3
 info:
   title: Cloudinary Video API
   description: |
-    The Video API enables you to stream, generate, analyze, and transform video in your product environment. Broadcast **live streams** over RTMP, generate videos from images with **Image to Video**, produce timestamped visual transcripts with **AI Video Analysis**, and build node-based transformation pipelines as **Video Canvas** applets.
+    The Video API enables you to stream, generate, analyze, and transform video in your product environment. Broadcast **live streams** over RTMP, generate videos from images with **Image to Video**, produce timestamped visual transcripts with **AI Video Analysis**, build node-based transformation pipelines as **Video Canvas** applets, and manage the posters, transcripts, and chapters attached to a video as **Video Elements**.
 
     The API uses **Basic Authentication** over HTTPS with your **API Key** and **API Secret** from the [Cloudinary Console](https://console.cloudinary.com/app/settings/api-keys), or **OAuth 2.0** with the `video` scope.
 
     Key capabilities:
-    * Create and manage RTMP live streams and their outputs, and start or stop a stream manually. See the [live streaming guide](https://cloudinary.com/documentation/video_live_streaming).
+    * Create and manage RTMP live streams and their outputs, start or stop a stream manually, and monitor a stream's input health and viewers. See the [live streaming guide](https://cloudinary.com/documentation/video_live_streaming).
     * Generate a video from a source image and a text prompt describing the motion or scene, and manage reusable prompts. See the [Image to Video add-on](https://cloudinary.com/documentation/image_to_video_addon) guide.
     * Generate a visual transcript of a stored video: timestamped, natural-language descriptions of what's visible on screen, optionally guided by a prompt. See the [AI Video Analysis](https://cloudinary.com/documentation/ai_video_analysis) guide.
     * Create applets that Cloudinary compiles into a [named transformation](https://cloudinary.com/documentation/video_named_transformations) you can deliver like any other transformation. See the [Video Canvas](https://cloudinary.com/documentation/video_canvas) guide.
+    * List, upload, and delete a video's elements: its poster, transcripts and their translations, visual transcript, and chapters. See [Managing video elements via the API](https://cloudinary.com/documentation/video_player_studio#managing_video_elements_via_the_api).
 
     Image to Video and AI Video Analysis requests run as asynchronous jobs: you submit a request, then poll the job until the result is ready.
 
     **Note**: Image to Video and AI Video Analysis are currently in **Beta**. There may be minor changes to parameter names or other implementation details before the general access release. We invite you to try them out, and would appreciate any feedback via our [support team](https://support.cloudinary.com/hc/en-us/requests/new).
-  version: 0.1.1 # x-release-please-version
+  version: 0.1.2 # x-release-please-version
   contact:
     name: Cloudinary Support
     email: support@cloudinary.com
@@ -937,6 +938,307 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/live_streams/{liveStreamId}/stats:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: The ID of the live stream.
+      - in: query
+        name: from
+        schema:
+          type: integer
+          format: int64
+        description: The start of the time range, as a Unix timestamp in milliseconds. Must be within the last 30 days. Defaults to five minutes before the request.
+      - in: query
+        name: to
+        schema:
+          type: integer
+          format: int64
+        description: The end of the time range, as a Unix timestamp in milliseconds. Defaults to the time of the request.
+    get:
+      x-speakeasy-mcp:
+        name: get-live-stream-stats
+        title: Get Live Stream Stats
+        readOnlyHint: true
+      tags:
+        - Live Stream
+      summary: Get live stream input stats
+      description: Returns the input stats collected for a live stream during a time range, such as the incoming video and audio bitrates, the resolution and codecs declared by the streaming software, and the number of dropped frames. Stats are kept for 30 days. Returns an empty list when no stats were collected in the time range, for example when the stream wasn't receiving input.
+      operationId: getLiveStreamStats
+      responses:
+        '200':
+          description: The stats collected during the time range, oldest first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamStatsWrappedResponse'
+              example:
+                request_id: 3c1f8e2a9b7d4e6f8a0b1c2d3e4f5a6b
+                data:
+                  - collected_at: 1763548800000
+                    video_bitrate: 4500000
+                    video_codec: H264
+                    video_width: 1920
+                    video_height: 1080
+                    video_frame_rate: 30
+                    audio_bitrate: 128000
+                    bitrate_in_to_out_ratio: 0.98
+                    audio_codec: AAC
+                    audio_channels: 2
+                    audio_sample_rate: 48000
+                    client_frames_dropped: 0
+        '400':
+          description: Bad request. A time value isn't a number, `from` is later than `to`, or the time range is outside the last 30 days.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/live_streams/{liveStreamId}/health:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: The ID of the live stream.
+      - in: query
+        name: from
+        schema:
+          type: integer
+          format: int64
+        description: The start of the time range to assess, as a Unix timestamp in milliseconds. Must be within the last 30 days. Defaults to 15 seconds before the request.
+      - in: query
+        name: to
+        schema:
+          type: integer
+          format: int64
+        description: The end of the time range to assess, as a Unix timestamp in milliseconds. Defaults to the time of the request.
+    get:
+      x-speakeasy-mcp:
+        name: get-live-stream-health
+        title: Get Live Stream Health
+        readOnlyHint: true
+      tags:
+        - Live Stream
+      summary: Get live stream health
+      description: Assesses the health of a live stream's input from the stats collected during a time range. The assessment compares the incoming video and audio bitrates to the bitrates expected for the stream's resolution, frame rate, and codecs, and also takes into account the ratio of incoming to outgoing bitrate and the number of dropped frames. By default, it covers the last 15 seconds, so you can poll it to monitor a stream while it runs.
+      operationId: getLiveStreamHealth
+      responses:
+        '200':
+          description: The health assessment for the time range.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamHealthWrappedResponse'
+              example:
+                request_id: 8d2e4f6a1b3c5d7e9f0a2b4c6d8e0f1a
+                data:
+                  assessment: excellent
+        '400':
+          description: Bad request. A time value isn't a number, `from` is later than `to`, or the time range is outside the last 30 days.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: Live stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/live_streams/{liveStreamId}/analytics/metrics:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: The ID of the live stream.
+    get:
+      x-speakeasy-mcp:
+        name: get-live-stream-viewer-metrics
+        title: Get Live Stream Viewer Metrics
+        readOnlyHint: true
+      tags:
+        - Live Stream
+      summary: Get live stream viewer metrics
+      description: |
+        Returns viewer metrics for the latest session of a live stream: how many people are watching now, how many watched in total, and the average watch time. A session runs from when the stream is activated until it goes idle.
+
+        Viewer data is reported by the Cloudinary Video Player, which sends an event when a viewer starts and stops watching the stream, unless the player's `cloudinaryAnalytics` option is set to `false`. Viewers who watch the stream in other players aren't counted.
+      operationId: getLiveStreamAnalyticsMetrics
+      responses:
+        '200':
+          description: The viewer metrics for the latest session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamAnalyticsMetricsWrappedResponse'
+              example:
+                request_id: 5a7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b
+                data:
+                  current_viewers_count: 12
+                  total_viewers_count: 48
+                  average_watch_time: 754000
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: The live stream doesn't exist, or it hasn't had a session yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/live_streams/{liveStreamId}/analytics/time_series:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: liveStreamId
+        schema:
+          type: string
+        required: true
+        description: The ID of the live stream.
+      - in: query
+        name: from
+        schema:
+          type: integer
+          format: int64
+        description: The start of the time range, as a Unix timestamp in milliseconds. Defaults to 15 seconds before the request.
+      - in: query
+        name: to
+        schema:
+          type: integer
+          format: int64
+        description: The end of the time range, as a Unix timestamp in milliseconds. Defaults to the time of the request. If the latest session has ended, the series stops at the end of the session.
+      - in: query
+        name: dimension
+        required: true
+        schema:
+          type: string
+        description: |
+          The metric to return. One of:
+          - `current_viewers_count`: the number of viewers watching at each point.
+          - `total_viewers_count`: the number of viewers who started watching up to each point.
+          - `average_watch_time`: the average watch time, in milliseconds, up to each point.
+    get:
+      x-speakeasy-mcp:
+        name: get-live-stream-viewer-time-series
+        title: Get Live Stream Viewer Time Series
+        readOnlyHint: true
+      tags:
+        - Live Stream
+      summary: Get live stream viewer metrics over time
+      description: Returns one viewer metric for the latest session of a live stream as a time series, with a data point every five seconds from `from` to `to`. Use it to chart how the audience changed during the session. Viewer data comes from the Cloudinary Video Player, as described for the viewer metrics endpoint.
+      operationId: getLiveStreamAnalyticsTimeSeries
+      responses:
+        '200':
+          description: The time series, oldest point first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveStreamAnalyticsTimeSeriesWrappedResponse'
+              example:
+                request_id: 2b4d6f8a0c2e4a6c8e0b2d4f6a8c0e2d
+                data:
+                  - timestamp: 1763548800000
+                    value: 10
+                  - timestamp: 1763548805000
+                    value: 12
+                  - timestamp: 1763548810000
+                    value: 12
+        '400':
+          description: Bad request. `dimension` is missing or invalid, or a time value isn't a number.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: The live stream doesn't exist, or it hasn't had a session yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
   /v2/video/{cloud_name}/image_to_video/generate:
     parameters:
       - $ref: '#/components/parameters/cloud_name'
@@ -1427,6 +1729,254 @@ paths:
                 $ref: '#/components/schemas/ErrorWrappedResponse'
         '404':
           description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+  /v2/video/{cloud_name}/elements/{videoAssetId}/{subkind}:
+    parameters:
+      - $ref: '#/components/parameters/cloud_name'
+      - in: path
+        name: videoAssetId
+        schema:
+          type: string
+        required: true
+        description: The asset ID of the video. This is the video's `asset_id`, not its public ID.
+      - in: path
+        name: subkind
+        schema:
+          type: string
+        required: true
+        description: |
+          The type of video element. One of:
+          - `poster`: the image shown before the video plays.
+          - `transcript`: the video's transcript, or a translation of it.
+          - `visual_transcript`: descriptions of what's shown in the video.
+          - `chapters`: the video's chapters. You can list and delete chapters, but not upload them.
+    get:
+      x-speakeasy-mcp:
+        name: list-video-elements
+        title: List Video Elements
+        readOnlyHint: true
+      tags:
+        - Video Elements
+      summary: List a video's elements
+      description: Returns the elements of the given type that are attached to a video, such as its custom poster or its transcript files. Each element is a separate asset related to the video. Results are paginated; when `next_cursor` is returned, pass it as `cursor` to get the next page.
+      operationId: getVideoElements
+      x-cld-use-for-readme: true
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: The `next_cursor` value from a previous response, to get the next page of results.
+      responses:
+        '200':
+          description: The video's elements of the given type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoElementsWrappedResponse'
+              example:
+                request_id: 54fa10b700125e701b4e1dd0570b9a63
+                data:
+                  - type: visual_transcript
+                    asset_id: 3a4bf9a18670c7b24947bacb156b90e7
+                    public_id: samples/sea-turtle.visual.transcript
+                    metadata: {}
+        '400':
+          description: Bad request. The element type isn't supported.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: a59557e743338a5a26795a4bf7f600f6
+                error:
+                  message: 'validation failed: unrecognized video element subkind ''subtitles'''
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: 78fa2cbe6d2e16cdb9734f8c2b6de2c3
+                error:
+                  message: 'error while authenticating: api_secret mismatch'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No video with this asset ID exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: 591e30d43eadf7e9461c65bafd2a4930
+                error:
+                  message: 'resource not found: video ''00000000000000000000000000000000'' not found'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    post:
+      x-speakeasy-mcp:
+        name: upload-video-element
+        title: Upload Video Element
+      tags:
+        - Video Elements
+      summary: Upload a video element
+      description: |
+        Uploads a file as a video element and attaches it to the video whose asset ID you pass as `videoAssetId` in the path. The element is stored as its own asset, in the same asset folder as the video, with a public ID based on the video's public ID.
+
+        How to send the file depends on the element type:
+        - `poster`: send the image as `file` in a `multipart/form-data` request, or send `{"url": "<image URL>"}` as `application/json` to upload it from a URL. The poster's public ID is `<video public ID>_poster`.
+        - `transcript`: send a `.srt`, `.vtt`, or `.transcript` file as `file` in a `multipart/form-data` request. Cloudinary converts it to its `.transcript` format. To upload a translation, also send `language_code`. The public ID is `<video public ID>.<language_code>.transcript`, or `<video public ID>.transcript` without a language code.
+        - `visual_transcript`: send a `.srt`, `.vtt`, or `.transcript` file as `file` in a `multipart/form-data` request. Cloudinary converts it to its `.transcript` format. The public ID is `<video public ID>.visual.transcript`.
+
+        Files can be up to 30 MB. Chapters can't be uploaded.
+      operationId: uploadVideoElement
+      requestBody:
+        description: The element file, or for a poster, the URL of the image to upload.
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VideoElementFileUpload'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoElementURLUpload'
+            example:
+              url: https://res.cloudinary.com/demo/image/upload/sample.jpg
+      responses:
+        '200':
+          description: The element was uploaded and attached to the video.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoElementUploadWrappedResponse'
+              example:
+                request_id: 9e1a3c5e7b9d1f3a5c7e9b1d3f5a7c9e
+                data:
+                  message: video element poster uploaded
+                  public_id: dog_poster
+                  asset_id: 43da975e2a8ad6ec0bd7f11c09ebae0b
+                  file_url: https://res.cloudinary.com/demo/image/upload/v1763548800/dog_poster.jpg
+        '400':
+          description: Bad request. For example, the element type can't be uploaded, or the file is missing, too large, or in an unsupported format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: b29592417bf6437233c9073f541a3ee6
+                error:
+                  message: 'bad request: transcript upload requires multipart form with file part'
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: 796aa421102594ce8c072c62bca3b0f4
+                error:
+                  message: 'error while authenticating: api_secret mismatch'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No video with this asset ID exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: 6b10e3e257f31f9ddd48cb2aa71a0ce9
+                error:
+                  message: 'resource not found: video ''00000000000000000000000000000000'' not found'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+    delete:
+      x-speakeasy-mcp:
+        name: delete-video-elements
+        title: Delete Video Elements
+        destructiveHint: true
+      tags:
+        - Video Elements
+      summary: Delete video elements
+      description: Deletes elements of the given type from a video. By default, deletes all of the video's elements of that type, for example every transcript including translations. To delete a single element, pass its `assetId`. The element assets are deleted, not just detached from the video. The response confirms the request but doesn't list the deleted elements, so to check what's left, list the video's elements.
+      operationId: deleteVideoElement
+      parameters:
+        - in: query
+          name: assetId
+          required: false
+          schema:
+            type: string
+          description: The asset ID of a single element to delete, as returned when you list the video's elements. When omitted, deletes all elements of the given type for the video.
+      responses:
+        '200':
+          description: The elements were deleted, or the video had no elements of this type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageWrappedResponse'
+              example:
+                request_id: d99c6557b8573bbb48c4a38ae3eb3dca
+                data:
+                  message: video element transcript deleted
+        '400':
+          description: Bad request. The element type isn't supported.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: 6c367455025915942298d34c7ede6bf3
+                error:
+                  message: 'validation failed: unrecognized video element subkind ''subtitles'''
+        '401':
+          description: Authentication error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: dd92862fa230ff87d0a0893bac1c99c1
+                error:
+                  message: 'error while authenticating: api_secret mismatch'
+        '403':
+          description: Authorization error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+        '404':
+          description: No video with this asset ID exists, or the video has no element of this type with the given `assetId`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorWrappedResponse'
+              example:
+                request_id: a761f913ec2477852cc0a77a28b276a8
+                error:
+                  message: 'resource not found: video element with asset id ''00000000000000000000000000000000'' not found for video'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -2205,6 +2755,169 @@ components:
           type: string
           example: main_stream_archive
           nullable: true
+    LiveStreamStatsResponse:
+      type: object
+      description: The input stats of a live stream at one point in time.
+      required:
+        - collected_at
+        - video_bitrate
+        - video_codec
+        - video_width
+        - video_height
+        - video_frame_rate
+        - audio_bitrate
+        - bitrate_in_to_out_ratio
+        - audio_codec
+        - audio_channels
+        - audio_sample_rate
+        - client_frames_dropped
+      properties:
+        collected_at:
+          type: integer
+          format: int64
+          description: When the stats were collected, as a Unix timestamp in milliseconds.
+        video_bitrate:
+          type: integer
+          description: The measured bitrate of the incoming video, in bits per second.
+        video_codec:
+          type: string
+          description: The video codec declared by the streaming software, for example `H264`.
+        video_width:
+          type: integer
+          description: The video width declared by the streaming software, in pixels.
+        video_height:
+          type: integer
+          description: The video height declared by the streaming software, in pixels.
+        video_frame_rate:
+          type: integer
+          description: The video frame rate declared by the streaming software, in frames per second.
+        audio_bitrate:
+          type: integer
+          description: The measured bitrate of the incoming audio, in bits per second.
+        bitrate_in_to_out_ratio:
+          type: number
+          format: double
+          description: The measured ratio of the stream's incoming bitrate to its outgoing bitrate.
+        audio_codec:
+          type: string
+          description: The audio codec declared by the streaming software, for example `AAC`.
+        audio_channels:
+          type: integer
+          description: The number of audio channels declared by the streaming software.
+        audio_sample_rate:
+          type: integer
+          description: The audio sample rate declared by the streaming software, in hertz.
+        client_frames_dropped:
+          type: integer
+          description: A running total of the frames that the streaming software dropped. To see how many frames were dropped between two entries, subtract the earlier value from the later one.
+    LiveStreamHealthResponse:
+      type: object
+      description: The health assessment of a live stream.
+      required:
+        - assessment
+      properties:
+        assessment:
+          type: string
+          description: |
+            The health of the stream's input during the time range. One of:
+            - `excellent`: the input meets or nearly meets the expected quality.
+            - `good`: the input is acceptable but below the expected quality.
+            - `poor`: the input is well below the expected quality, or one of the measures is very low.
+            - `offline`: there weren't enough stats in the time range to assess the stream, for example because it isn't receiving input.
+          example: excellent
+    LiveStreamHealthWrappedResponse:
+      type: object
+      description: A response envelope wrapping a live stream health assessment.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/LiveStreamHealthResponse'
+    LiveStreamAnalyticsMetricsResponse:
+      type: object
+      description: Viewer metrics for the latest session of a live stream.
+      required:
+        - current_viewers_count
+        - total_viewers_count
+        - average_watch_time
+      properties:
+        current_viewers_count:
+          type: integer
+          description: The number of unique viewers watching the stream now. Always `0` when the session has ended.
+          example: 12
+        total_viewers_count:
+          type: integer
+          description: The number of unique viewers who watched the stream during the session.
+          example: 48
+        average_watch_time:
+          type: integer
+          format: int64
+          description: The average time that viewers watched the stream during the session, in milliseconds. Views still in progress count up to the time of the request.
+          example: 754000
+    LiveStreamAnalyticsMetricsWrappedResponse:
+      type: object
+      description: A response envelope wrapping live stream viewer metrics.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/LiveStreamAnalyticsMetricsResponse'
+    LiveStreamAnalyticsTimeSeriesResponse:
+      type: array
+      description: The data points of the time series, oldest first.
+      items:
+        type: object
+        description: One data point of the time series.
+        required:
+          - timestamp
+          - value
+        properties:
+          timestamp:
+            type: integer
+            format: int64
+            description: The time of the data point, as a Unix timestamp in milliseconds.
+          value:
+            type: integer
+            description: The value of the requested metric at that time. For `average_watch_time`, the value is in milliseconds.
+    LiveStreamAnalyticsTimeSeriesWrappedResponse:
+      type: object
+      description: A response envelope wrapping a live stream viewer time series.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/LiveStreamAnalyticsTimeSeriesResponse'
+    LiveStreamStatsWrappedResponse:
+      type: object
+      description: A response envelope wrapping a list of live stream stats.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          type: array
+          description: The stats collected during the time range, oldest first.
+          items:
+            $ref: '#/components/schemas/LiveStreamStatsResponse'
     ImageToVideoGeneratePayload:
       type: object
       required:
@@ -2445,6 +3158,117 @@ components:
           example: 6ec0bd7f11c043da975e2a8ad9ebae0b
         data:
           $ref: '#/components/schemas/AIVideoAnalysisResponse'
+    VideoElementsWrappedResponse:
+      type: object
+      description: A response envelope wrapping a page of video elements.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        next_cursor:
+          type: string
+          description: A cursor for the next page of results. Pass it as `cursor` in your next request. When there are no more results, it's `null`.
+          example: da975e2a8ad9ebae0b6ec0bd7f11c043d
+        data:
+          nullable: true
+          type: array
+          description: The video's elements of the requested type.
+          items:
+            $ref: '#/components/schemas/VideoElementResponse'
+    VideoElementResponse:
+      type: object
+      description: A video element. Each element is an asset related to the video.
+      required:
+        - type
+        - asset_id
+        - public_id
+        - metadata
+      properties:
+        type:
+          type: string
+          description: The type of the element, for example `poster` or `transcript`.
+          example: poster
+        asset_id:
+          type: string
+          description: The asset ID of the element. Use it to delete this element.
+          example: 43da975e2a8ad6ec0bd7f11c09ebae0b
+        public_id:
+          type: string
+          description: The public ID of the element asset.
+          example: dog_poster
+        metadata:
+          type: object
+          description: Extra information about the element, for example the `language_code` of a translated transcript. Empty when there's none.
+          example:
+            language_code: es
+    VideoElementFileUpload:
+      type: object
+      description: The element file to upload, sent as `multipart/form-data`.
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary
+          description: The element file. For a poster, an image. For a transcript or visual transcript, a `.srt`, `.vtt`, or `.transcript` file. Up to 30 MB.
+        language_code:
+          type: string
+          description: For a transcript only, the language of the transcript, for example `en` or `de`. The uploaded transcript's public ID is then `<video public ID>.<language_code>.transcript`. Don't send this field for other element types.
+          example: de
+    VideoElementURLUpload:
+      type: object
+      description: The URL of a poster image to upload, sent as `application/json`. Only posters can be uploaded from a URL.
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          format: uri
+          description: The URL of the image to upload as the video's poster.
+          example: https://res.cloudinary.com/demo/image/upload/sample.jpg
+    VideoElementUploadWrappedResponse:
+      type: object
+      description: A response envelope wrapping the result of a video element upload.
+      required:
+        - request_id
+        - data
+      properties:
+        request_id:
+          type: string
+          description: A unique id for the request, useful when contacting support.
+          example: 6ec0bd7f11c043da975e2a8ad9ebae0b
+        data:
+          $ref: '#/components/schemas/VideoElementUploadResponse'
+    VideoElementUploadResponse:
+      type: object
+      description: The uploaded element.
+      required:
+        - message
+        - public_id
+        - asset_id
+        - file_url
+      properties:
+        message:
+          type: string
+          description: A confirmation message, for example `video element poster uploaded`.
+          example: video element poster uploaded
+        public_id:
+          type: string
+          description: The public ID of the uploaded element asset.
+          example: dog_poster
+        asset_id:
+          type: string
+          description: The asset ID of the uploaded element.
+          example: 43da975e2a8ad6ec0bd7f11c09ebae0b
+        file_url:
+          type: string
+          format: uri
+          description: The secure delivery URL of the uploaded element asset.
+          example: https://res.cloudinary.com/demo/image/upload/v1763548800/dog_poster.jpg
   examples:
     MyLiveStreamWrappedResponse:
       summary: My Live Stream Response
@@ -2593,3 +3417,5 @@ tags:
     description: Manage reusable image-to-video prompts.
   - name: AI Video Analysis
     description: Generate a visual transcription of a video and poll the analysis job.
+  - name: Video Elements
+    description: List, upload, and delete the elements attached to a video, such as its poster and transcripts.
